@@ -1,0 +1,357 @@
+"use client";
+
+import { useState, useRef } from "react";
+import { Plus, Pencil, Trash2, CreditCard as CardIcon, ArrowUpRight, ArrowDownRight, GripVertical, Wallet, PiggyBank, Banknote, Coins, Calendar } from "lucide-react";
+import AddCreditCardModal from "@/components/AddCreditCardModal";
+import AddCashAccountModal from "@/components/AddCashAccountModal";
+import AddExpenseModal from "@/components/AddExpenseModal";
+import { useCreditCards } from "@/hooks/useCreditCards";
+import { useCashAccounts } from "@/hooks/useCashAccounts";
+import type { CreditCard, CreditCardWithStats, CashAccount, CashAccountType } from "@/lib/types";
+
+const ACCOUNT_ICONS: Record<CashAccountType, typeof Wallet> = {
+  checking: Wallet,
+  savings: PiggyBank,
+  cash: Banknote,
+  other: Coins,
+};
+
+function formatDueDate(isoDate: string | null, daysUntil: number | null): string {
+  if (!isoDate) return "";
+  const date = new Date(isoDate + "T12:00:00");
+  const monthDay = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (daysUntil === 0) return `Due today (${monthDay})`;
+  if (daysUntil === 1) return `Due tomorrow (${monthDay})`;
+  if (daysUntil !== null && daysUntil <= 7) return `Due in ${daysUntil} days (${monthDay})`;
+  return `Due ${monthDay}`;
+}
+
+function getDueColor(daysUntil: number | null): string {
+  if (daysUntil === null) return "text-gray-500";
+  if (daysUntil <= 3) return "text-red-600";
+  if (daysUntil <= 7) return "text-amber-600";
+  return "text-gray-500";
+}
+
+export default function CardsPage() {
+  const { cards, loading: loadingCards, refetch: refetchCards, createCard, updateCard, deleteCard, reorderCards } = useCreditCards();
+  const { accounts, totalBalance: totalCash, loading: loadingAccounts, createAccount, updateAccount, deleteAccount, reorderAccounts } = useCashAccounts();
+
+  const [showAddCardModal, setShowAddCardModal] = useState(false);
+  const [editCard, setEditCard] = useState<CreditCard | null>(null);
+  const [showAddAccountModal, setShowAddAccountModal] = useState(false);
+  const [editAccount, setEditAccount] = useState<CashAccount | null>(null);
+  const [payCard, setPayCard] = useState<CreditCardWithStats | null>(null);
+  const [chargeCard, setChargeCard] = useState<CreditCardWithStats | null>(null);
+
+  // Drag & drop state
+  const dragCardIdx = useRef<number | null>(null);
+  const dragAccountIdx = useRef<number | null>(null);
+  const [dragOverCard, setDragOverCard] = useState<number | null>(null);
+  const [dragOverAccount, setDragOverAccount] = useState<number | null>(null);
+
+  const handleSaveCard = async (data: { name: string; last_four?: string; color?: string; credit_limit?: number | null; due_day?: number | null; statement_day?: number | null }) => {
+    if (editCard) {
+      await updateCard(editCard.id, { ...data, last_four: data.last_four ?? null });
+      setEditCard(null);
+    } else {
+      await createCard(data);
+    }
+  };
+
+  const handleSaveAccount = async (data: { name: string; type: CashAccountType; balance: number; color?: string }) => {
+    if (editAccount) {
+      await updateAccount(editAccount.id, data);
+      setEditAccount(null);
+    } else {
+      await createAccount(data);
+    }
+  };
+
+  // Card drag handlers
+  const onCardDragStart = (i: number) => { dragCardIdx.current = i; };
+  const onCardDragOver = (e: React.DragEvent, i: number) => { e.preventDefault(); setDragOverCard(i); };
+  const onCardDragEnd = () => { setDragOverCard(null); dragCardIdx.current = null; };
+  const onCardDrop = (e: React.DragEvent, i: number) => {
+    e.preventDefault();
+    const from = dragCardIdx.current;
+    if (from === null || from === i) { onCardDragEnd(); return; }
+    const next = [...cards];
+    const [moved] = next.splice(from, 1);
+    next.splice(i, 0, moved);
+    reorderCards(next);
+    onCardDragEnd();
+  };
+
+  // Account drag handlers
+  const onAccountDragStart = (i: number) => { dragAccountIdx.current = i; };
+  const onAccountDragOver = (e: React.DragEvent, i: number) => { e.preventDefault(); setDragOverAccount(i); };
+  const onAccountDragEnd = () => { setDragOverAccount(null); dragAccountIdx.current = null; };
+  const onAccountDrop = (e: React.DragEvent, i: number) => {
+    e.preventDefault();
+    const from = dragAccountIdx.current;
+    if (from === null || from === i) { onAccountDragEnd(); return; }
+    const next = [...accounts];
+    const [moved] = next.splice(from, 1);
+    next.splice(i, 0, moved);
+    reorderAccounts(next);
+    onAccountDragEnd();
+  };
+
+  const totalDebt = cards.reduce((sum, c) => sum + Math.max(0, c.balance), 0);
+  const totalLimit = cards.reduce((sum, c) => sum + Number(c.credit_limit || 0), 0);
+  const totalUtilization = totalLimit > 0 ? (totalDebt / totalLimit) * 100 : 0;
+  const netWorth = totalCash - totalDebt;
+
+  // Upcoming payments (next 30 days)
+  const upcomingPayments = cards
+    .filter((c) => c.balance > 0 && c.daysUntilDue !== null && c.daysUntilDue <= 30)
+    .sort((a, b) => (a.daysUntilDue || 0) - (b.daysUntilDue || 0));
+
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Accounts & Cards</h1>
+          <p className="text-gray-400 text-sm mt-0.5">Track your cash, checking, and credit cards</p>
+        </div>
+      </div>
+
+      {/* Net summary */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+          <span className="text-xs text-gray-400 uppercase tracking-wider">Cash & Checking</span>
+          <p className="text-xl font-bold text-green-600 mt-1">${totalCash.toFixed(2)}</p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+          <span className="text-xs text-gray-400 uppercase tracking-wider">Credit Card Debt</span>
+          <p className="text-xl font-bold text-red-600 mt-1">${totalDebt.toFixed(2)}</p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+          <span className="text-xs text-gray-400 uppercase tracking-wider">Liquid Net Worth</span>
+          <p className={`text-xl font-bold mt-1 ${netWorth >= 0 ? "text-gray-900" : "text-red-600"}`}>
+            {netWorth < 0 ? "-" : ""}${Math.abs(netWorth).toFixed(2)}
+          </p>
+        </div>
+      </div>
+
+      {/* Upcoming payments alert */}
+      {upcomingPayments.length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <Calendar size={16} className="text-gray-400" />
+            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Upcoming Payments</h2>
+          </div>
+          <div className="space-y-2">
+            {upcomingPayments.map((c) => (
+              <div key={c.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100/80 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full" style={{ background: c.color }} />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{c.name}</p>
+                    <p className={`text-xs ${getDueColor(c.daysUntilDue)}`}>{formatDueDate(c.nextDueDate, c.daysUntilDue)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-bold text-red-600 tabular-nums">${c.balance.toFixed(2)}</span>
+                  <button onClick={() => setPayCard(c)} className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md transition-colors">Pay Now</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Cash Accounts */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Cash & Bank Accounts</h2>
+          <button onClick={() => { setEditAccount(null); setShowAddAccountModal(true); }} className="text-sm text-blue-600 hover:text-blue-700 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-1">
+            <Plus size={14} /> Add Account
+          </button>
+        </div>
+
+        {loadingAccounts ? (
+          <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-400 shadow-sm">Loading...</div>
+        ) : accounts.length === 0 ? (
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
+            <div className="flex flex-col items-center justify-center py-10">
+              <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                <Wallet size={18} className="text-gray-300" />
+              </div>
+              <p className="text-sm font-medium text-gray-500">No accounts yet</p>
+              <p className="text-xs text-gray-400 mt-1">Add your checking, savings, or cash on hand</p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Quick-add Cash on Hand if no cash-type account */}
+            {!accounts.some((a) => a.type === "cash") && (
+              <button
+                onClick={() => {
+                  setEditAccount(null);
+                  setShowAddAccountModal(true);
+                }}
+                className="group border-2 border-dashed border-gray-200 hover:border-blue-300 rounded-xl p-4 flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-blue-600 transition-all min-h-[100px]"
+              >
+                <Banknote size={20} />
+                <span className="text-xs font-medium">Add Cash on Hand</span>
+                <span className="text-[10px] text-gray-300 group-hover:text-blue-400">Track physical cash</span>
+              </button>
+            )}
+            {accounts.map((acc, i) => {
+              const Icon = ACCOUNT_ICONS[acc.type];
+              const isOver = dragOverAccount === i;
+              return (
+                <div key={acc.id}
+                  draggable
+                  onDragStart={() => onAccountDragStart(i)}
+                  onDragOver={(e) => onAccountDragOver(e, i)}
+                  onDragEnd={onAccountDragEnd}
+                  onDrop={(e) => onAccountDrop(e, i)}
+                  className={`group bg-white border rounded-xl shadow-sm transition-all cursor-move ${isOver ? "border-blue-400 ring-2 ring-blue-200 -translate-y-0.5" : "border-gray-200 hover:shadow-md"}`}>
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <GripVertical size={14} className="text-gray-300 group-hover:text-gray-400" />
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${acc.color}20`, color: acc.color }}>
+                          <Icon size={16} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 leading-tight">{acc.name}</p>
+                          <p className="text-[10px] text-gray-400 uppercase tracking-wider">{acc.type}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => { setEditAccount(acc); setShowAddAccountModal(true); }} className="text-gray-400 hover:text-blue-600 p-1" title="Edit"><Pencil size={12} /></button>
+                        <button onClick={() => { if (confirm(`Delete ${acc.name}?`)) deleteAccount(acc.id); }} className="text-gray-300 hover:text-red-500 p-1" title="Delete"><Trash2 size={12} /></button>
+                      </div>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900 tabular-nums">${Number(acc.balance).toFixed(2)}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Credit Cards */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Credit Cards</h2>
+          <div className="flex items-center gap-3">
+            {totalLimit > 0 && (
+              <span className={`text-xs ${totalUtilization > 30 ? "text-red-600" : totalUtilization > 10 ? "text-amber-600" : "text-green-600"}`}>
+                {totalUtilization.toFixed(1)}% utilization
+              </span>
+            )}
+            <button onClick={() => { setEditCard(null); setShowAddCardModal(true); }} className="text-sm text-blue-600 hover:text-blue-700 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-1">
+              <Plus size={14} /> Add Card
+            </button>
+          </div>
+        </div>
+
+        {loadingCards ? (
+          <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-400 shadow-sm">Loading...</div>
+        ) : cards.length === 0 ? (
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
+            <div className="flex flex-col items-center justify-center py-10">
+              <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                <CardIcon size={18} className="text-gray-300" />
+              </div>
+              <p className="text-sm font-medium text-gray-500">No cards yet</p>
+              <p className="text-xs text-gray-400 mt-1">Add a credit card to start tracking</p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {cards.map((card, i) => {
+              const utilColor = card.utilization > 30 ? "text-red-600" : card.utilization > 10 ? "text-amber-600" : "text-green-600";
+              const barColor = card.utilization > 30 ? "bg-red-500" : card.utilization > 10 ? "bg-amber-500" : "bg-green-500";
+              const isOver = dragOverCard === i;
+              return (
+                <div key={card.id}
+                  draggable
+                  onDragStart={() => onCardDragStart(i)}
+                  onDragOver={(e) => onCardDragOver(e, i)}
+                  onDragEnd={onCardDragEnd}
+                  onDrop={(e) => onCardDrop(e, i)}
+                  className={`bg-white border rounded-xl shadow-sm overflow-hidden transition-all cursor-move ${isOver ? "border-blue-400 ring-2 ring-blue-200 -translate-y-0.5" : "border-gray-200 hover:shadow-md"}`}>
+                  {/* Card visual */}
+                  <div className="p-5 text-white relative" style={{ background: `linear-gradient(135deg, ${card.color}, ${card.color}cc)` }}>
+                    <GripVertical size={14} className="absolute top-2 right-2 opacity-50" />
+                    <div className="flex items-start justify-between mb-6">
+                      <div>
+                        <p className="text-xs opacity-80 uppercase tracking-wider">Credit Card</p>
+                        <p className="text-lg font-semibold mt-1">{card.name}</p>
+                      </div>
+                      <CardIcon size={22} className="opacity-70" />
+                    </div>
+                    <p className="text-sm font-mono opacity-90">•••• •••• •••• {card.last_four || "0000"}</p>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-xs text-gray-400 uppercase tracking-wider">Balance</span>
+                      <span className={`text-xl font-bold tabular-nums ${card.balance > 0 ? "text-red-600" : "text-green-600"}`}>
+                        ${card.balance.toFixed(2)}
+                      </span>
+                    </div>
+
+                    {card.due_day && card.balance > 0 && (
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <Calendar size={12} className="text-gray-400" />
+                        <span className={getDueColor(card.daysUntilDue)}>{formatDueDate(card.nextDueDate, card.daysUntilDue)}</span>
+                      </div>
+                    )}
+
+                    {card.credit_limit && Number(card.credit_limit) > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs text-gray-400">Utilization</span>
+                          <span className={`text-xs font-medium ${utilColor}`}>{card.utilization.toFixed(1)}% of ${Number(card.credit_limit).toFixed(0)}</span>
+                        </div>
+                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div className={`h-full transition-all ${barColor}`} style={{ width: `${Math.min(100, card.utilization)}%` }} />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 pt-2 border-t border-gray-100">
+                      <div>
+                        <p className="text-gray-400">Charges</p>
+                        <p className="font-medium text-gray-700 tabular-nums">${card.totalCharges.toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400">Payments</p>
+                        <p className="font-medium text-gray-700 tabular-nums">${card.totalPayments.toFixed(2)}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-3 border-t border-gray-100">
+                      <button onClick={() => setChargeCard(card)} className="flex-1 flex items-center justify-center gap-1 text-xs bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-2.5 py-1.5 rounded-md transition-colors">
+                        <ArrowUpRight size={12} /> Charge
+                      </button>
+                      <button onClick={() => setPayCard(card)} className="flex-1 flex items-center justify-center gap-1 text-xs bg-green-50 text-green-600 hover:bg-green-100 border border-green-200 px-2.5 py-1.5 rounded-md transition-colors">
+                        <ArrowDownRight size={12} /> Pay
+                      </button>
+                      <button onClick={() => { setEditCard(card); setShowAddCardModal(true); }} className="text-gray-400 hover:text-blue-600 transition-colors p-1.5" title="Edit"><Pencil size={14} /></button>
+                      <button onClick={() => { if (confirm(`Delete ${card.name}?`)) deleteCard(card.id); }} className="text-gray-300 hover:text-red-500 transition-colors p-1.5" title="Delete"><Trash2 size={14} /></button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <AddCreditCardModal isOpen={showAddCardModal} card={editCard} onClose={() => { setShowAddCardModal(false); setEditCard(null); }} onSave={handleSaveCard} />
+      <AddCashAccountModal isOpen={showAddAccountModal} account={editAccount} onClose={() => { setShowAddAccountModal(false); setEditAccount(null); }} onSave={handleSaveAccount} />
+      <AddExpenseModal isOpen={!!chargeCard} onClose={() => setChargeCard(null)} onAdded={refetchCards} defaultCardId={chargeCard?.id} />
+      <AddExpenseModal isOpen={!!payCard} onClose={() => setPayCard(null)} onAdded={refetchCards} defaultCardId={payCard?.id} defaultIsCardPayment={true} />
+    </div>
+  );
+}

@@ -1,0 +1,457 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import {
+  Plus, DollarSign, TrendingUp, Package, Percent,
+  Briefcase, Zap, BarChart3, Wallet, ArrowUpRight, CreditCard, Scale, Coins,
+  Calendar, PiggyBank, Banknote, Target,
+} from "lucide-react";
+import AddItemModal from "@/components/AddItemModal";
+import AddIncomeModal from "@/components/AddIncomeModal";
+import MarkSoldModal from "@/components/MarkSoldModal";
+import AddExpenseModal from "@/components/AddExpenseModal";
+import QuickAdd from "@/components/QuickAdd";
+import Charts from "@/components/Charts";
+import { useItems, useStats } from "@/hooks/useItems";
+import { useIncome, useIncomeStats, useSavedIncome, useMonthlyIncomeStats } from "@/hooks/useIncome";
+import { useExpenseStats, useMonthlyExpenseStats } from "@/hooks/useExpenses";
+import { usePortfolioStats, useRealizedMetalProfit } from "@/hooks/useHoldings";
+import { useCashAccounts } from "@/hooks/useCashAccounts";
+import { useCreditCards } from "@/hooks/useCreditCards";
+import { useDebts } from "@/hooks/useDebts";
+import { useGoals } from "@/hooks/useGoals";
+import { getGoalIcon } from "@/lib/goalIcons";
+import { useChartData } from "@/hooks/useChartData";
+import { useAuth } from "@/context/AuthContext";
+import { createClient } from "@/lib/supabase/client";
+import type { Item, Income, CashAccountType, CreditCardWithStats } from "@/lib/types";
+import { Crown } from "lucide-react";
+
+const ACCOUNT_ICONS: Record<CashAccountType, typeof Wallet> = {
+  checking: Wallet,
+  savings: PiggyBank,
+  cash: Banknote,
+  other: Coins,
+};
+
+function formatDueDate(isoDate: string | null, daysUntil: number | null): string {
+  if (!isoDate) return "";
+  const date = new Date(isoDate + "T12:00:00");
+  const monthDay = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (daysUntil === 0) return `Due today`;
+  if (daysUntil === 1) return `Due tomorrow`;
+  if (daysUntil !== null && daysUntil <= 7) return `Due in ${daysUntil}d (${monthDay})`;
+  return `Due ${monthDay}`;
+}
+
+function getDueColor(daysUntil: number | null): string {
+  if (daysUntil === null) return "text-gray-500";
+  if (daysUntil <= 3) return "text-red-600";
+  if (daysUntil <= 7) return "text-amber-600";
+  return "text-gray-500";
+}
+
+function MiniHeatMap({ data }: { data: Map<string, number> }) {
+  const days: string[] = [];
+  const today = new Date();
+  for (let i = 29; i >= 0; i--) { const d = new Date(today); d.setDate(d.getDate() - i); days.push(d.toISOString().split("T")[0]); }
+  let maxVal = 0;
+  data.forEach((v) => { if (Math.abs(v) > maxVal) maxVal = Math.abs(v); });
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm overflow-hidden min-w-0">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Last 30 Days</h3>
+        <div className="flex items-center gap-2 text-xs text-gray-400">
+          <span>Less</span>
+          <div className="flex gap-0.5">
+            {["bg-gray-100", "bg-emerald-100", "bg-emerald-200", "bg-emerald-300", "bg-emerald-400"].map((c, i) => (
+              <div key={i} className={`w-3 h-3 rounded-sm ${c}`} />
+            ))}
+          </div>
+          <span>More</span>
+        </div>
+      </div>
+      <div className="flex gap-[3px] overflow-hidden">
+        {days.map((date) => {
+          const val = data.get(date) || 0;
+          let bg = "bg-gray-100";
+          if (val > 0) { const i = Math.min(val / Math.max(maxVal, 1), 1); bg = i > 0.75 ? "bg-emerald-400" : i > 0.5 ? "bg-emerald-300" : i > 0.25 ? "bg-emerald-200" : "bg-emerald-100"; }
+          else if (val < 0) bg = "bg-red-200";
+          return <div key={date} className={`flex-1 aspect-square rounded-sm ${bg}`} title={`${date}: $${val.toFixed(2)}`} />;
+        })}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ icon: Icon, title, subtitle }: { icon: React.ElementType; title: string; subtitle: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12">
+      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+        <Icon size={20} className="text-gray-300" />
+      </div>
+      <p className="text-sm font-medium text-gray-400">{title}</p>
+      <p className="text-xs text-gray-300 mt-1">{subtitle}</p>
+    </div>
+  );
+}
+
+export default function DashboardPage() {
+  const { user } = useAuth();
+  const { stats, refetch: refetchStats } = useStats();
+  const { items: recentItems, refetch: refetchItems } = useItems();
+  const { mainTotal, sideTotal, count: incomeCount, refetch: refetchIncome } = useIncomeStats();
+  const { incomes: recentIncomes, refetch: refetchIncomeList } = useIncome();
+  const { savedIncomes, savePinned, deleteSaved, quickAdd } = useSavedIncome();
+  const { total: totalExpenses, refetch: refetchExpenses } = useExpenseStats();
+  const { total: monthlyExpenses, refetch: refetchMonthlyExpenses } = useMonthlyExpenseStats();
+  const { mainTotal: monthlyMain, sideTotal: monthlySide, refetch: refetchMonthlyIncome } = useMonthlyIncomeStats();
+  const { stats: metalStats, refetch: refetchMetals } = usePortfolioStats();
+  const { monthlyProfit: monthlyMetalProfit, refetch: refetchMetalProfit } = useRealizedMetalProfit();
+  const { accounts: cashAccounts, totalBalance: totalCash, refetch: refetchCash } = useCashAccounts();
+  const { cards: creditCards, refetch: refetchCards } = useCreditCards();
+  const { totalIOwe, totalTheyOwe, refetch: refetchDebts } = useDebts();
+  const { goals, refetch: refetchGoals } = useGoals();
+  const { monthlyData, categoryData, refetch: refetchCharts } = useChartData();
+
+  const [showAddItem, setShowAddItem] = useState(false);
+  const [showAddIncome, setShowAddIncome] = useState(false);
+  const [soldItem, setSoldItem] = useState<Item | null>(null);
+  const [heatMapData, setHeatMapData] = useState<Map<string, number>>(new Map());
+  const supabase = createClient();
+
+  const fetchHeatMap = useCallback(async () => {
+    const today = new Date(); const thirtyAgo = new Date(today); thirtyAgo.setDate(thirtyAgo.getDate() - 30);
+    const startDate = thirtyAgo.toISOString().split("T")[0];
+    try {
+      let itemsQ = supabase.from("items").select("sale_date, sale_price, purchase_price, fees, shipping_costs").eq("status", "sold").gte("sale_date", startDate);
+      let incomeQ = supabase.from("income").select("date, amount").gte("date", startDate);
+      if (user) { itemsQ = itemsQ.eq("user_id", user.id); incomeQ = incomeQ.eq("user_id", user.id); }
+      else { itemsQ = itemsQ.is("user_id", null); incomeQ = incomeQ.is("user_id", null); }
+      const [itemsRes, incomeRes] = await Promise.all([itemsQ, incomeQ]);
+      const map = new Map<string, number>();
+      for (const item of (itemsRes.data || []) as Item[]) { const d = item.sale_date!; map.set(d, (map.get(d) || 0) + Number(item.sale_price) - Number(item.purchase_price) - Number(item.fees || 0) - Number(item.shipping_costs || 0)); }
+      for (const inc of (incomeRes.data || []) as Income[]) { map.set(inc.date, (map.get(inc.date) || 0) + Number(inc.amount)); }
+      setHeatMapData(map);
+    } catch { /* ignore */ }
+  }, [user, supabase]);
+
+  useEffect(() => { fetchHeatMap(); }, [fetchHeatMap]);
+
+  const [payCard, setPayCard] = useState<CreditCardWithStats | null>(null);
+
+  const handleRefresh = () => { refetchStats(); refetchItems(); refetchIncome(); refetchIncomeList(); refetchExpenses(); refetchMonthlyExpenses(); refetchMonthlyIncome(); refetchMetals(); refetchMetalProfit(); refetchCash(); refetchCards(); refetchDebts(); refetchGoals(); fetchHeatMap(); refetchCharts(); };
+  const handleQuickAdd = async (saved: Parameters<typeof quickAdd>[0]) => { await quickAdd(saved); handleRefresh(); };
+
+  const monthlyIncome = monthlyMain + monthlySide;
+  // Monthly net includes realized metal profit this month
+  const monthlyNet = monthlyIncome + monthlyMetalProfit - monthlyExpenses;
+  const monthName = new Date().toLocaleDateString("en-US", { month: "long" });
+
+  const totalCardDebt = creditCards.reduce((sum, c) => sum + Math.max(0, c.balance), 0);
+  const upcomingPayments = creditCards
+    .filter((c) => c.balance > 0 && c.daysUntilDue !== null && c.daysUntilDue <= 30)
+    .sort((a, b) => (a.daysUntilDue || 0) - (b.daysUntilDue || 0));
+
+  // NET WORTH = Cash + Metals + Inventory + Money owed to me - Card debt - Debts I owe
+  const netWorth = totalCash + metalStats.totalValue + stats.inventoryValue + totalTheyOwe - totalCardDebt - totalIOwe;
+
+  const topCards = [
+    { label: `${monthName} Net`, value: monthlyNet, icon: Scale, iconBg: monthlyNet >= 0 ? "text-green-600 bg-green-50" : "text-red-600 bg-red-50", valueColor: monthlyNet >= 0 ? "text-green-600" : "text-red-600" },
+    { label: "Cash & Checking", value: totalCash, icon: Wallet, iconBg: "text-green-600 bg-green-50", valueColor: "text-green-600", href: "/cards" as string | undefined },
+    { label: "Card Debt", value: totalCardDebt, icon: CreditCard, iconBg: "text-red-600 bg-red-50", valueColor: "text-red-600", negative: true, href: "/cards" as string | undefined },
+    { label: "Metals Portfolio", value: metalStats.totalValue, icon: Coins, iconBg: "text-amber-600 bg-amber-50", valueColor: "text-amber-600", href: "/metals" as string | undefined },
+  ];
+
+  const bottomCards = [
+    { label: `${monthName} Income`, display: `$${monthlyIncome.toFixed(2)}`, icon: DollarSign, iconBg: "text-emerald-600 bg-emerald-50", valueColor: "text-emerald-600" },
+    { label: `${monthName} Expenses`, display: `-$${monthlyExpenses.toFixed(2)}`, icon: CreditCard, iconBg: "text-red-600 bg-red-50", valueColor: "text-red-600" },
+    { label: "Owed to Me", display: `$${totalTheyOwe.toFixed(2)}`, icon: ArrowUpRight, iconBg: "text-green-600 bg-green-50", valueColor: "text-green-600", href: "/debts" as string | undefined },
+    { label: "I Owe", display: `-$${totalIOwe.toFixed(2)}`, icon: Scale, iconBg: "text-red-600 bg-red-50", valueColor: "text-red-600", href: "/debts" as string | undefined },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-400 text-sm mt-0.5">Your complete financial overview</p>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => setShowAddIncome(true)} className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 font-medium py-2 px-4 rounded-lg flex items-center gap-2">
+            <Plus size={16} /><span className="hidden sm:inline">Add Income</span>
+          </button>
+          <button onClick={() => setShowAddItem(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 hover:shadow-lg hover:shadow-blue-600/20">
+            <Plus size={16} /><span className="hidden sm:inline">Add Item</span>
+          </button>
+        </div>
+      </div>
+
+      <QuickAdd savedIncomes={savedIncomes} onQuickAdd={handleQuickAdd} onDelete={deleteSaved} />
+
+      {/* Net Worth */}
+      <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-amber-50 text-amber-600"><Crown size={18} /></div>
+            <div>
+              <span className="text-sm text-gray-500">Net Worth</span>
+              <p className="text-xs text-gray-400">Assets − debts</p>
+            </div>
+          </div>
+        </div>
+        <p className={`text-[32px] font-bold tracking-tight tabular-nums ${netWorth >= 0 ? "text-gray-900" : "text-red-600"}`}>
+          {netWorth < 0 ? "-" : ""}${Math.abs(netWorth).toFixed(2)}
+        </p>
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-3 pt-3 border-t border-gray-100">
+          <div>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Cash & Banks</p>
+            <p className="text-sm font-semibold text-green-600 tabular-nums">${totalCash.toFixed(2)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Metals</p>
+            <p className="text-sm font-semibold text-amber-600 tabular-nums">${metalStats.totalValue.toFixed(2)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Inventory</p>
+            <p className="text-sm font-semibold text-blue-600 tabular-nums">${stats.inventoryValue.toFixed(2)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Owed to Me</p>
+            <p className="text-sm font-semibold text-green-600 tabular-nums">${totalTheyOwe.toFixed(2)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Total Debt</p>
+            <p className="text-sm font-semibold text-red-600 tabular-nums">-${(totalCardDebt + totalIOwe).toFixed(2)}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {topCards.map((card) => {
+          const Icon = card.icon;
+          const v = card.value;
+          const neg = (card as typeof card & { negative?: boolean }).negative;
+          const href = (card as typeof card & { href?: string }).href;
+          const content = (
+            <>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-gray-500">{card.label}</span>
+                <div className={`p-2 rounded-lg ${card.iconBg}`}><Icon size={18} /></div>
+              </div>
+              <p className={`text-[28px] font-semibold tracking-tight ${card.valueColor}`}>
+                {neg ? "-" : v < 0 ? "-" : ""}${Math.abs(v).toFixed(2)}
+              </p>
+            </>
+          );
+          const baseClass = "bg-white border border-gray-200 rounded-xl p-5 shadow-sm transition-all hover:shadow-md hover:border-gray-300";
+          return href ? (
+            <Link key={card.label} href={href} className={`${baseClass} block`}>{content}</Link>
+          ) : (
+            <div key={card.label} className={baseClass}>{content}</div>
+          );
+        })}
+      </div>
+
+      {/* All accounts */}
+      {cashAccounts.length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Wallet size={16} className="text-gray-400" />
+              <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Your Accounts</h2>
+            </div>
+            <Link href="/cards" className="text-xs text-blue-600 hover:text-blue-700 font-medium">Manage →</Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {cashAccounts.map((acc) => {
+              const Icon = ACCOUNT_ICONS[acc.type];
+              return (
+                <div key={acc.id} className="rounded-xl p-3.5 border border-gray-100 hover:border-gray-200 transition-all" style={{ background: `${acc.color}08` }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${acc.color}20`, color: acc.color }}>
+                      <Icon size={14} />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-medium text-gray-700 truncate block">{acc.name}</span>
+                      <span className="text-[10px] text-gray-400 uppercase tracking-wider">{acc.type}</span>
+                    </div>
+                  </div>
+                  <p className="text-xl font-bold text-gray-900 tabular-nums">${Number(acc.balance).toFixed(2)}</p>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+            <span className="text-xs text-gray-400 uppercase tracking-wider">Total Cash</span>
+            <span className="text-lg font-bold text-green-600 tabular-nums">${totalCash.toFixed(2)}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Upcoming card payments */}
+      {upcomingPayments.length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Calendar size={16} className="text-gray-400" />
+              <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Upcoming Card Payments</h2>
+            </div>
+            <Link href="/cards" className="text-xs text-blue-600 hover:text-blue-700 font-medium">View all →</Link>
+          </div>
+          <div className="space-y-2">
+            {upcomingPayments.slice(0, 4).map((c) => (
+              <div key={c.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100/80 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-8 rounded-sm" style={{ background: c.color }} />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{c.name}{c.last_four ? ` ••${c.last_four}` : ""}</p>
+                    <p className={`text-xs font-medium ${getDueColor(c.daysUntilDue)}`}>{formatDueDate(c.nextDueDate, c.daysUntilDue)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-base font-bold text-red-600 tabular-nums">${c.balance.toFixed(2)}</span>
+                  <button onClick={() => setPayCard(c)} className="text-xs bg-green-600 hover:bg-green-700 text-white font-medium px-3 py-1.5 rounded-md transition-colors">Pay</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Goals progress */}
+      {goals.filter((g) => !g.completed).length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Target size={16} className="text-gray-400" />
+              <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Goals Progress</h2>
+            </div>
+            <Link href="/goals" className="text-xs text-blue-600 hover:text-blue-700 font-medium">View all →</Link>
+          </div>
+          <div className="space-y-3">
+            {goals.filter((g) => !g.completed).slice(0, 4).map((g) => {
+              const Icon = getGoalIcon(g.icon);
+              return (
+                <Link key={g.id} href="/goals" className="block group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105" style={{ background: `${g.color}15`, color: g.color }}>
+                      <Icon size={16} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline justify-between mb-1">
+                        <p className="text-sm font-medium text-gray-900 truncate">{g.name}</p>
+                        <span className="text-xs font-medium tabular-nums shrink-0 ml-2" style={{ color: g.color }}>{g.progress.toFixed(0)}%</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full transition-all rounded-full" style={{ width: `${Math.min(100, g.progress)}%`, background: g.color }} />
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1 tabular-nums">${g.saved.toFixed(2)} of ${Number(g.target_amount).toFixed(2)}</p>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {bottomCards.map((card) => {
+          const Icon = card.icon;
+          const href = (card as typeof card & { href?: string }).href;
+          const inner = (
+            <>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-gray-400 uppercase tracking-wider">{card.label}</span>
+                <div className={`p-1.5 rounded-md ${card.iconBg}`}><Icon size={14} /></div>
+              </div>
+              <p className={`text-xl font-bold ${card.valueColor}`}>{card.display}</p>
+            </>
+          );
+          const cls = "bg-white border border-gray-200 rounded-xl p-5 shadow-sm transition-all hover:border-gray-300";
+          return href ? (
+            <Link key={card.label} href={href} className={`${cls} block`}>{inner}</Link>
+          ) : (
+            <div key={card.label} className={cls}>{inner}</div>
+          );
+        })}
+      </div>
+
+      <MiniHeatMap data={heatMapData} />
+      <Charts monthlyData={monthlyData} categoryData={categoryData} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm min-w-0">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Recent Reselling</h2>
+          </div>
+          <div className="p-3 space-y-1.5">
+            {recentItems.length === 0 ? (
+              <EmptyState icon={Package} title="No items yet" subtitle="Items you add will appear here" />
+            ) : (
+              recentItems.slice(0, 5).map((item) => {
+                const profit = item.status === "sold" ? Number(item.sale_price) - Number(item.purchase_price) - Number(item.fees || 0) - Number(item.shipping_costs || 0) : null;
+                return (
+                  <div key={item.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className={`p-2 rounded-lg ${item.status === "sold" ? "bg-green-50" : "bg-blue-50"}`}>
+                      {item.status === "sold" ? <ArrowUpRight size={16} className="text-green-600" /> : <Package size={16} className="text-blue-600" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-900 font-medium truncate">{item.name}</p>
+                      <p className="text-xs text-gray-400">{item.status === "active" ? "In Stock" : "Sold"} &middot; {item.category}</p>
+                    </div>
+                    <div className="text-right">
+                      {profit !== null ? (
+                        <span className={`text-sm font-semibold ${profit >= 0 ? "text-green-600" : "text-red-600"}`}>{profit >= 0 ? "+" : ""}${profit.toFixed(2)}</span>
+                      ) : (
+                        <span className="text-sm text-gray-500">${Number(item.purchase_price).toFixed(2)}</span>
+                      )}
+                    </div>
+                    {item.status === "active" && (
+                      <button onClick={() => setSoldItem(item)} className="text-xs font-medium bg-green-50 text-green-600 hover:bg-green-100 border border-green-200 px-2.5 py-1 rounded-md shrink-0">Sell</button>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm min-w-0">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Recent Income</h2>
+          </div>
+          <div className="p-3 space-y-1.5">
+            {recentIncomes.length === 0 ? (
+              <EmptyState icon={Wallet} title="No income entries yet" subtitle="Income you log will appear here" />
+            ) : (
+              recentIncomes.slice(0, 5).map((inc) => (
+                <div key={inc.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className={`p-2 rounded-lg ${inc.type === "main" ? "bg-blue-50" : "bg-purple-50"}`}>
+                    {inc.type === "main" ? <Briefcase size={16} className="text-blue-600" /> : <Zap size={16} className="text-purple-600" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-900 font-medium truncate">{inc.source}</p>
+                    <p className="text-xs text-gray-400">{inc.type === "main" ? "Main" : "Side"} &middot; {inc.category}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-semibold text-green-600">+${Number(inc.amount).toFixed(2)}</span>
+                    <p className="text-xs text-gray-400">{new Date(inc.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      <AddItemModal isOpen={showAddItem} onClose={() => setShowAddItem(false)} onItemAdded={handleRefresh} />
+      <AddIncomeModal isOpen={showAddIncome} onClose={() => setShowAddIncome(false)} onAdded={handleRefresh} onSavePin={savePinned} />
+      <MarkSoldModal isOpen={!!soldItem} item={soldItem} onClose={() => setSoldItem(null)} onSold={handleRefresh} />
+      <AddExpenseModal isOpen={!!payCard} onClose={() => setPayCard(null)} onAdded={handleRefresh} defaultCardId={payCard?.id} defaultIsCardPayment={true} />
+    </div>
+  );
+}

@@ -1,0 +1,350 @@
+export type ItemStatus = "active" | "sold";
+
+export type ItemCondition =
+  | "New"
+  | "Like New"
+  | "Very Good"
+  | "Good"
+  | "Acceptable"
+  | "For Parts";
+
+export type BuyPlatform =
+  | "eBay"
+  | "Facebook Marketplace"
+  | "Thrift Store"
+  | "Garage Sale"
+  | "Goodwill"
+  | "Craigslist"
+  | "OfferUp"
+  | "Mercari"
+  | "Wholesale"
+  | "Free / Already Owned"
+  | "Other";
+
+export type SellPlatform =
+  | "eBay"
+  | "StockX"
+  | "Mercari"
+  | "Poshmark"
+  | "Facebook Marketplace"
+  | "OfferUp"
+  | "Craigslist"
+  | "Amazon"
+  | "Depop"
+  | "Grailed"
+  | "Other";
+
+export type ItemCategory =
+  | "Sneakers"
+  | "Clothing"
+  | "Electronics"
+  | "Toys & Collectibles"
+  | "Books"
+  | "Home & Garden"
+  | "Sports"
+  | "Accessories"
+  | "Vintage"
+  | "Other";
+
+export interface Item {
+  id: string;
+  user_id: string;
+  name: string;
+  category: ItemCategory;
+  purchase_price: number;
+  purchase_date: string;
+  platform_bought: BuyPlatform;
+  condition: ItemCondition;
+  notes: string | null;
+  status: ItemStatus;
+  sale_price: number | null;
+  sale_date: string | null;
+  platform_sold: SellPlatform | null;
+  fees: number | null;
+  shipping_costs: number | null;
+  created_at: string;
+}
+
+export interface DashboardStats {
+  totalInvested: number;
+  totalRevenue: number;
+  totalProfit: number;
+  roi: number;
+  activeItems: number;
+  soldItems: number;
+  inventoryValue: number;
+}
+
+// Income types
+
+export type IncomeType = "main" | "side";
+
+export type IncomeCategory =
+  | "Salary"
+  | "Wages"
+  | "Commission"
+  | "Bonus"
+  | "Freelance"
+  | "Gig Work"
+  | "Tutoring"
+  | "Content Creation"
+  | "Rental"
+  | "Investments"
+  | "Dividends"
+  | "Tips"
+  | "Other";
+
+export type IncomeFrequency = "Weekly" | "Biweekly" | "Monthly" | "One-time";
+
+export interface Income {
+  id: string;
+  user_id: string | null;
+  type: IncomeType;
+  source: string;
+  category: IncomeCategory;
+  amount: number;
+  date: string;
+  recurring: boolean;
+  frequency: IncomeFrequency | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface SavedIncome {
+  id: string;
+  user_id: string | null;
+  type: IncomeType;
+  source: string;
+  category: string;
+  amount: number;
+  frequency: IncomeFrequency | null;
+  created_at: string;
+}
+
+export type ExpenseCategory =
+  | "Rent / Mortgage"
+  | "Utilities"
+  | "Groceries"
+  | "Dining Out"
+  | "Transportation"
+  | "Gas"
+  | "Insurance"
+  | "Subscriptions"
+  | "Entertainment"
+  | "Shopping"
+  | "Health"
+  | "Education"
+  | "Phone / Internet"
+  | "Personal Care"
+  | "Gifts"
+  | "Travel"
+  | "Debt Payment"
+  | "Savings"
+  | "Taxes"
+  | "Other";
+
+export type ExpenseFrequency = "Weekly" | "Biweekly" | "Monthly" | "Yearly" | "One-time";
+
+export type PaymentMethod = "cash" | "debit" | "credit" | "bank_transfer" | "other";
+
+export interface Expense {
+  id: string;
+  user_id: string | null;
+  name: string;
+  category: ExpenseCategory;
+  amount: number;
+  date: string;
+  recurring: boolean;
+  frequency: ExpenseFrequency | null;
+  notes: string | null;
+  payment_method: PaymentMethod;
+  credit_card_id: string | null;
+  is_card_payment: boolean;
+  created_at: string;
+}
+
+export interface CreditCard {
+  id: string;
+  user_id: string | null;
+  name: string;
+  last_four: string | null;
+  color: string;
+  credit_limit: number | null;
+  display_order: number;
+  due_day: number | null;       // Day of month payment is due (1-28)
+  statement_day: number | null; // Day of month statement closes (1-28)
+  created_at: string;
+}
+
+export interface CreditCardWithStats extends CreditCard {
+  balance: number;
+  totalCharges: number;
+  totalPayments: number;
+  utilization: number;
+  nextDueDate: string | null;   // ISO date of next payment
+  daysUntilDue: number | null;  // Days from today
+}
+
+// ---- Goals / Wishlist ----
+
+export type GoalCategory = "savings" | "purchase" | "travel" | "emergency" | "investment" | "other";
+
+export interface Goal {
+  id: string;
+  user_id: string | null;
+  name: string;
+  target_amount: number;
+  category: GoalCategory;
+  color: string;
+  icon: string;          // Lucide icon name
+  notes: string | null;
+  target_date: string | null;
+  display_order: number;
+  completed: boolean;
+  url: string | null;
+  image_url: string | null;
+  created_at: string;
+}
+
+export interface GoalContribution {
+  id: string;
+  goal_id: string;
+  user_id: string | null;
+  amount: number;       // Positive = deposit, negative = withdrawal
+  date: string;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface GoalWithStats extends Goal {
+  saved: number;          // Sum of all contributions
+  remaining: number;      // target_amount - saved
+  progress: number;       // 0-100 percentage
+  daysUntilTarget: number | null;
+  contributions: GoalContribution[];
+}
+
+// ---- Debts / IOUs ----
+
+export type DebtDirection = "i_owe" | "they_owe";
+
+export interface Debt {
+  id: string;
+  user_id: string | null;
+  person: string;
+  direction: DebtDirection;
+  description: string | null;
+  original_amount: number;
+  date: string;
+  settled: boolean;
+  settled_date: string | null;
+  color: string;
+  created_at: string;
+}
+
+export interface DebtPayment {
+  id: string;
+  debt_id: string;
+  user_id: string | null;
+  amount: number;
+  date: string;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface DebtWithStats extends Debt {
+  totalPaid: number;
+  remaining: number;
+  progress: number;
+  payments: DebtPayment[];
+}
+
+export type CashAccountType = "checking" | "savings" | "cash" | "other";
+
+export interface CashAccount {
+  id: string;
+  user_id: string | null;
+  name: string;
+  type: CashAccountType;
+  balance: number;
+  color: string;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OverallStats {
+  reselling: DashboardStats;
+  mainIncome: number;
+  sideIncome: number;
+  totalExpenses: number;
+  totalEarned: number;
+  incomeCount: number;
+}
+
+// ---- Metals Portfolio ----
+
+export type MetalType = "gold" | "silver" | "platinum" | "palladium";
+export type HoldingForm = "coin" | "bar" | "round" | "other";
+export type HoldingStatus = "active" | "sold" | "traded";
+
+export interface Holding {
+  id: string;
+  user_id: string | null;
+  metal: MetalType;
+  type: HoldingForm;
+  description: string;
+  quantity: number;
+  cost_per_oz: number;
+  purchase_date: string | null;
+  notes: string;
+  status: HoldingStatus;
+  sale_price_per_oz: number | null;
+  sale_date: string | null;
+  fees: number;
+  created_at: string;
+}
+
+export interface MetalTransaction {
+  id: string;
+  user_id: string | null;
+  type: "buy" | "sell" | "trade";
+  notes: string;
+  cash_amount: number;
+  created_at: string;
+  items?: MetalTransactionItem[];
+}
+
+export interface MetalTransactionItem {
+  id: string;
+  transaction_id: string;
+  holding_id: string | null;
+  direction: "in" | "out";
+  holding?: Holding;
+}
+
+export interface MetalPrices {
+  gold: number;
+  silver: number;
+  platinum: number;
+  palladium: number;
+  timestamp: string;
+  source: "live" | "cache" | "fallback";
+}
+
+export interface MetalMetrics {
+  totalOz: number;
+  totalCost: number;
+  currentValue: number;
+  pnl: number;
+  pnlPercent: number;
+  count: number;
+}
+
+export interface PortfolioStats {
+  totalValue: number;
+  totalCost: number;
+  totalPnl: number;
+  pnlPercent: number;
+  metalBreakdown: Record<MetalType, MetalMetrics>;
+}
