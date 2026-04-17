@@ -9,17 +9,24 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-const navItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  divider?: boolean;
+}
+
+const navItems: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/inventory", label: "Inventory", icon: Package },
-  { href: "/sales", label: "Sales History", icon: History },
-  { href: "/metals", label: "Metals", icon: Coins },
-  { href: "/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/income", label: "Income", icon: Wallet },
   { href: "/expenses", label: "Expenses", icon: CreditCard },
   { href: "/cards", label: "Cards", icon: WalletCards },
-  { href: "/goals", label: "Goals", icon: Target },
+  { href: "/income", label: "Income", icon: Wallet },
   { href: "/debts", label: "Debts", icon: HandCoins },
+  { href: "/inventory", label: "Inventory", icon: Package, divider: true },
+  { href: "/sales", label: "Sales History", icon: History },
+  { href: "/metals", label: "Metals", icon: Coins },
+  { href: "/goals", label: "Goals", icon: Target },
+  { href: "/calendar", label: "Calendar", icon: CalendarDays },
 ];
 
 export default function Sidebar() {
@@ -56,15 +63,18 @@ export default function Sidebar() {
             const isActive = pathname === item.href;
             const Icon = item.icon;
             return (
-              <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all ${
-                  isActive
-                    ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/60"
-                    : "text-gray-500 hover:text-gray-900 hover:bg-white/60"
-                }`}>
-                <Icon size={18} />
-                {item.label}
-              </Link>
+              <div key={item.href}>
+                {item.divider && <div className="my-2 border-t border-gray-200/60" />}
+                <Link href={item.href} onClick={() => setMobileOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all ${
+                    isActive
+                      ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/60"
+                      : "text-gray-500 hover:text-gray-900 hover:bg-white/60"
+                  }`}>
+                  <Icon size={18} />
+                  {item.label}
+                </Link>
+              </div>
             );
           })}
         </nav>
