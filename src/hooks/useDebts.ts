@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { todayEST } from "@/lib/dates";
 import { useRealtimeRefetch } from "@/lib/useRealtimeRefetch";
+import { adjustAccountBalance, adjustCheckingBalance } from "@/lib/updateBalance";
 import type { Debt, DebtPayment, DebtWithStats } from "@/lib/types";
 
 export function useDebts() {
@@ -60,16 +61,32 @@ export function useDebts() {
     await fetchDebts();
   };
 
-  const addPayment = async (debtId: string, amount: number, notes?: string, date?: string) => {
-    await supabase.from("debt_payments").insert({
+  const addPayment = async (debtId: string, amount: number, notes?: string, date?: string, accountId?: string) => {
+    const { error } = await supabase.from("debt_payments").insert({
       debt_id: debtId, user_id: user?.id ?? null, amount,
       date: date || todayEST(), notes: notes || null,
     });
-    // Auto-settle if fully paid
-    const debt = debts.find((d) => d.id === debtId);
-    if (debt && debt.remaining <= amount) {
-      await supabase.from("debts").update({ settled: true, settled_date: todayEST() }).eq("id", debtId);
+
+    if (!error) {
+      const debt = debts.find((d) => d.id === debtId);
+      if (debt) {
+        // Adjust cash account:
+        // - I owe them (I'm paying back): money LEAVES my account (negative)
+        // - They owe me (I'm receiving payment): money ENTERS my account (positive)
+        const signed = debt.direction === "i_owe" ? -amount : amount;
+        if (accountId) {
+          await adjustAccountBalance(accountId, signed);
+        } else {
+          await adjustCheckingBalance(user?.id ?? null, signed);
+        }
+
+        // Auto-settle if fully paid
+        if (debt.remaining <= amount) {
+          await supabase.from("debts").update({ settled: true, settled_date: todayEST() }).eq("id", debtId);
+        }
+      }
     }
+
     await fetchDebts();
   };
 
