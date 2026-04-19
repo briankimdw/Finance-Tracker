@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useCashAccounts } from "@/hooks/useCashAccounts";
 import { adjustAccountBalance } from "@/lib/updateBalance";
+import { todayEST } from "@/lib/dates";
 import type { IncomeType, IncomeCategory, IncomeFrequency } from "@/lib/types";
 
 const incomeCategories: IncomeCategory[] = [
@@ -27,7 +28,7 @@ export default function AddIncomeModal({ isOpen, onClose, onAdded, onSavePin }: 
   const [depositTo, setDepositTo] = useState<string>("");
   const [form, setForm] = useState({
     type: "main" as IncomeType, source: "", category: "Salary" as IncomeCategory,
-    amount: "", date: new Date().toISOString().split("T")[0],
+    amount: "", date: todayEST(),
     recurring: false, frequency: "Monthly" as IncomeFrequency, notes: "",
   });
 
@@ -50,7 +51,7 @@ export default function AddIncomeModal({ isOpen, onClose, onAdded, onSavePin }: 
       if (selectedAccount) {
         await adjustAccountBalance(selectedAccount, parseFloat(form.amount));
       }
-      setForm({ type: "main", source: "", category: "Salary", amount: "", date: new Date().toISOString().split("T")[0], recurring: false, frequency: "Monthly", notes: "" });
+      setForm({ type: "main", source: "", category: "Salary", amount: "", date: todayEST(), recurring: false, frequency: "Monthly", notes: "" });
       setDepositTo("");
       onAdded(); onClose();
     }

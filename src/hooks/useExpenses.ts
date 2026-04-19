@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { useRealtimeRefetch } from "@/lib/useRealtimeRefetch";
 import type { Expense } from "@/lib/types";
 
 export function useExpenses() {
@@ -26,6 +27,7 @@ export function useExpenses() {
   }, [user, supabase]);
 
   useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
+  useRealtimeRefetch(["expenses"], fetchExpenses);
 
   const deleteExpense = async (id: string) => {
     await supabase.from("expenses").delete().eq("id", id);
@@ -61,6 +63,7 @@ export function useExpenseStats() {
   }, [user, supabase]);
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
+  useRealtimeRefetch(["expenses"], fetchStats);
 
   return { total, count, loading, refetch: fetchStats };
 }
@@ -90,6 +93,7 @@ export function useMonthlyExpenseStats() {
   }, [user, supabase]);
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
+  useRealtimeRefetch(["expenses"], fetchStats);
   return { total, loading, refetch: fetchStats };
 }
 

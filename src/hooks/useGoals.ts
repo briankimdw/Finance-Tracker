@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { todayEST } from "@/lib/dates";
+import { useRealtimeRefetch } from "@/lib/useRealtimeRefetch";
 import type { Goal, GoalContribution, GoalWithStats, GoalCategory } from "@/lib/types";
 
 function calculateDays(targetDate: string | null): number | null {
@@ -61,6 +63,7 @@ export function useGoals() {
   }, [user, supabase]);
 
   useEffect(() => { fetchGoals(); }, [fetchGoals]);
+  useRealtimeRefetch(["goals", "goal_contributions"], fetchGoals);
 
   const createGoal = async (data: { name: string; target_amount: number; category?: GoalCategory; color?: string; icon?: string; notes?: string; target_date?: string | null; url?: string; image_url?: string }) => {
     const maxOrder = goals.length > 0 ? Math.max(...goals.map((g) => g.display_order)) : 0;
@@ -102,7 +105,7 @@ export function useGoals() {
       goal_id: goalId,
       user_id: user?.id ?? null,
       amount,
-      date: date || new Date().toISOString().split("T")[0],
+      date: date || todayEST(),
       notes: notes || null,
     });
     await fetchGoals();

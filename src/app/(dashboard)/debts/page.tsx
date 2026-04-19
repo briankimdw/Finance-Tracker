@@ -6,6 +6,7 @@ import {
   ArrowUpRight, ArrowDownLeft, Users, HandCoins, Trash,
 } from "lucide-react";
 import { useDebts } from "@/hooks/useDebts";
+import { todayEST } from "@/lib/dates";
 import type { Debt, DebtWithStats } from "@/lib/types";
 
 const COLORS = ["#f59e0b", "#3b82f6", "#ef4444", "#10b981", "#8b5cf6", "#ec4899", "#06b6d4", "#1f2937"];
@@ -15,7 +16,7 @@ function AddDebtModal({ isOpen, debt, onClose, onSave }: {
   onSave: (d: { person: string; direction: "i_owe" | "they_owe"; description?: string; original_amount: number; date?: string; color?: string }) => Promise<void>;
 }) {
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ person: debt?.person || "", direction: debt?.direction || "i_owe" as "i_owe" | "they_owe", description: debt?.description || "", amount: debt ? String(debt.original_amount) : "", date: debt?.date || new Date().toISOString().split("T")[0], color: debt?.color || COLORS[0] });
+  const [form, setForm] = useState({ person: debt?.person || "", direction: debt?.direction || "i_owe" as "i_owe" | "they_owe", description: debt?.description || "", amount: debt ? String(debt.original_amount) : "", date: debt?.date || todayEST(), color: debt?.color || COLORS[0] });
 
   if (!isOpen) return null;
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,7 +90,7 @@ function PayDebtModal({ isOpen, debt, onClose, onPay }: {
   const [loading, setLoading] = useState(false);
   const [amount, setAmount] = useState("");
   const [notes, setNotes] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(todayEST());
 
   if (!isOpen || !debt) return null;
   const handleSubmit = async (e: React.FormEvent) => {
@@ -228,7 +229,7 @@ export default function DebtsPage() {
               <h2 className="text-xs font-semibold text-red-600 uppercase tracking-wider mb-3 flex items-center gap-1.5"><ArrowUpRight size={14} /> I Owe</h2>
               <div className="space-y-3">
                 {iOwe.map((d) => (
-                  <DebtCard key={d.id} debt={d} expanded={expanded.has(d.id)} onToggle={() => toggleExpand(d.id)} onPay={() => setPayDebt(d)} onEdit={() => { setEditDebt(d); setShowAddModal(true); }} onDelete={() => { if (confirm(`Delete debt to ${d.person}?`)) deleteDebt(d.id); }} onSettle={() => updateDebt(d.id, { settled: true, settled_date: new Date().toISOString().split("T")[0] })} onDeletePayment={deletePayment} />
+                  <DebtCard key={d.id} debt={d} expanded={expanded.has(d.id)} onToggle={() => toggleExpand(d.id)} onPay={() => setPayDebt(d)} onEdit={() => { setEditDebt(d); setShowAddModal(true); }} onDelete={() => { if (confirm(`Delete debt to ${d.person}?`)) deleteDebt(d.id); }} onSettle={() => updateDebt(d.id, { settled: true, settled_date: todayEST() })} onDeletePayment={deletePayment} />
                 ))}
               </div>
             </div>
@@ -240,7 +241,7 @@ export default function DebtsPage() {
               <h2 className="text-xs font-semibold text-green-600 uppercase tracking-wider mb-3 flex items-center gap-1.5"><ArrowDownLeft size={14} /> They Owe Me</h2>
               <div className="space-y-3">
                 {theyOwe.map((d) => (
-                  <DebtCard key={d.id} debt={d} expanded={expanded.has(d.id)} onToggle={() => toggleExpand(d.id)} onPay={() => setPayDebt(d)} onEdit={() => { setEditDebt(d); setShowAddModal(true); }} onDelete={() => { if (confirm(`Delete debt from ${d.person}?`)) deleteDebt(d.id); }} onSettle={() => updateDebt(d.id, { settled: true, settled_date: new Date().toISOString().split("T")[0] })} onDeletePayment={deletePayment} />
+                  <DebtCard key={d.id} debt={d} expanded={expanded.has(d.id)} onToggle={() => toggleExpand(d.id)} onPay={() => setPayDebt(d)} onEdit={() => { setEditDebt(d); setShowAddModal(true); }} onDelete={() => { if (confirm(`Delete debt from ${d.person}?`)) deleteDebt(d.id); }} onSettle={() => updateDebt(d.id, { settled: true, settled_date: todayEST() })} onDeletePayment={deletePayment} />
                 ))}
               </div>
             </div>

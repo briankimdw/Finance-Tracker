@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X, Gift } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { todayEST } from "@/lib/dates";
 import type { ItemCategory, BuyPlatform, ItemCondition } from "@/lib/types";
 
 const categories: ItemCategory[] = [
@@ -27,7 +28,7 @@ export default function AddItemModal({ isOpen, onClose, onItemAdded }: AddItemMo
   const [isFreeItem, setIsFreeItem] = useState(false);
   const [form, setForm] = useState({
     name: "", category: "Sneakers" as ItemCategory, purchase_price: "",
-    purchase_date: new Date().toISOString().split("T")[0],
+    purchase_date: todayEST(),
     platform_bought: "eBay" as BuyPlatform, condition: "New" as ItemCondition, notes: "",
   });
 
@@ -54,7 +55,7 @@ export default function AddItemModal({ isOpen, onClose, onItemAdded }: AddItemMo
     });
     setLoading(false);
     if (!error) {
-      setForm({ name: "", category: "Sneakers", purchase_price: "", purchase_date: new Date().toISOString().split("T")[0], platform_bought: "eBay", condition: "New", notes: "" });
+      setForm({ name: "", category: "Sneakers", purchase_price: "", purchase_date: todayEST(), platform_bought: "eBay", condition: "New", notes: "" });
       setIsFreeItem(false);
       onItemAdded(); onClose();
     }

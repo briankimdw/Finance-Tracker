@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useCreditCards } from "@/hooks/useCreditCards";
 import { useCashAccounts } from "@/hooks/useCashAccounts";
 import { adjustAccountBalance } from "@/lib/updateBalance";
+import { todayEST } from "@/lib/dates";
 import type { ExpenseCategory, ExpenseFrequency, PaymentMethod } from "@/lib/types";
 
 const categories: ExpenseCategory[] = [
@@ -37,7 +38,7 @@ export default function AddExpenseModal({ isOpen, onClose, onAdded, defaultCardI
   const [isCardPayment, setIsCardPayment] = useState(false);
   const [form, setForm] = useState({
     name: "", category: "Groceries" as ExpenseCategory, amount: "",
-    date: new Date().toISOString().split("T")[0],
+    date: todayEST(),
     recurring: false, frequency: "Monthly" as ExpenseFrequency, notes: "",
   });
 
@@ -88,7 +89,7 @@ export default function AddExpenseModal({ isOpen, onClose, onAdded, defaultCardI
       if ((paymentMethod !== "credit" || isCardPayment) && selectedAccount) {
         await adjustAccountBalance(selectedAccount, -amt);
       }
-      setForm({ name: "", category: "Groceries", amount: "", date: new Date().toISOString().split("T")[0], recurring: false, frequency: "Monthly", notes: "" });
+      setForm({ name: "", category: "Groceries", amount: "", date: todayEST(), recurring: false, frequency: "Monthly", notes: "" });
       setPaymentMethod("cash");
       setCreditCardId("");
       setPayFromAccount("");

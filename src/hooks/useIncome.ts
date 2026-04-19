@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { adjustCheckingBalance } from "@/lib/updateBalance";
+import { todayEST } from "@/lib/dates";
+import { useRealtimeRefetch } from "@/lib/useRealtimeRefetch";
 // Quick-add uses the default checking account since there's no picker
 import type { Income, IncomeType, SavedIncome } from "@/lib/types";
 
@@ -43,6 +45,7 @@ export function useIncome(type?: IncomeType) {
   useEffect(() => {
     fetchIncomes();
   }, [fetchIncomes]);
+  useRealtimeRefetch(["income"], fetchIncomes);
 
   const deleteIncome = async (id: string) => {
     await supabase.from("income").delete().eq("id", id);
@@ -95,6 +98,7 @@ export function useIncomeStats() {
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
+  useRealtimeRefetch(["income"], fetchStats);
 
   return { mainTotal, sideTotal, count, loading, refetch: fetchStats };
 }
@@ -126,6 +130,7 @@ export function useMonthlyIncomeStats() {
   }, [user, supabase]);
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
+  useRealtimeRefetch(["income"], fetchStats);
   return { mainTotal, sideTotal, loading, refetch: fetchStats };
 }
 
@@ -173,7 +178,7 @@ export function useSavedIncome() {
       source: saved.source,
       category: saved.category,
       amount: saved.amount,
-      date: new Date().toISOString().split("T")[0],
+      date: todayEST(),
       recurring: true,
       frequency: saved.frequency || "Monthly",
       notes: null,

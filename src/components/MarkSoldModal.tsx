@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { todayEST } from "@/lib/dates";
 import type { Item, SellPlatform } from "@/lib/types";
 
 const sellPlatforms: SellPlatform[] = [
@@ -16,7 +17,7 @@ export default function MarkSoldModal({ isOpen, item, onClose, onSold }: MarkSol
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    sale_price: "", sale_date: new Date().toISOString().split("T")[0],
+    sale_price: "", sale_date: todayEST(),
     platform_sold: "eBay" as SellPlatform, fees: "", shipping_costs: "",
   });
 
@@ -32,7 +33,7 @@ export default function MarkSoldModal({ isOpen, item, onClose, onSold }: MarkSol
     }).eq("id", item.id);
     setLoading(false);
     if (!error) {
-      setForm({ sale_price: "", sale_date: new Date().toISOString().split("T")[0], platform_sold: "eBay", fees: "", shipping_costs: "" });
+      setForm({ sale_price: "", sale_date: todayEST(), platform_sold: "eBay", fees: "", shipping_costs: "" });
       onSold(); onClose();
     }
   };

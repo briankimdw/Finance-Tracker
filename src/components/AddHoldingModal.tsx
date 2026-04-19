@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { METALS, METAL_KEYS, FORM_TYPES } from "@/lib/metals";
+import { todayEST } from "@/lib/dates";
 import type { MetalType, HoldingForm } from "@/lib/types";
 
 interface AddHoldingModalProps {
@@ -24,7 +25,7 @@ export default function AddHoldingModal({ isOpen, onClose, onAdded }: AddHolding
     description: "",
     quantity: "",
     cost_input: "",
-    purchase_date: new Date().toISOString().split("T")[0],
+    purchase_date: todayEST(),
     notes: "",
   });
 
@@ -55,7 +56,7 @@ export default function AddHoldingModal({ isOpen, onClose, onAdded }: AddHolding
 
     setLoading(false);
     if (!error && data) {
-      setForm({ metal: "gold", type: "coin", description: "", quantity: "", cost_input: "", purchase_date: new Date().toISOString().split("T")[0], notes: "" });
+      setForm({ metal: "gold", type: "coin", description: "", quantity: "", cost_input: "", purchase_date: todayEST(), notes: "" });
       onAdded(data.id);
       onClose();
     }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { useRealtimeRefetch } from "@/lib/useRealtimeRefetch";
 import type { CreditCard, CreditCardWithStats } from "@/lib/types";
 
 function calculateNextDueDate(dueDay: number | null): { date: string | null; daysUntil: number | null } {
@@ -63,6 +64,7 @@ export function useCreditCards() {
   }, [user, supabase]);
 
   useEffect(() => { fetchCards(); }, [fetchCards]);
+  useRealtimeRefetch(["credit_cards", "expenses"], fetchCards);
 
   const createCard = async (data: { name: string; last_four?: string; color?: string; credit_limit?: number | null; due_day?: number | null; statement_day?: number | null }) => {
     const maxOrder = cards.length > 0 ? Math.max(...cards.map((c) => c.display_order)) : 0;

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { METALS } from "@/lib/metals";
+import { todayEST } from "@/lib/dates";
 import type { Holding } from "@/lib/types";
 
 interface SellHoldingModalProps {
@@ -18,7 +19,7 @@ export default function SellHoldingModal({ isOpen, holding, onClose, onSold }: S
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     sale_price_per_oz: "",
-    sale_date: new Date().toISOString().split("T")[0],
+    sale_date: todayEST(),
     fees: "",
     notes: "",
   });
@@ -45,7 +46,7 @@ export default function SellHoldingModal({ isOpen, holding, onClose, onSold }: S
 
     setLoading(false);
     if (!error) {
-      setForm({ sale_price_per_oz: "", sale_date: new Date().toISOString().split("T")[0], fees: "", notes: "" });
+      setForm({ sale_price_per_oz: "", sale_date: todayEST(), fees: "", notes: "" });
       onSold(holding.id, cashAmount);
       onClose();
     }

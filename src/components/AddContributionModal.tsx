@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { X, ArrowDown, ArrowUp } from "lucide-react";
+import { todayEST } from "@/lib/dates";
 import type { GoalWithStats } from "@/lib/types";
 
 interface AddContributionModalProps {
@@ -16,7 +17,7 @@ export default function AddContributionModal({ isOpen, goal, onClose, onSave }: 
   const [type, setType] = useState<"deposit" | "withdraw">("deposit");
   const [amount, setAmount] = useState("");
   const [notes, setNotes] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(todayEST());
 
   if (!isOpen || !goal) return null;
 
@@ -27,7 +28,7 @@ export default function AddContributionModal({ isOpen, goal, onClose, onSave }: 
     const signed = type === "withdraw" ? -value : value;
     await onSave(goal.id, signed, notes || undefined, date);
     setLoading(false);
-    setAmount(""); setNotes(""); setType("deposit"); setDate(new Date().toISOString().split("T")[0]);
+    setAmount(""); setNotes(""); setType("deposit"); setDate(todayEST());
     onClose();
   };
 

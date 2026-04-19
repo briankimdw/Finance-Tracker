@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { useRealtimeRefetch } from "@/lib/useRealtimeRefetch";
 import type { CashAccount, CashAccountType } from "@/lib/types";
 
 export function useCashAccounts() {
@@ -26,6 +27,7 @@ export function useCashAccounts() {
   }, [user, supabase]);
 
   useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
+  useRealtimeRefetch(["cash_accounts"], fetchAccounts);
 
   const createAccount = async (data: { name: string; type: CashAccountType; balance: number; color?: string }) => {
     const maxOrder = accounts.length > 0 ? Math.max(...accounts.map((a) => a.display_order)) : 0;

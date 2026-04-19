@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { todayEST } from "@/lib/dates";
+import { useRealtimeRefetch } from "@/lib/useRealtimeRefetch";
 import type { Debt, DebtPayment, DebtWithStats } from "@/lib/types";
 
 export function useDebts() {
@@ -37,12 +39,13 @@ export function useDebts() {
   }, [user, supabase]);
 
   useEffect(() => { fetchDebts(); }, [fetchDebts]);
+  useRealtimeRefetch(["debts", "debt_payments"], fetchDebts);
 
   const createDebt = async (data: { person: string; direction: "i_owe" | "they_owe"; description?: string; original_amount: number; date?: string; color?: string }) => {
     await supabase.from("debts").insert({
       user_id: user?.id ?? null, person: data.person, direction: data.direction,
       description: data.description || null, original_amount: data.original_amount,
-      date: data.date || new Date().toISOString().split("T")[0], color: data.color || "#f59e0b",
+      date: data.date || todayEST(), color: data.color || "#f59e0b",
     });
     await fetchDebts();
   };
@@ -60,12 +63,12 @@ export function useDebts() {
   const addPayment = async (debtId: string, amount: number, notes?: string, date?: string) => {
     await supabase.from("debt_payments").insert({
       debt_id: debtId, user_id: user?.id ?? null, amount,
-      date: date || new Date().toISOString().split("T")[0], notes: notes || null,
+      date: date || todayEST(), notes: notes || null,
     });
     // Auto-settle if fully paid
     const debt = debts.find((d) => d.id === debtId);
     if (debt && debt.remaining <= amount) {
-      await supabase.from("debts").update({ settled: true, settled_date: new Date().toISOString().split("T")[0] }).eq("id", debtId);
+      await supabase.from("debts").update({ settled: true, settled_date: todayEST() }).eq("id", debtId);
     }
     await fetchDebts();
   };

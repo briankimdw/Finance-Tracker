@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { METALS, METAL_KEYS, FORM_TYPES } from "@/lib/metals";
+import { todayEST } from "@/lib/dates";
 import type { Holding, MetalType, HoldingForm } from "@/lib/types";
 
 interface EditHoldingModalProps {
@@ -22,7 +23,7 @@ export default function EditHoldingModal({ isOpen, holding, onClose, onUpdated }
     description: "",
     quantity: "",
     cost_per_oz: "",
-    purchase_date: new Date().toISOString().split("T")[0],
+    purchase_date: todayEST(),
     notes: "",
   });
 
@@ -34,7 +35,7 @@ export default function EditHoldingModal({ isOpen, holding, onClose, onUpdated }
         description: holding.description || "",
         quantity: String(holding.quantity),
         cost_per_oz: String(holding.cost_per_oz),
-        purchase_date: holding.purchase_date || new Date().toISOString().split("T")[0],
+        purchase_date: holding.purchase_date || todayEST(),
         notes: holding.notes || "",
       });
     }
