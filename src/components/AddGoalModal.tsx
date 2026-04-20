@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import {
   X, Target, Plane, Home, Car, Smartphone, Gift, GraduationCap,
   Heart, Briefcase, Music, Camera, Gamepad2, ShoppingBag, Plus,
-  Tv, Bike, Trophy, Sparkles, Link as LinkIcon, Image as ImageIcon,
+  Tv, Bike, Trophy, Sparkles, Link as LinkIcon, Image as ImageIcon, Users,
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 import type { Goal, GoalCategory } from "@/lib/types";
 
 const COLORS = [
@@ -47,10 +48,11 @@ interface AddGoalModalProps {
   isOpen: boolean;
   goal?: Goal | null;
   onClose: () => void;
-  onSave: (data: { name: string; target_amount: number; category?: GoalCategory; color?: string; icon?: string; notes?: string; target_date?: string | null; url?: string; image_url?: string }) => Promise<void>;
+  onSave: (data: { name: string; target_amount: number; category?: GoalCategory; color?: string; icon?: string; notes?: string; target_date?: string | null; url?: string; image_url?: string; is_shared?: boolean }) => Promise<void>;
 }
 
 export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalModalProps) {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: "",
@@ -62,6 +64,7 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
     target_date: "",
     url: "",
     image_url: "",
+    is_shared: false,
   });
 
   useEffect(() => {
@@ -76,9 +79,10 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
         target_date: goal.target_date || "",
         url: goal.url || "",
         image_url: goal.image_url || "",
+        is_shared: goal.is_shared || false,
       });
     } else if (isOpen) {
-      setForm({ name: "", target_amount: "", category: "savings", color: COLORS[0], icon: "Target", notes: "", target_date: "", url: "", image_url: "" });
+      setForm({ name: "", target_amount: "", category: "savings", color: COLORS[0], icon: "Target", notes: "", target_date: "", url: "", image_url: "", is_shared: false });
     }
   }, [goal, isOpen]);
 
@@ -97,12 +101,13 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
       target_date: form.target_date || null,
       url: form.url || undefined,
       image_url: form.image_url || undefined,
+      is_shared: form.is_shared,
     });
     setLoading(false);
     onClose();
   };
 
-  const update = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
+  const update = (field: string, value: string | boolean) => setForm((p) => ({ ...p, [field]: value }));
   const inputClass = "w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400";
   const labelClass = "block text-sm font-medium text-gray-700 mb-1.5";
 
@@ -136,6 +141,23 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-5">
+          {/* Shared toggle (only when signed in, and only for new goals or goals owned by user) */}
+          {user && (!goal || goal.user_id === user.id) && (
+            <button
+              type="button"
+              onClick={() => update("is_shared", !form.is_shared)}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                form.is_shared ? "border-purple-400 bg-purple-50 text-purple-800" : "border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300"
+              }`}
+            >
+              <Users size={18} className={form.is_shared ? "text-purple-600" : "text-gray-400"} />
+              <div className="text-left flex-1">
+                <p className="text-sm font-medium">{form.is_shared ? "Shared Goal — invite others" : "Share with others?"}</p>
+                <p className="text-xs opacity-70">{form.is_shared ? "Everyone can contribute. You stay the owner." : "Toggle to track a goal together with friends/family"}</p>
+              </div>
+            </button>
+          )}
+
           <div>
             <label className={labelClass}>Goal Name *</label>
             <input type="text" value={form.name} onChange={(e) => update("name", e.target.value)} required className={inputClass} placeholder="e.g. New MacBook, Trip to Japan" />

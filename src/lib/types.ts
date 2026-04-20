@@ -192,6 +192,8 @@ export type GoalCategory = "savings" | "purchase" | "travel" | "emergency" | "in
 export interface Goal {
   id: string;
   user_id: string | null;
+  owner_id: string | null;
+  is_shared: boolean;
   name: string;
   target_amount: number;
   category: GoalCategory;
@@ -203,6 +205,27 @@ export interface Goal {
   completed: boolean;
   url: string | null;
   image_url: string | null;
+  created_at: string;
+}
+
+export interface GoalMember {
+  id: string;
+  goal_id: string;
+  user_id: string;
+  role: "owner" | "member";
+  joined_at: string;
+  email?: string;
+}
+
+export interface GoalInvite {
+  id: string;
+  goal_id: string;
+  token: string;
+  email: string | null;
+  invited_by: string | null;
+  expires_at: string;
+  accepted_by: string | null;
+  accepted_at: string | null;
   created_at: string;
 }
 
@@ -222,6 +245,9 @@ export interface GoalWithStats extends Goal {
   progress: number;       // 0-100 percentage
   daysUntilTarget: number | null;
   contributions: GoalContribution[];
+  members: GoalMember[];
+  isOwner: boolean;
+  myRole: "owner" | "member" | null;
 }
 
 // ---- Debts / IOUs ----

@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { todayEST } from "@/lib/dates";
 import { useRealtimeRefetch } from "@/lib/useRealtimeRefetch";
-import type { Goal, GoalContribution, GoalWithStats, GoalCategory } from "@/lib/types";
+import type { Goal, GoalContribution, GoalWithStats, GoalCategory, GoalMember } from "@/lib/types";
 
 function calculateDays(targetDate: string | null): number | null {
   if (!targetDate) return null;
@@ -13,6 +13,13 @@ function calculateDays(targetDate: string | null): number | null {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const target = new Date(targetDate + "T12:00:00");
   return Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function randomToken(): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let out = "";
+  for (let i = 0; i < 20; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
 }
 
 export function useGoals() {
@@ -24,19 +31,18 @@ export function useGoals() {
   const fetchGoals = useCallback(async () => {
     setLoading(true);
     try {
-      let goalsQ = supabase.from("goals").select("*").order("completed", { ascending: true }).order("display_order", { ascending: true }).order("created_at", { ascending: true });
+      // RLS handles both owned and shared goals — no explicit user filter needed for authed users.
+      // For anonymous mode, we still filter by null user_id.
+      let goalsQ = supabase.from("goals").select("*, goal_members(id, goal_id, user_id, role, joined_at)").order("completed", { ascending: true }).order("display_order", { ascending: true }).order("created_at", { ascending: true });
       let contribQ = supabase.from("goal_contributions").select("*").order("date", { ascending: false });
 
-      if (user) {
-        goalsQ = goalsQ.eq("user_id", user.id);
-        contribQ = contribQ.eq("user_id", user.id);
-      } else {
+      if (!user) {
         goalsQ = goalsQ.is("user_id", null);
         contribQ = contribQ.is("user_id", null);
       }
 
       const [goalsRes, contribRes] = await Promise.all([goalsQ, contribQ]);
-      const rawGoals = (goalsRes.data as Goal[]) || [];
+      const rawGoals = (goalsRes.data || []) as (Goal & { goal_members: GoalMember[] })[];
       const allContribs = (contribRes.data as GoalContribution[]) || [];
 
       const enriched: GoalWithStats[] = rawGoals.map((g) => {
@@ -45,6 +51,9 @@ export function useGoals() {
         const target = Number(g.target_amount);
         const remaining = Math.max(0, target - saved);
         const progress = target > 0 ? Math.min(100, (saved / target) * 100) : 0;
+        const members = g.goal_members || [];
+        const myMember = user ? members.find((m) => m.user_id === user.id) : null;
+        const isOwner = user ? (g.user_id === user.id || myMember?.role === "owner") : false;
         return {
           ...g,
           saved,
@@ -52,6 +61,9 @@ export function useGoals() {
           progress,
           daysUntilTarget: calculateDays(g.target_date),
           contributions,
+          members,
+          isOwner,
+          myRole: myMember?.role ?? null,
         };
       });
 
@@ -63,12 +75,14 @@ export function useGoals() {
   }, [user, supabase]);
 
   useEffect(() => { fetchGoals(); }, [fetchGoals]);
-  useRealtimeRefetch(["goals", "goal_contributions"], fetchGoals);
+  useRealtimeRefetch(["goals", "goal_contributions", "goal_members", "goal_invites"], fetchGoals);
 
-  const createGoal = async (data: { name: string; target_amount: number; category?: GoalCategory; color?: string; icon?: string; notes?: string; target_date?: string | null; url?: string; image_url?: string }) => {
+  const createGoal = async (data: { name: string; target_amount: number; category?: GoalCategory; color?: string; icon?: string; notes?: string; target_date?: string | null; url?: string; image_url?: string; is_shared?: boolean }) => {
     const maxOrder = goals.length > 0 ? Math.max(...goals.map((g) => g.display_order)) : 0;
-    await supabase.from("goals").insert({
+    const { data: inserted, error } = await supabase.from("goals").insert({
       user_id: user?.id ?? null,
+      owner_id: user?.id ?? null,
+      is_shared: !!data.is_shared && !!user, // can't share without auth
       name: data.name,
       target_amount: data.target_amount,
       category: data.category || "savings",
@@ -79,7 +93,16 @@ export function useGoals() {
       url: data.url || null,
       image_url: data.image_url || null,
       display_order: maxOrder + 1,
-    });
+    }).select().single();
+
+    if (!error && inserted && user) {
+      // Add creator as a member with role='owner'
+      await supabase.from("goal_members").insert({
+        goal_id: inserted.id,
+        user_id: user.id,
+        role: "owner",
+      });
+    }
     await fetchGoals();
   };
 
@@ -116,9 +139,33 @@ export function useGoals() {
     await fetchGoals();
   };
 
+  const inviteToGoal = async (goalId: string, email: string): Promise<string | null> => {
+    const token = randomToken();
+    const { error } = await supabase.from("goal_invites").insert({
+      goal_id: goalId,
+      token,
+      email: email || null,
+      invited_by: user?.id ?? null,
+    });
+    if (error) return null;
+    return token;
+  };
+
+  const removeMember = async (goalId: string, memberUserId: string) => {
+    await supabase.from("goal_members").delete().eq("goal_id", goalId).eq("user_id", memberUserId);
+    await fetchGoals();
+  };
+
+  const leaveGoal = async (goalId: string) => {
+    if (!user) return;
+    await supabase.from("goal_members").delete().eq("goal_id", goalId).eq("user_id", user.id);
+    await fetchGoals();
+  };
+
   return {
     goals, loading, refetch: fetchGoals,
     createGoal, updateGoal, deleteGoal, reorderGoals,
     addContribution, deleteContribution,
+    inviteToGoal, removeMember, leaveGoal,
   };
 }

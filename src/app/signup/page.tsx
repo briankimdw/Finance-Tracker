@@ -1,18 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { UserPlus } from "lucide-react";
 
 export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-gray-400">Loading...</div></div>}>
+      <SignupForm />
+    </Suspense>
+  );
+}
+
+function SignupForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect") || "/";
   const supabase = createClient();
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -32,7 +42,7 @@ export default function SignupPage() {
 
     // If email confirmation is disabled, user is auto-confirmed and session exists
     if (data.session) {
-      router.push("/");
+      router.push(redirect);
       router.refresh();
     } else {
       // Email confirmation required — sign in directly
@@ -41,7 +51,7 @@ export default function SignupPage() {
         setError("Account created! Please check your email to confirm, then sign in.");
         setLoading(false);
       } else {
-        router.push("/");
+        router.push(redirect);
         router.refresh();
       }
     }
@@ -91,7 +101,7 @@ export default function SignupPage() {
 
           <p className="text-center text-sm text-gray-500">
             Already have an account?{" "}
-            <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium">Sign In</Link>
+            <Link href={`/login${redirect !== "/" ? `?redirect=${encodeURIComponent(redirect)}` : ""}`} className="text-blue-600 hover:text-blue-700 font-medium">Sign In</Link>
           </p>
         </form>
       </div>

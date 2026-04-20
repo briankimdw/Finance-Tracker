@@ -4,10 +4,11 @@ import { useState, useRef } from "react";
 import {
   Plus, Pencil, Trash2, GripVertical, Check, Calendar,
   Target, Sparkles, Trophy, ChevronDown, ChevronUp, Trash, ArrowUp, ArrowDown,
-  ExternalLink,
+  ExternalLink, Users, UserPlus, LogOut,
 } from "lucide-react";
 import AddGoalModal from "@/components/AddGoalModal";
 import AddContributionModal from "@/components/AddContributionModal";
+import InviteGoalMembersModal from "@/components/InviteGoalMembersModal";
 import { useGoals } from "@/hooks/useGoals";
 import { getGoalIcon } from "@/lib/goalIcons";
 import type { Goal, GoalWithStats } from "@/lib/types";
@@ -26,10 +27,11 @@ function formatTargetDate(targetDate: string | null, days: number | null): strin
 }
 
 export default function GoalsPage() {
-  const { goals, loading, createGoal, updateGoal, deleteGoal, reorderGoals, addContribution, deleteContribution } = useGoals();
+  const { goals, loading, createGoal, updateGoal, deleteGoal, reorderGoals, addContribution, deleteContribution, inviteToGoal, removeMember, leaveGoal } = useGoals();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editGoal, setEditGoal] = useState<Goal | null>(null);
   const [contribGoal, setContribGoal] = useState<GoalWithStats | null>(null);
+  const [inviteGoal, setInviteGoal] = useState<GoalWithStats | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const dragIdx = useRef<number | null>(null);
@@ -169,7 +171,7 @@ export default function GoalsPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <h3 className="text-base font-semibold text-gray-900 truncate">{g.name}</h3>
                                 {g.url && (
                                   <a
@@ -183,6 +185,11 @@ export default function GoalsPage() {
                                     <ExternalLink size={13} />
                                   </a>
                                 )}
+                                {g.is_shared && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700">
+                                    <Users size={10} /> SHARED · {g.members.length}
+                                  </span>
+                                )}
                                 {isComplete && (
                                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700">
                                     <Trophy size={10} /> COMPLETE
@@ -194,6 +201,38 @@ export default function GoalsPage() {
                                   <Calendar size={11} /> {formatTargetDate(g.target_date, g.daysUntilTarget)}
                                 </p>
                               )}
+                              {/* Member avatar stack (only on shared goals with 2+ members) */}
+                              {g.is_shared && g.members.length > 0 && (
+                                <div className="flex items-center gap-1.5 mt-2">
+                                  <div className="flex -space-x-1.5">
+                                    {g.members.slice(0, 4).map((m, mi) => {
+                                      const initial = m.user_id.charAt(0).toUpperCase();
+                                      return (
+                                        <div key={m.id}
+                                          className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-semibold text-white ring-2 ring-white"
+                                          style={{ background: `hsl(${(mi * 73) % 360}, 55%, 55%)` }}
+                                          title={m.role === "owner" ? "Owner" : "Member"}
+                                        >
+                                          {initial}
+                                        </div>
+                                      );
+                                    })}
+                                    {g.members.length > 4 && (
+                                      <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-[9px] font-semibold text-gray-500 ring-2 ring-white">
+                                        +{g.members.length - 4}
+                                      </div>
+                                    )}
+                                  </div>
+                                  {g.isOwner && (
+                                    <button
+                                      onClick={() => setInviteGoal(g)}
+                                      className="text-[10px] font-medium text-blue-600 hover:text-blue-700 flex items-center gap-0.5 ml-1"
+                                    >
+                                      <UserPlus size={10} /> Invite
+                                    </button>
+                                  )}
+                                </div>
+                              )}
                             </div>
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                               {isComplete && (
@@ -201,8 +240,17 @@ export default function GoalsPage() {
                                   <Check size={14} />
                                 </button>
                               )}
-                              <button onClick={() => { setEditGoal(g); setShowAddModal(true); }} className="text-gray-400 hover:text-blue-600 p-1.5 rounded" title="Edit"><Pencil size={14} /></button>
-                              <button onClick={() => { if (confirm(`Delete "${g.name}"? All contributions will be deleted too.`)) deleteGoal(g.id); }} className="text-gray-300 hover:text-red-500 p-1.5 rounded" title="Delete"><Trash2 size={14} /></button>
+                              {g.is_shared && g.isOwner && (
+                                <button onClick={() => setInviteGoal(g)} className="text-gray-400 hover:text-purple-600 p-1.5 rounded" title="Invite members"><UserPlus size={14} /></button>
+                              )}
+                              {g.isOwner && (
+                                <button onClick={() => { setEditGoal(g); setShowAddModal(true); }} className="text-gray-400 hover:text-blue-600 p-1.5 rounded" title="Edit"><Pencil size={14} /></button>
+                              )}
+                              {g.isOwner ? (
+                                <button onClick={() => { if (confirm(`Delete "${g.name}"? All contributions will be deleted too.`)) deleteGoal(g.id); }} className="text-gray-300 hover:text-red-500 p-1.5 rounded" title="Delete"><Trash2 size={14} /></button>
+                              ) : (
+                                <button onClick={() => { if (confirm(`Leave "${g.name}"? You won't be able to see or contribute to it anymore.`)) leaveGoal(g.id); }} className="text-gray-300 hover:text-red-500 p-1.5 rounded" title="Leave goal"><LogOut size={14} /></button>
+                              )}
                             </div>
                           </div>
 
@@ -313,6 +361,7 @@ export default function GoalsPage() {
 
       <AddGoalModal isOpen={showAddModal} goal={editGoal} onClose={() => { setShowAddModal(false); setEditGoal(null); }} onSave={handleSave} />
       <AddContributionModal isOpen={!!contribGoal} goal={contribGoal} onClose={() => setContribGoal(null)} onSave={addContribution} />
+      <InviteGoalMembersModal isOpen={!!inviteGoal} goal={inviteGoal} onClose={() => setInviteGoal(null)} onInvite={inviteToGoal} onRemoveMember={removeMember} />
     </div>
   );
 }
