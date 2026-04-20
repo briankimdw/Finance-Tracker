@@ -272,6 +272,37 @@ export interface Transfer {
   created_at: string;
 }
 
+export interface NetWorthSnapshot {
+  id: string;
+  user_id: string | null;
+  date: string;
+  cash: number;
+  metals: number;
+  inventory: number;
+  owed_to_me: number;
+  card_debt: number;
+  i_owe: number;
+  net_worth: number;
+  created_at: string;
+}
+
+export interface Budget {
+  id: string;
+  user_id: string | null;
+  category: string;
+  monthly_amount: number;
+  color: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BudgetWithSpend extends Budget {
+  spent: number;       // This month's spending in category
+  remaining: number;
+  progress: number;    // 0-100+ (can exceed 100 if over budget)
+  overBudget: boolean;
+}
+
 export interface CashAccount {
   id: string;
   user_id: string | null;

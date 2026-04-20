@@ -15,6 +15,10 @@ import TransferModal from "@/components/TransferModal";
 import AddContributionModal from "@/components/AddContributionModal";
 import QuickAdd from "@/components/QuickAdd";
 import Charts from "@/components/Charts";
+import NetWorthChart from "@/components/NetWorthChart";
+import AnimatedNumber from "@/components/animated/AnimatedNumber";
+import { Stagger, StaggerItem } from "@/components/animated/FadeInUp";
+import { saveNetWorthSnapshot } from "@/hooks/useNetWorthHistory";
 import { useItems, useStats } from "@/hooks/useItems";
 import { useIncome, useIncomeStats, useSavedIncome, useMonthlyIncomeStats } from "@/hooks/useIncome";
 import { useExpenseStats, useMonthlyExpenseStats } from "@/hooks/useExpenses";
@@ -162,6 +166,22 @@ export default function DashboardPage() {
   // NET WORTH = Cash + Metals + Inventory + Money owed to me - Card debt - Debts I owe
   const netWorth = totalCash + metalStats.totalValue + stats.inventoryValue + totalTheyOwe - totalCardDebt - totalIOwe;
 
+  // Save daily net worth snapshot (debounced — only when data is loaded and stabilized)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      saveNetWorthSnapshot(user?.id ?? null, {
+        cash: totalCash,
+        metals: metalStats.totalValue,
+        inventory: stats.inventoryValue,
+        owed_to_me: totalTheyOwe,
+        card_debt: totalCardDebt,
+        i_owe: totalIOwe,
+        net_worth: netWorth,
+      });
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [user, totalCash, metalStats.totalValue, stats.inventoryValue, totalTheyOwe, totalCardDebt, totalIOwe, netWorth]);
+
   const topCards = [
     { label: `${monthName} Net`, value: monthlyNet, icon: Scale, iconBg: monthlyNet >= 0 ? "text-green-600 bg-green-50" : "text-red-600 bg-red-50", valueColor: monthlyNet >= 0 ? "text-green-600" : "text-red-600" },
     { label: "Cash & Checking", value: totalCash, icon: Wallet, iconBg: "text-green-600 bg-green-50", valueColor: "text-green-600", href: "/cards" as string | undefined },
@@ -195,69 +215,67 @@ export default function DashboardPage() {
 
       <QuickAdd savedIncomes={savedIncomes} onQuickAdd={handleQuickAdd} onDelete={deleteSaved} />
 
-      {/* Net Worth */}
+      {/* Net Worth chart */}
+      <NetWorthChart currentNetWorth={netWorth} />
+
+      {/* Net worth breakdown */}
       <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-amber-50 text-amber-600"><Crown size={18} /></div>
-            <div>
-              <span className="text-sm text-gray-500">Net Worth</span>
-              <p className="text-xs text-gray-400">Assets − debts</p>
-            </div>
-          </div>
+        <div className="flex items-center gap-2 mb-4">
+          <div className="p-2 rounded-lg bg-amber-50 text-amber-600"><Crown size={16} /></div>
+          <span className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Breakdown</span>
         </div>
-        <p className={`text-[32px] font-bold tracking-tight tabular-nums ${netWorth >= 0 ? "text-gray-900" : "text-red-600"}`}>
-          {netWorth < 0 ? "-" : ""}${Math.abs(netWorth).toFixed(2)}
-        </p>
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-3 pt-3 border-t border-gray-100">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <div>
             <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Cash & Banks</p>
-            <p className="text-sm font-semibold text-green-600 tabular-nums">${totalCash.toFixed(2)}</p>
+            <AnimatedNumber value={totalCash} prefix="$" className="text-sm font-semibold text-green-600" />
           </div>
           <div>
             <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Metals</p>
-            <p className="text-sm font-semibold text-amber-600 tabular-nums">${metalStats.totalValue.toFixed(2)}</p>
+            <AnimatedNumber value={metalStats.totalValue} prefix="$" className="text-sm font-semibold text-amber-600" />
           </div>
           <div>
             <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Inventory</p>
-            <p className="text-sm font-semibold text-blue-600 tabular-nums">${stats.inventoryValue.toFixed(2)}</p>
+            <AnimatedNumber value={stats.inventoryValue} prefix="$" className="text-sm font-semibold text-blue-600" />
           </div>
           <div>
             <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Owed to Me</p>
-            <p className="text-sm font-semibold text-green-600 tabular-nums">${totalTheyOwe.toFixed(2)}</p>
+            <AnimatedNumber value={totalTheyOwe} prefix="$" className="text-sm font-semibold text-green-600" />
           </div>
           <div>
             <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Total Debt</p>
-            <p className="text-sm font-semibold text-red-600 tabular-nums">-${(totalCardDebt + totalIOwe).toFixed(2)}</p>
+            <AnimatedNumber value={totalCardDebt + totalIOwe} prefix="-$" className="text-sm font-semibold text-red-600" />
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <Stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {topCards.map((card) => {
           const Icon = card.icon;
           const v = card.value;
           const neg = (card as typeof card & { negative?: boolean }).negative;
           const href = (card as typeof card & { href?: string }).href;
+          const displayValue = neg ? -Math.abs(v) : v;
           const content = (
             <>
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm text-gray-500">{card.label}</span>
                 <div className={`p-2 rounded-lg ${card.iconBg}`}><Icon size={18} /></div>
               </div>
-              <p className={`text-[28px] font-semibold tracking-tight ${card.valueColor}`}>
-                {neg ? "-" : v < 0 ? "-" : ""}${Math.abs(v).toFixed(2)}
-              </p>
+              <AnimatedNumber value={displayValue} prefix="$" className={`text-[28px] font-semibold tracking-tight ${card.valueColor}`} />
             </>
           );
-          const baseClass = "bg-white border border-gray-200 rounded-xl p-5 shadow-sm transition-all hover:shadow-md hover:border-gray-300";
-          return href ? (
-            <Link key={card.label} href={href} className={`${baseClass} block`}>{content}</Link>
-          ) : (
-            <div key={card.label} className={baseClass}>{content}</div>
+          const baseClass = "bg-white border border-gray-200 rounded-xl p-5 shadow-sm transition-all hover:shadow-md hover:border-gray-300 hover:-translate-y-0.5";
+          return (
+            <StaggerItem key={card.label}>
+              {href ? (
+                <Link href={href} className={`${baseClass} block h-full`}>{content}</Link>
+              ) : (
+                <div className={`${baseClass} h-full`}>{content}</div>
+              )}
+            </StaggerItem>
           );
         })}
-      </div>
+      </Stagger>
 
       {/* All accounts */}
       {cashAccounts.length > 0 && (

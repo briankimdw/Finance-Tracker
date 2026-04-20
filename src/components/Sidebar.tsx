@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
-  LayoutDashboard, Package, History, CalendarDays, Wallet, CreditCard, Coins, WalletCards, Target, HandCoins,
+  LayoutDashboard, Package, History, CalendarDays, Wallet, CreditCard, Coins, WalletCards, Target, HandCoins, PieChart,
   LogOut, LogIn, TrendingUp, Menu, X, User,
 } from "lucide-react";
 import { useState } from "react";
@@ -18,6 +18,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/budget", label: "Budget", icon: PieChart },
   { href: "/expenses", label: "Expenses", icon: CreditCard },
   { href: "/cards", label: "Cards", icon: WalletCards },
   { href: "/income", label: "Income", icon: Wallet },
