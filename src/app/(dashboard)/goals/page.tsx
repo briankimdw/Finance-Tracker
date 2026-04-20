@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import {
   Plus, Pencil, Trash2, GripVertical, Check, Calendar,
   Target, Sparkles, Trophy, ChevronDown, ChevronUp, Trash, ArrowUp, ArrowDown,
+  ExternalLink,
 } from "lucide-react";
 import AddGoalModal from "@/components/AddGoalModal";
 import AddContributionModal from "@/components/AddContributionModal";
@@ -143,8 +144,24 @@ export default function GoalsPage() {
                       <div className="flex items-start gap-4">
                         <GripVertical size={14} className="text-gray-300 group-hover:text-gray-400 mt-2 shrink-0" />
 
-                        {/* Icon */}
-                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm" style={{ background: `${g.color}15`, color: g.color }}>
+                        {/* Icon or image */}
+                        {g.image_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={g.image_url}
+                            alt={g.name}
+                            className="w-14 h-14 rounded-2xl object-cover shrink-0 shadow-sm border border-gray-100"
+                            onError={(e) => {
+                              const img = e.target as HTMLImageElement;
+                              img.style.display = "none";
+                              img.nextElementSibling?.classList.remove("hidden");
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className={`${g.image_url ? "hidden" : ""} w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm`}
+                          style={{ background: `${g.color}15`, color: g.color }}
+                        >
                           <Icon size={26} />
                         </div>
 
@@ -154,6 +171,18 @@ export default function GoalsPage() {
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
                                 <h3 className="text-base font-semibold text-gray-900 truncate">{g.name}</h3>
+                                {g.url && (
+                                  <a
+                                    href={g.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-gray-300 hover:text-blue-600 shrink-0 transition-colors"
+                                    title="Open link"
+                                  >
+                                    <ExternalLink size={13} />
+                                  </a>
+                                )}
                                 {isComplete && (
                                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700">
                                     <Trophy size={10} /> COMPLETE
@@ -259,9 +288,14 @@ export default function GoalsPage() {
                 const Icon = getGoalIcon(g.icon);
                 return (
                   <div key={g.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex items-center gap-3 opacity-75 hover:opacity-100 transition-opacity">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${g.color}15`, color: g.color }}>
-                      <Icon size={18} />
-                    </div>
+                    {g.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={g.image_url} alt={g.name} className="w-10 h-10 rounded-xl object-cover border border-gray-100 shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    ) : (
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${g.color}15`, color: g.color }}>
+                        <Icon size={18} />
+                      </div>
+                    )}
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900">{g.name}</p>
                       <p className="text-xs text-gray-400">${g.saved.toFixed(2)} saved · Reached</p>

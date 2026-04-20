@@ -368,8 +368,14 @@ export default function DashboardPage() {
               const Icon = getGoalIcon(g.icon);
               return (
                 <div key={g.id} className="group flex items-center gap-3">
-                  <Link href="/goals" className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform hover:scale-105" style={{ background: `${g.color}15`, color: g.color }}>
-                    <Icon size={16} />
+                  <Link href="/goals" className="shrink-0 transition-transform hover:scale-105">
+                    {g.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={g.image_url} alt="" className="w-9 h-9 rounded-xl object-cover border border-gray-100" onError={(e) => { const i = e.target as HTMLImageElement; i.style.display = "none"; i.nextElementSibling?.classList.remove("hidden"); }} />
+                    ) : null}
+                    <div className={`${g.image_url ? "hidden" : ""} w-9 h-9 rounded-xl flex items-center justify-center`} style={{ background: `${g.color}15`, color: g.color }}>
+                      <Icon size={16} />
+                    </div>
                   </Link>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between mb-1">

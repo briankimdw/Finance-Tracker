@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import {
   X, Target, Plane, Home, Car, Smartphone, Gift, GraduationCap,
   Heart, Briefcase, Music, Camera, Gamepad2, ShoppingBag, Plus,
-  Tv, Bike, Trophy, Sparkles,
+  Tv, Bike, Trophy, Sparkles, Link as LinkIcon, Image as ImageIcon,
 } from "lucide-react";
 import type { Goal, GoalCategory } from "@/lib/types";
 
@@ -47,7 +47,7 @@ interface AddGoalModalProps {
   isOpen: boolean;
   goal?: Goal | null;
   onClose: () => void;
-  onSave: (data: { name: string; target_amount: number; category?: GoalCategory; color?: string; icon?: string; notes?: string; target_date?: string | null }) => Promise<void>;
+  onSave: (data: { name: string; target_amount: number; category?: GoalCategory; color?: string; icon?: string; notes?: string; target_date?: string | null; url?: string; image_url?: string }) => Promise<void>;
 }
 
 export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalModalProps) {
@@ -60,6 +60,8 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
     icon: "Target",
     notes: "",
     target_date: "",
+    url: "",
+    image_url: "",
   });
 
   useEffect(() => {
@@ -72,9 +74,11 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
         icon: goal.icon,
         notes: goal.notes || "",
         target_date: goal.target_date || "",
+        url: goal.url || "",
+        image_url: goal.image_url || "",
       });
     } else if (isOpen) {
-      setForm({ name: "", target_amount: "", category: "savings", color: COLORS[0], icon: "Target", notes: "", target_date: "" });
+      setForm({ name: "", target_amount: "", category: "savings", color: COLORS[0], icon: "Target", notes: "", target_date: "", url: "", image_url: "" });
     }
   }, [goal, isOpen]);
 
@@ -91,6 +95,8 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
       icon: form.icon,
       notes: form.notes,
       target_date: form.target_date || null,
+      url: form.url || undefined,
+      image_url: form.image_url || undefined,
     });
     setLoading(false);
     onClose();
@@ -114,9 +120,14 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
         {/* Preview */}
         <div className="px-5 pt-5">
           <div className="rounded-xl p-4 border-2 border-dashed border-gray-200 flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: `${form.color}20`, color: form.color }}>
-              <SelectedIcon size={22} />
-            </div>
+            {form.image_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={form.image_url} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+            ) : (
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${form.color}20`, color: form.color }}>
+                <SelectedIcon size={22} />
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 truncate">{form.name || "Goal name"}</p>
               <p className="text-xs text-gray-500">${form.target_amount || "0"} target</p>
@@ -174,6 +185,30 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
                   style={{ background: c }} />
               ))}
             </div>
+          </div>
+
+          {/* Image URL */}
+          <div>
+            <label className={labelClass}>
+              <span className="flex items-center gap-1.5">
+                <ImageIcon size={13} className="text-gray-400" />
+                Image URL
+              </span>
+            </label>
+            <input type="url" value={form.image_url} onChange={(e) => update("image_url", e.target.value)} className={inputClass} placeholder="https://..." />
+            <p className="text-xs text-gray-400 mt-1">Paste an image link — it&apos;ll show on the goal card instead of the icon</p>
+          </div>
+
+          {/* Product link */}
+          <div>
+            <label className={labelClass}>
+              <span className="flex items-center gap-1.5">
+                <LinkIcon size={13} className="text-gray-400" />
+                Link
+              </span>
+            </label>
+            <input type="url" value={form.url} onChange={(e) => update("url", e.target.value)} className={inputClass} placeholder="https://apple.com/macbook-pro" />
+            <p className="text-xs text-gray-400 mt-1">Link to the product or inspiration</p>
           </div>
 
           <div>
