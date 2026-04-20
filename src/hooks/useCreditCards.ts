@@ -50,8 +50,11 @@ export function useCreditCards() {
         const cardExpenses = expenses.filter((e) => e.credit_card_id === c.id);
         const totalCharges = cardExpenses.filter((e) => !e.is_card_payment).reduce((sum, e) => sum + Number(e.amount), 0);
         const totalPayments = cardExpenses.filter((e) => e.is_card_payment).reduce((sum, e) => sum + Number(e.amount), 0);
-        const balance = totalCharges - totalPayments;
-        const utilization = c.credit_limit && Number(c.credit_limit) > 0 ? (balance / Number(c.credit_limit)) * 100 : 0;
+        // Round to avoid floating-point noise (e.g. -0.0000001)
+        const rawBalance = totalCharges - totalPayments;
+        const balance = Math.abs(rawBalance) < 0.01 ? 0 : Math.round(rawBalance * 100) / 100;
+        // Utilization only counts positive balance (debt), and clamps to [0, 100+]
+        const utilization = c.credit_limit && Number(c.credit_limit) > 0 && balance > 0 ? (balance / Number(c.credit_limit)) * 100 : 0;
         const { date: nextDueDate, daysUntil: daysUntilDue } = calculateNextDueDate(c.due_day);
         return { ...c, balance, totalCharges, totalPayments, utilization, nextDueDate, daysUntilDue };
       });

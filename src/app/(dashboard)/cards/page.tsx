@@ -323,7 +323,7 @@ export default function CardsPage() {
                           <span className={`text-xs font-medium ${utilColor}`}>{card.utilization.toFixed(1)}% of ${Number(card.credit_limit).toFixed(0)}</span>
                         </div>
                         <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div className={`h-full transition-all ${barColor}`} style={{ width: `${Math.min(100, card.utilization)}%` }} />
+                          <div className={`h-full transition-all ${barColor}`} style={{ width: `${Math.max(0, Math.min(100, card.utilization))}%` }} />
                         </div>
                       </div>
                     )}

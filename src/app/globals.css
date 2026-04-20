@@ -32,3 +32,6 @@ select option { background: #ffffff; color: #111827; }
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input[type="number"] { -moz-appearance: textfield; }
+
+/* iPhone safe-area support for bottom nav */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0); }

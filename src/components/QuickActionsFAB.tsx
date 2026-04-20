@@ -35,7 +35,7 @@ export default function QuickActionsFAB() {
       {open && (
         <>
           <div className="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1px]" onClick={close} />
-          <div className="fixed bottom-20 right-4 sm:right-6 z-50 w-60 bg-white border border-gray-200 rounded-2xl shadow-2xl shadow-gray-900/20 overflow-hidden animate-in">
+          <div className="fixed bottom-[88px] lg:bottom-20 right-4 sm:right-6 z-50 w-60 bg-white border border-gray-200 rounded-2xl shadow-2xl shadow-gray-900/20 overflow-hidden animate-in">
             <div className="p-2 border-b border-gray-100 flex items-center justify-between">
               <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider pl-2">Quick Actions</span>
               <button onClick={close} className="p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600"><X size={14} /></button>
@@ -58,10 +58,10 @@ export default function QuickActionsFAB() {
         </>
       )}
 
-      {/* FAB */}
+      {/* FAB — sits above mobile bottom nav */}
       <button
         onClick={() => setOpen(!open)}
-        className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 flex items-center justify-center transition-all ${open ? "rotate-45" : "hover:scale-105"}`}
+        className={`fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-40 w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 flex items-center justify-center transition-all ${open ? "rotate-45" : "hover:scale-105"}`}
         aria-label="Quick actions"
       >
         <Plus size={24} />

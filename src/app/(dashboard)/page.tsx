@@ -243,7 +243,7 @@ export default function DashboardPage() {
           </div>
           <div>
             <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Total Debt</p>
-            <AnimatedNumber value={totalCardDebt + totalIOwe} prefix="-$" className="text-sm font-semibold text-red-600" />
+            <AnimatedNumber value={totalCardDebt + totalIOwe} prefix={(totalCardDebt + totalIOwe) > 0.005 ? "-$" : "$"} className="text-sm font-semibold text-red-600" />
           </div>
         </div>
       </div>
@@ -254,7 +254,8 @@ export default function DashboardPage() {
           const v = card.value;
           const neg = (card as typeof card & { negative?: boolean }).negative;
           const href = (card as typeof card & { href?: string }).href;
-          const displayValue = neg ? -Math.abs(v) : v;
+          // Don't show negative sign for zero (avoids "-$0.00")
+          const displayValue = neg && Math.abs(v) > 0.005 ? -Math.abs(v) : Math.abs(v) < 0.005 ? 0 : v;
           const content = (
             <>
               <div className="flex items-center justify-between mb-3">
