@@ -261,6 +261,17 @@ export interface DebtWithStats extends Debt {
 
 export type CashAccountType = "checking" | "savings" | "cash" | "other";
 
+export interface Transfer {
+  id: string;
+  user_id: string | null;
+  from_account_id: string | null;
+  to_account_id: string | null;
+  amount: number;
+  date: string;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface CashAccount {
   id: string;
   user_id: string | null;

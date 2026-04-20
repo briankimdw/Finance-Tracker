@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Plus, Pencil, Trash2, CreditCard as CardIcon, ArrowUpRight, ArrowDownRight, GripVertical, Wallet, PiggyBank, Banknote, Coins, Calendar } from "lucide-react";
+import { Plus, Pencil, Trash2, CreditCard as CardIcon, ArrowUpRight, ArrowDownRight, GripVertical, Wallet, PiggyBank, Banknote, Coins, Calendar, ArrowLeftRight } from "lucide-react";
 import AddCreditCardModal from "@/components/AddCreditCardModal";
 import AddCashAccountModal from "@/components/AddCashAccountModal";
 import AddExpenseModal from "@/components/AddExpenseModal";
+import TransferModal from "@/components/TransferModal";
 import { useCreditCards } from "@/hooks/useCreditCards";
 import { useCashAccounts } from "@/hooks/useCashAccounts";
 import type { CreditCard, CreditCardWithStats, CashAccount, CashAccountType } from "@/lib/types";
@@ -43,6 +44,7 @@ export default function CardsPage() {
   const [editAccount, setEditAccount] = useState<CashAccount | null>(null);
   const [payCard, setPayCard] = useState<CreditCardWithStats | null>(null);
   const [chargeCard, setChargeCard] = useState<CreditCardWithStats | null>(null);
+  const [showTransfer, setShowTransfer] = useState(false);
 
   // Drag & drop state
   const dragCardIdx = useRef<number | null>(null);
@@ -166,9 +168,16 @@ export default function CardsPage() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Cash & Bank Accounts</h2>
-          <button onClick={() => { setEditAccount(null); setShowAddAccountModal(true); }} className="text-sm text-blue-600 hover:text-blue-700 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-1">
-            <Plus size={14} /> Add Account
-          </button>
+          <div className="flex items-center gap-2">
+            {accounts.length >= 2 && (
+              <button onClick={() => setShowTransfer(true)} className="text-sm text-gray-600 hover:text-blue-600 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-1">
+                <ArrowLeftRight size={14} /> Transfer
+              </button>
+            )}
+            <button onClick={() => { setEditAccount(null); setShowAddAccountModal(true); }} className="text-sm text-blue-600 hover:text-blue-700 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-1">
+              <Plus size={14} /> Add Account
+            </button>
+          </div>
         </div>
 
         {loadingAccounts ? (
@@ -352,6 +361,7 @@ export default function CardsPage() {
       <AddCashAccountModal isOpen={showAddAccountModal} account={editAccount} onClose={() => { setShowAddAccountModal(false); setEditAccount(null); }} onSave={handleSaveAccount} />
       <AddExpenseModal isOpen={!!chargeCard} onClose={() => setChargeCard(null)} onAdded={refetchCards} defaultCardId={chargeCard?.id} />
       <AddExpenseModal isOpen={!!payCard} onClose={() => setPayCard(null)} onAdded={refetchCards} defaultCardId={payCard?.id} defaultIsCardPayment={true} />
+      <TransferModal isOpen={showTransfer} onClose={() => setShowTransfer(false)} onTransferred={refetchCards} />
     </div>
   );
 }
