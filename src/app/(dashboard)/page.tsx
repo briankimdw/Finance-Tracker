@@ -5,12 +5,14 @@ import Link from "next/link";
 import {
   Plus, DollarSign, TrendingUp, Package, Percent,
   Briefcase, Zap, BarChart3, Wallet, ArrowUpRight, CreditCard, Scale, Coins,
-  Calendar, PiggyBank, Banknote, Target,
+  Calendar, PiggyBank, Banknote, Target, ArrowLeftRight,
 } from "lucide-react";
 import AddItemModal from "@/components/AddItemModal";
 import AddIncomeModal from "@/components/AddIncomeModal";
 import MarkSoldModal from "@/components/MarkSoldModal";
 import AddExpenseModal from "@/components/AddExpenseModal";
+import TransferModal from "@/components/TransferModal";
+import AddContributionModal from "@/components/AddContributionModal";
 import QuickAdd from "@/components/QuickAdd";
 import Charts from "@/components/Charts";
 import { useItems, useStats } from "@/hooks/useItems";
@@ -113,7 +115,7 @@ export default function DashboardPage() {
   const { accounts: cashAccounts, totalBalance: totalCash, refetch: refetchCash } = useCashAccounts();
   const { cards: creditCards, refetch: refetchCards } = useCreditCards();
   const { totalIOwe, totalTheyOwe, refetch: refetchDebts } = useDebts();
-  const { goals, refetch: refetchGoals } = useGoals();
+  const { goals, addContribution, refetch: refetchGoals } = useGoals();
   const { monthlyData, categoryData, refetch: refetchCharts } = useChartData();
 
   const [showAddItem, setShowAddItem] = useState(false);
@@ -141,6 +143,8 @@ export default function DashboardPage() {
   useEffect(() => { fetchHeatMap(); }, [fetchHeatMap]);
 
   const [payCard, setPayCard] = useState<CreditCardWithStats | null>(null);
+  const [showTransfer, setShowTransfer] = useState<string | null>(null); // account id as default from
+  const [contribGoalId, setContribGoalId] = useState<string | null>(null);
 
   const handleRefresh = () => { refetchStats(); refetchItems(); refetchIncome(); refetchIncomeList(); refetchExpenses(); refetchMonthlyExpenses(); refetchMonthlyIncome(); refetchMetals(); refetchMetalProfit(); refetchCash(); refetchCards(); refetchDebts(); refetchGoals(); fetchHeatMap(); refetchCharts(); };
   const handleQuickAdd = async (saved: Parameters<typeof quickAdd>[0]) => { await quickAdd(saved); handleRefresh(); };
@@ -269,15 +273,24 @@ export default function DashboardPage() {
             {cashAccounts.map((acc) => {
               const Icon = ACCOUNT_ICONS[acc.type];
               return (
-                <div key={acc.id} className="rounded-xl p-3.5 border border-gray-100 hover:border-gray-200 transition-all" style={{ background: `${acc.color}08` }}>
+                <div key={acc.id} className="group relative rounded-xl p-3.5 border border-gray-100 hover:border-gray-200 transition-all" style={{ background: `${acc.color}08` }}>
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${acc.color}20`, color: acc.color }}>
                       <Icon size={14} />
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <span className="text-xs font-medium text-gray-700 truncate block">{acc.name}</span>
                       <span className="text-[10px] text-gray-400 uppercase tracking-wider">{acc.type}</span>
                     </div>
+                    {cashAccounts.length >= 2 && (
+                      <button
+                        onClick={() => setShowTransfer(acc.id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-white/60 text-gray-400 hover:text-blue-600"
+                        title="Transfer"
+                      >
+                        <ArrowLeftRight size={13} />
+                      </button>
+                    )}
                   </div>
                   <p className="text-xl font-bold text-gray-900 tabular-nums">${Number(acc.balance).toFixed(2)}</p>
                 </div>
@@ -335,23 +348,27 @@ export default function DashboardPage() {
             {goals.filter((g) => !g.completed).slice(0, 4).map((g) => {
               const Icon = getGoalIcon(g.icon);
               return (
-                <Link key={g.id} href="/goals" className="block group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105" style={{ background: `${g.color}15`, color: g.color }}>
-                      <Icon size={16} />
+                <div key={g.id} className="group flex items-center gap-3">
+                  <Link href="/goals" className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform hover:scale-105" style={{ background: `${g.color}15`, color: g.color }}>
+                    <Icon size={16} />
+                  </Link>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between mb-1">
+                      <Link href="/goals" className="text-sm font-medium text-gray-900 truncate hover:text-blue-600 transition-colors">{g.name}</Link>
+                      <span className="text-xs font-medium tabular-nums shrink-0 ml-2" style={{ color: g.color }}>{g.progress.toFixed(0)}%</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline justify-between mb-1">
-                        <p className="text-sm font-medium text-gray-900 truncate">{g.name}</p>
-                        <span className="text-xs font-medium tabular-nums shrink-0 ml-2" style={{ color: g.color }}>{g.progress.toFixed(0)}%</span>
-                      </div>
-                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full transition-all rounded-full" style={{ width: `${Math.min(100, g.progress)}%`, background: g.color }} />
-                      </div>
-                      <p className="text-xs text-gray-400 mt-1 tabular-nums">${g.saved.toFixed(2)} of ${Number(g.target_amount).toFixed(2)}</p>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full transition-all rounded-full" style={{ width: `${Math.min(100, g.progress)}%`, background: g.color }} />
                     </div>
+                    <p className="text-xs text-gray-400 mt-1 tabular-nums">${g.saved.toFixed(2)} of ${Number(g.target_amount).toFixed(2)}</p>
                   </div>
-                </Link>
+                  <button onClick={() => setContribGoalId(g.id)}
+                    className="shrink-0 text-xs font-medium text-white px-2.5 py-1.5 rounded-md transition-all hover:shadow-md opacity-0 group-hover:opacity-100"
+                    style={{ background: g.color }}
+                    title="Add money">
+                    <Plus size={12} className="inline -ml-0.5" />
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -452,6 +469,13 @@ export default function DashboardPage() {
       <AddIncomeModal isOpen={showAddIncome} onClose={() => setShowAddIncome(false)} onAdded={handleRefresh} onSavePin={savePinned} />
       <MarkSoldModal isOpen={!!soldItem} item={soldItem} onClose={() => setSoldItem(null)} onSold={handleRefresh} />
       <AddExpenseModal isOpen={!!payCard} onClose={() => setPayCard(null)} onAdded={handleRefresh} defaultCardId={payCard?.id} defaultIsCardPayment={true} />
+      <TransferModal isOpen={!!showTransfer} onClose={() => setShowTransfer(null)} onTransferred={handleRefresh} defaultFromId={showTransfer || undefined} />
+      <AddContributionModal
+        isOpen={!!contribGoalId}
+        goal={goals.find((g) => g.id === contribGoalId) || null}
+        onClose={() => setContribGoalId(null)}
+        onSave={addContribution}
+      />
     </div>
   );
 }

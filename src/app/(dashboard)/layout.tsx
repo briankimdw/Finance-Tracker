@@ -1,6 +1,7 @@
 "use client";
 
 import Sidebar from "@/components/Sidebar";
+import QuickActionsFAB from "@/components/QuickActionsFAB";
 import { useAuth } from "@/context/AuthContext";
 
 export default function DashboardLayout({
@@ -29,6 +30,7 @@ export default function DashboardLayout({
         )}
         <div className="p-4 lg:p-6 max-w-7xl">{children}</div>
       </main>
+      <QuickActionsFAB />
     </div>
   );
 }
