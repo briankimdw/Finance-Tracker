@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Wallet, Banknote, PiggyBank, Coins, ArrowRight } from "lucide-react";
+import { X, Wallet, Banknote, PiggyBank, Coins, ArrowRight, ArrowLeftRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useCashAccounts } from "@/hooks/useCashAccounts";
@@ -106,16 +106,28 @@ export default function TransferModal({ isOpen, onClose, onTransferred, defaultF
           <form onSubmit={handleSubmit} className="p-5 space-y-5">
             {/* From account */}
             <div>
-              <label className={labelClass}>From</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium text-gray-700">From</label>
+                {fromId && toId && fromId !== toId && (
+                  <button type="button" onClick={() => { const f = fromId; setFromId(toId); setToId(f); }}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+                    <ArrowLeftRight size={11} /> Swap
+                  </button>
+                )}
+              </div>
               <div className="space-y-1.5">
                 {accounts.map((acc) => {
                   const Icon = ACCOUNT_ICONS[acc.type];
                   const isSelected = fromId === acc.id;
                   const isDest = toId === acc.id;
                   return (
-                    <button key={acc.id} type="button" onClick={() => setFromId(acc.id)} disabled={isDest}
+                    <button key={acc.id} type="button" onClick={() => {
+                        // If clicking the current To, swap them
+                        if (isDest) { setToId(fromId); setFromId(acc.id); }
+                        else setFromId(acc.id);
+                      }}
                       className={`w-full flex items-center gap-3 p-2.5 rounded-xl border-2 transition-all text-left ${
-                        isSelected ? "border-red-400 bg-red-50/50" : isDest ? "border-gray-100 bg-gray-50 opacity-40 cursor-not-allowed" : "border-gray-200 hover:border-gray-300 bg-white"
+                        isSelected ? "border-red-400 bg-red-50/50" : isDest ? "border-green-200 bg-green-50/30" : "border-gray-200 hover:border-gray-300 bg-white"
                       }`}>
                       <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${acc.color}20`, color: acc.color }}>
                         <Icon size={14} />
@@ -125,6 +137,7 @@ export default function TransferModal({ isOpen, onClose, onTransferred, defaultF
                         <p className="text-xs text-gray-400 capitalize">{acc.type} · ${Number(acc.balance).toFixed(2)}</p>
                       </div>
                       {isSelected && <span className="text-xs font-semibold text-red-600">FROM</span>}
+                      {isDest && !isSelected && <span className="text-[10px] text-green-600 font-medium">currently TO</span>}
                     </button>
                   );
                 })}
@@ -147,9 +160,13 @@ export default function TransferModal({ isOpen, onClose, onTransferred, defaultF
                   const isSelected = toId === acc.id;
                   const isSource = fromId === acc.id;
                   return (
-                    <button key={acc.id} type="button" onClick={() => setToId(acc.id)} disabled={isSource}
+                    <button key={acc.id} type="button" onClick={() => {
+                        // If clicking the current From, swap them
+                        if (isSource) { setFromId(toId); setToId(acc.id); }
+                        else setToId(acc.id);
+                      }}
                       className={`w-full flex items-center gap-3 p-2.5 rounded-xl border-2 transition-all text-left ${
-                        isSelected ? "border-green-400 bg-green-50/50" : isSource ? "border-gray-100 bg-gray-50 opacity-40 cursor-not-allowed" : "border-gray-200 hover:border-gray-300 bg-white"
+                        isSelected ? "border-green-400 bg-green-50/50" : isSource ? "border-red-200 bg-red-50/30" : "border-gray-200 hover:border-gray-300 bg-white"
                       }`}>
                       <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${acc.color}20`, color: acc.color }}>
                         <Icon size={14} />
@@ -159,6 +176,7 @@ export default function TransferModal({ isOpen, onClose, onTransferred, defaultF
                         <p className="text-xs text-gray-400 capitalize">{acc.type} · ${Number(acc.balance).toFixed(2)}</p>
                       </div>
                       {isSelected && <span className="text-xs font-semibold text-green-600">TO</span>}
+                      {isSource && !isSelected && <span className="text-[10px] text-red-600 font-medium">currently FROM</span>}
                     </button>
                   );
                 })}
