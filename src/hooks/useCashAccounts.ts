@@ -18,8 +18,37 @@ export function useCashAccounts() {
       let q = supabase.from("cash_accounts").select("*").order("display_order", { ascending: true }).order("created_at", { ascending: true });
       if (user) q = q.eq("user_id", user.id);
       else q = q.is("user_id", null);
-      const { data } = await q;
-      setAccounts((data as CashAccount[]) || []);
+
+      // Pull contributions (that point at a cash account) + the goal.completed flag
+      // so we can compute per-account "reserved for active goals" totals.
+      let contribQ = supabase
+        .from("goal_contributions")
+        .select("source_cash_account_id, amount, goals(completed)")
+        .not("source_cash_account_id", "is", null);
+      if (user) contribQ = contribQ.eq("user_id", user.id);
+      else contribQ = contribQ.is("user_id", null);
+
+      const [{ data }, { data: contribs }] = await Promise.all([q, contribQ]);
+
+      const reservedByAccount = new Map<string, number>();
+      type ContribRow = { source_cash_account_id: string | null; amount: number | string; goals: { completed: boolean } | { completed: boolean }[] | null };
+      for (const c of ((contribs || []) as ContribRow[])) {
+        if (!c.source_cash_account_id) continue;
+        const goalRef = c.goals;
+        const completed = Array.isArray(goalRef) ? goalRef[0]?.completed : goalRef?.completed;
+        if (completed) continue;  // completed goals release their reservation
+        reservedByAccount.set(
+          c.source_cash_account_id,
+          (reservedByAccount.get(c.source_cash_account_id) || 0) + Number(c.amount)
+        );
+      }
+
+      const raw = (data as CashAccount[]) || [];
+      const withReserved: CashAccount[] = raw.map((a) => ({
+        ...a,
+        reserved: Math.max(0, Math.round((reservedByAccount.get(a.id) || 0) * 100) / 100),
+      }));
+      setAccounts(withReserved);
     } catch {
       setAccounts([]);
     }
@@ -27,7 +56,7 @@ export function useCashAccounts() {
   }, [user, supabase]);
 
   useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
-  useRealtimeRefetch(["cash_accounts"], fetchAccounts);
+  useRealtimeRefetch(["cash_accounts", "goal_contributions", "goals"], fetchAccounts);
 
   const createAccount = async (data: { name: string; type: CashAccountType; balance: number; color?: string }) => {
     const maxOrder = accounts.length > 0 ? Math.max(...accounts.map((a) => a.display_order)) : 0;
@@ -60,6 +89,12 @@ export function useCashAccounts() {
   };
 
   const totalBalance = accounts.reduce((sum, a) => sum + Number(a.balance), 0);
+  const totalReserved = accounts.reduce((sum, a) => sum + (a.reserved ?? 0), 0);
+  const totalFree = totalBalance - totalReserved;
 
-  return { accounts, totalBalance, loading, refetch: fetchAccounts, createAccount, updateAccount, deleteAccount, reorderAccounts };
+  return {
+    accounts, totalBalance, totalReserved, totalFree,
+    loading, refetch: fetchAccounts,
+    createAccount, updateAccount, deleteAccount, reorderAccounts,
+  };
 }

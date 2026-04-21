@@ -408,6 +408,8 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {cashAccounts.map((acc) => {
               const Icon = ACCOUNT_ICONS[acc.type];
+              const reserved = acc.reserved ?? 0;
+              const free = Number(acc.balance) - reserved;
               return (
                 <div key={acc.id} className="group relative rounded-xl p-3.5 border border-gray-100 dark:border-gray-800 hover:border-gray-200 transition-all" style={{ background: `${acc.color}08` }}>
                   <div className="flex items-center gap-2 mb-2">
@@ -429,13 +431,37 @@ export default function DashboardPage() {
                     )}
                   </div>
                   <p className="text-xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">${Number(acc.balance).toFixed(2)}</p>
+                  {reserved > 0 && (
+                    <div className="mt-1.5 space-y-0.5">
+                      {/* Segmented bar: reserved (goal color tint) + free */}
+                      <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden flex">
+                        <div className="h-full" style={{ width: `${Number(acc.balance) > 0 ? Math.min(100, (reserved / Number(acc.balance)) * 100) : 0}%`, background: acc.color }} />
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] font-medium tabular-nums">
+                        <span className="text-gray-500 dark:text-gray-400" title="Reserved for active goals">${reserved.toFixed(2)} reserved</span>
+                        <span className={free >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}>${free.toFixed(2)} free</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
           <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
             <span className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider">Total Cash</span>
-            <span className="text-lg font-bold text-green-600 dark:text-green-400 tabular-nums">${totalCash.toFixed(2)}</span>
+            <div className="text-right">
+              <p className="text-lg font-bold text-green-600 dark:text-green-400 tabular-nums">${totalCash.toFixed(2)}</p>
+              {(() => {
+                const totalReserved = cashAccounts.reduce((s, a) => s + (a.reserved ?? 0), 0);
+                if (totalReserved <= 0) return null;
+                const totalFree = totalCash - totalReserved;
+                return (
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums mt-0.5">
+                    ${totalReserved.toFixed(2)} reserved · <span className={totalFree >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}>${totalFree.toFixed(2)} free</span>
+                  </p>
+                );
+              })()}
+            </div>
           </div>
         </div>
       )}

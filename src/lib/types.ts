@@ -268,6 +268,7 @@ export interface GoalContribution {
   id: string;
   goal_id: string;
   user_id: string | null;
+  source_cash_account_id: string | null;  // which account funded this
   amount: number;       // Positive = deposit, negative = withdrawal
   date: string;
   notes: string | null;
@@ -494,6 +495,9 @@ export interface CashAccount {
   display_order: number;
   created_at: string;
   updated_at: string;
+  // Computed client-side by useCashAccounts: amount of the balance earmarked
+  // for active goal contributions. `balance - reserved` = free to spend.
+  reserved?: number;
 }
 
 export interface OverallStats {

@@ -237,6 +237,23 @@ export default function CardsPage() {
                       </div>
                     </div>
                     <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">${Number(acc.balance).toFixed(2)}</p>
+                    {(() => {
+                      const reserved = acc.reserved ?? 0;
+                      const free = Number(acc.balance) - reserved;
+                      if (reserved <= 0) return null;
+                      const pct = Number(acc.balance) > 0 ? Math.min(100, (reserved / Number(acc.balance)) * 100) : 0;
+                      return (
+                        <div className="mt-2">
+                          <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div className="h-full" style={{ width: `${pct}%`, background: acc.color }} />
+                          </div>
+                          <div className="flex items-center justify-between text-[10px] font-medium tabular-nums mt-1">
+                            <span className="text-gray-500 dark:text-gray-400" title="Reserved for active goals">${reserved.toFixed(2)} reserved</span>
+                            <span className={free >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}>${free.toFixed(2)} free</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               );

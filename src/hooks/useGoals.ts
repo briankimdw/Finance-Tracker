@@ -119,10 +119,17 @@ export function useGoals() {
     ));
   };
 
-  const addContribution = async (goalId: string, amount: number, notes?: string, date?: string) => {
+  const addContribution = async (
+    goalId: string,
+    amount: number,
+    notes?: string,
+    date?: string,
+    sourceCashAccountId?: string | null,
+  ) => {
     await supabase.from("goal_contributions").insert({
       goal_id: goalId,
       user_id: user?.id ?? null,
+      source_cash_account_id: sourceCashAccountId || null,
       amount,
       date: date || todayEST(),
       notes: notes || null,
