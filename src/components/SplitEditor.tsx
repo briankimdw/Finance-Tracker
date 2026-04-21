@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Users, Equal, Sliders, User, AlertCircle, CheckCircle } from "lucide-react";
 import type { TripMember, Profile, SplitInput } from "@/lib/types";
@@ -45,15 +45,24 @@ export default function SplitEditor({ total, members, currentUserId, initialSpli
     })();
   }, [members, supabase]);
 
-  // Initialize from existing splits on mount/when prop changes
+  // Initialize ONCE per mount. Parent passes a new `initialSplits` array
+  // reference on every keystroke, so a naive effect would reset state
+  // constantly. Use a ref to only run the init logic the first time we
+  // have enough data (members loaded). The parent should remount this
+  // component when switching items (via `key={item.id}`) if it wants
+  // fresh state.
+  const didInitRef = useRef(false);
   useEffect(() => {
+    if (didInitRef.current) return;
+    if (members.length === 0) return;  // wait for members to load
+    didInitRef.current = true;
+
     if (!initialSplits || initialSplits.length === 0) {
       setIncluded(new Set(members.map((m) => m.user_id)));
       setCustomAmounts({});
       setMode("equal");
       return;
     }
-    // Detect whether it looks like an equal split
     const amounts = initialSplits.map((s) => s.amount);
     const minA = Math.min(...amounts);
     const maxA = Math.max(...amounts);
@@ -67,7 +76,8 @@ export default function SplitEditor({ total, members, currentUserId, initialSpli
       setCustomAmounts(cm);
       setMode("custom");
     }
-  }, [initialSplits, members]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [members]);
 
   const labelFor = (uid: string) => {
     const p = profiles[uid];

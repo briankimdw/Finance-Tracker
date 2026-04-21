@@ -133,14 +133,28 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
 
           {hasMembers && (
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><User size={11} /> Who paid</label>
-              <select value={form.paid_by} onChange={(e) => update("paid_by", e.target.value)} className={input}>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5 flex items-center gap-1"><User size={11} /> Who paid</label>
+              <div className="flex items-center gap-1.5 flex-wrap">
                 {members.map((m) => {
                   const p = profiles[m.user_id];
-                  const label = p?.display_name || p?.username || m.user_id.slice(0, 8);
-                  return <option key={m.user_id} value={m.user_id}>{m.user_id === currentUserId ? `You (${label})` : label}</option>;
+                  const name = p?.display_name || p?.username || (m.user_id === currentUserId ? "You" : m.user_id.slice(0, 8));
+                  const initial = (m.user_id === currentUserId ? "Y" : name).charAt(0).toUpperCase();
+                  const color = p?.color || "#3b82f6";
+                  const isSelected = form.paid_by === m.user_id;
+                  const isCurrentUser = m.user_id === currentUserId;
+                  return (
+                    <button key={m.user_id} type="button" onClick={() => update("paid_by", m.user_id)}
+                      className={`flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                        isSelected ? "bg-white ring-2 ring-blue-400 shadow-sm" : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"
+                      }`}>
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                        style={{ background: color }}>{initial}</div>
+                      <span className={isSelected ? "text-gray-900" : ""}>{isCurrentUser ? "You" : name}</span>
+                      {isCurrentUser && <span className="text-[9px] text-blue-500 font-semibold">(default)</span>}
+                    </button>
+                  );
                 })}
-              </select>
+              </div>
             </div>
           )}
 
@@ -166,6 +180,7 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
             }
             return (
               <SplitEditor
+                key="quicklog"
                 total={amt}
                 members={members}
                 currentUserId={currentUserId}

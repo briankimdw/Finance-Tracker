@@ -306,39 +306,61 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
             </div>
           )}
 
-          {/* Paid by (shared trips only, done items only) */}
+          {/* Paid by + Split — grouped "who's this for" block */}
           {members.length >= 2 && form.status === "done" && (
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1">
-                <User size={11} /> Paid by
-              </label>
-              <select value={form.paid_by} onChange={(e) => update("paid_by", e.target.value)} className={input}>
-                {members.map((m) => {
-                  const p = memberProfiles[m.user_id];
-                  const label = p?.display_name || p?.username || (m.user_id === currentUserId ? "You" : m.user_id.slice(0, 8));
-                  return <option key={m.user_id} value={m.user_id}>{m.user_id === currentUserId ? `You (${label})` : label}{m.role === "owner" ? " · owner" : ""}</option>;
-                })}
-              </select>
+            <div className="bg-blue-50/40 border border-blue-100 rounded-xl p-3 space-y-3">
+              <p className="text-[11px] font-semibold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
+                <User size={11} /> Who paid &amp; who&apos;s it for?
+              </p>
+
+              {/* Paid by — styled as chip buttons, one per member */}
+              <div>
+                <label className="block text-[10px] font-medium text-blue-900/70 mb-1.5">Paid by</label>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {members.map((m) => {
+                    const p = memberProfiles[m.user_id];
+                    const name = p?.display_name || p?.username || (m.user_id === currentUserId ? "You" : m.user_id.slice(0, 8));
+                    const initial = (m.user_id === currentUserId ? "Y" : name).charAt(0).toUpperCase();
+                    const color = p?.color || "#3b82f6";
+                    const isSelected = form.paid_by === m.user_id;
+                    const isCurrentUser = m.user_id === currentUserId;
+                    return (
+                      <button key={m.user_id} type="button" onClick={() => update("paid_by", m.user_id)}
+                        className={`flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                          isSelected ? "bg-white ring-2 ring-blue-400 shadow-sm" : "bg-white/80 border border-gray-200 text-gray-600 hover:border-gray-300"
+                        }`}>
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                          style={{ background: color }}>{initial}</div>
+                        <span className={isSelected ? "text-gray-900" : ""}>{isCurrentUser ? "You" : name}</span>
+                        {isCurrentUser && <span className="text-[9px] text-blue-500 font-semibold">(default)</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Split editor */}
+              {(() => {
+                const actualNum = parseFloat(form.actual_amount) || parseFloat(form.planned_amount) || 0;
+                if (actualNum <= 0) return (
+                  <p className="text-[11px] text-gray-400">Enter an amount to configure the split.</p>
+                );
+                return (
+                  <SplitEditor
+                    key={item?.id ?? "new"}
+                    total={actualNum}
+                    members={members}
+                    currentUserId={currentUserId ?? null}
+                    initialSplits={item?.splits?.map((s) => ({ user_id: s.user_id, amount: Number(s.amount) }))}
+                    onChange={(s, valid) => {
+                      setSplits(s);
+                      setSplitsValid(valid);
+                    }}
+                  />
+                );
+              })()}
             </div>
           )}
-
-          {/* Split editor — shared trips, done items, non-zero amount */}
-          {members.length >= 2 && form.status === "done" && (() => {
-            const actualNum = parseFloat(form.actual_amount) || parseFloat(form.planned_amount) || 0;
-            if (actualNum <= 0) return null;
-            return (
-              <SplitEditor
-                total={actualNum}
-                members={members}
-                currentUserId={currentUserId ?? null}
-                initialSplits={item?.splits?.map((s) => ({ user_id: s.user_id, amount: Number(s.amount) }))}
-                onChange={(s, valid) => {
-                  setSplits(s);
-                  setSplitsValid(valid);
-                }}
-              />
-            );
-          })()}
 
           {/* URL */}
           <div>
