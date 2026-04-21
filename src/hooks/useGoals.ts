@@ -157,6 +157,35 @@ export function useGoals() {
     }
   };
 
+  /** Invite a friend (by user_id) to a goal. No email sent; friend accepts in-app. */
+  const inviteFriendToGoal = async (
+    goalId: string,
+    friendUserId: string
+  ): Promise<{ ok: boolean; error?: string }> => {
+    if (!user) return { ok: false, error: "Sign in first" };
+    await supabase.from("goals").update({ is_shared: true }).eq("id", goalId);
+    const { data: existing } = await supabase
+      .from("goal_invites")
+      .select("*")
+      .eq("goal_id", goalId)
+      .eq("target_user_id", friendUserId)
+      .is("accepted_at", null)
+      .maybeSingle();
+    if (existing) return { ok: false, error: "Invite already pending" };
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    let token = "";
+    for (let i = 0; i < 20; i++) token += chars[Math.floor(Math.random() * chars.length)];
+    const { error } = await supabase.from("goal_invites").insert({
+      goal_id: goalId,
+      token,
+      target_user_id: friendUserId,
+      invited_by: user.id,
+    });
+    if (error) return { ok: false, error: error.message };
+    await fetchGoals();
+    return { ok: true };
+  };
+
   const removeMember = async (goalId: string, memberUserId: string) => {
     await supabase.from("goal_members").delete().eq("goal_id", goalId).eq("user_id", memberUserId);
     await fetchGoals();
@@ -172,6 +201,6 @@ export function useGoals() {
     goals, loading, refetch: fetchGoals,
     createGoal, updateGoal, deleteGoal, reorderGoals,
     addContribution, deleteContribution,
-    inviteToGoal, removeMember, leaveGoal,
+    inviteToGoal, inviteFriendToGoal, removeMember, leaveGoal,
   };
 }

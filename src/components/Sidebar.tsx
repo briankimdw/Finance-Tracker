@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useFriends } from "@/hooks/useFriends";
+import { usePendingInvites } from "@/hooks/usePendingInvites";
 import {
   LayoutDashboard, Package, History, CalendarDays, Wallet, CreditCard, Coins, WalletCards, Target, HandCoins, PieChart, Plane, Users,
   LogOut, LogIn, TrendingUp, User,
@@ -36,7 +37,8 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   const { incoming } = useFriends();
-  const pendingCount = incoming.length;
+  const { trips: tripInvites, goals: goalInvites } = usePendingInvites();
+  const pendingCount = incoming.length + tripInvites.length + goalInvites.length;
 
   return (
     <>

@@ -30,7 +30,7 @@ function formatTargetDate(targetDate: string | null, days: number | null): strin
 }
 
 export default function GoalsPage() {
-  const { goals, loading, createGoal, updateGoal, deleteGoal, reorderGoals, addContribution, deleteContribution, inviteToGoal, removeMember, leaveGoal } = useGoals();
+  const { goals, loading, createGoal, updateGoal, deleteGoal, reorderGoals, addContribution, deleteContribution, inviteToGoal, inviteFriendToGoal, removeMember, leaveGoal } = useGoals();
   const { trips, createTrip } = useTrips();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editGoal, setEditGoal] = useState<Goal | null>(null);
@@ -392,7 +392,7 @@ export default function GoalsPage() {
 
       <AddGoalModal isOpen={showAddModal} goal={editGoal} onClose={() => { setShowAddModal(false); setEditGoal(null); }} onSave={handleSave} />
       <AddContributionModal isOpen={!!contribGoal} goal={contribGoal} onClose={() => setContribGoal(null)} onSave={addContribution} />
-      <InviteGoalMembersModal isOpen={!!inviteGoal} goal={inviteGoal} onClose={() => setInviteGoal(null)} onInvite={inviteToGoal} onRemoveMember={removeMember} />
+      <InviteGoalMembersModal isOpen={!!inviteGoal} goal={inviteGoal} onClose={() => setInviteGoal(null)} onInvite={inviteToGoal} onInviteFriend={inviteFriendToGoal} onRemoveMember={removeMember} />
       <AddTripModal
         isOpen={!!tripFromGoalId}
         defaultGoalId={tripFromGoalId}

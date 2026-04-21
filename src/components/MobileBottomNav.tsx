@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useFriends } from "@/hooks/useFriends";
+import { usePendingInvites } from "@/hooks/usePendingInvites";
 
 const primaryTabs = [
   { href: "/", label: "Home", icon: LayoutDashboard },
@@ -35,7 +36,8 @@ export default function MobileBottomNav() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   const { incoming } = useFriends();
-  const pendingCount = incoming.length;
+  const { trips: tripInvites, goals: goalInvites } = usePendingInvites();
+  const pendingCount = incoming.length + tripInvites.length + goalInvites.length;
   const [moreOpen, setMoreOpen] = useState(false);
 
   const isActive = (href: string) => pathname === href;

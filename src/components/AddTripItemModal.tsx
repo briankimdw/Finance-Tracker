@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import {
   X, Bed, Plane, Utensils, MapPin, ShoppingBag, Package,
-  DollarSign, Calendar, Link as LinkIcon, Clock, Hash,
+  DollarSign, Calendar, Link as LinkIcon, Clock, Hash, User,
 } from "lucide-react";
-import type { TripItem, TripItemCategory, TripItemStatus } from "@/lib/types";
+import { createClient } from "@/lib/supabase/client";
+import type { TripItem, TripItemCategory, TripItemStatus, TripMember, Profile } from "@/lib/types";
 
 const CATEGORIES: { value: TripItemCategory; label: string; Icon: typeof Bed }[] = [
   { value: "lodging", label: "Lodging", Icon: Bed },
@@ -28,6 +29,9 @@ interface AddTripItemModalProps {
   tripColor?: string;
   item?: TripItem | null;
   remainingBudget: number;
+  members?: TripMember[];             // for paid_by dropdown on shared trips
+  defaultStatus?: TripItemStatus;      // "done" when launched from Quick-log
+  currentUserId?: string | null;
   onClose: () => void;
   onSave: (data: {
     name: string;
@@ -43,11 +47,14 @@ interface AddTripItemModalProps {
     status?: TripItemStatus;
     notes?: string;
     url?: string;
+    paid_by?: string | null;
   }) => Promise<void>;
 }
 
-export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", remainingBudget, onClose, onSave }: AddTripItemModalProps) {
+export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", remainingBudget, members = [], defaultStatus, currentUserId, onClose, onSave }: AddTripItemModalProps) {
+  const supabase = createClient();
   const [loading, setLoading] = useState(false);
+  const [memberProfiles, setMemberProfiles] = useState<Record<string, Profile>>({});
   const [form, setForm] = useState({
     name: "",
     category: "activity" as TripItemCategory,
@@ -62,6 +69,7 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
     status: "planned" as TripItemStatus,
     notes: "",
     url: "",
+    paid_by: "",
   });
 
   useEffect(() => {
@@ -80,6 +88,7 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
         status: item.status,
         notes: item.notes ?? "",
         url: item.url ?? "",
+        paid_by: item.paid_by ?? currentUserId ?? "",
       });
     } else {
       setForm({
@@ -93,12 +102,25 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
         end_time: "",
         location: "",
         confirmation_code: "",
-        status: "planned",
+        status: defaultStatus || "planned",
         notes: "",
         url: "",
+        paid_by: currentUserId ?? "",
       });
     }
-  }, [item, isOpen]);
+  }, [item, isOpen, defaultStatus, currentUserId]);
+
+  // Fetch profiles for the paid_by selector
+  useEffect(() => {
+    if (!isOpen || members.length === 0) return;
+    (async () => {
+      const ids = members.map((m) => m.user_id);
+      const { data: profs } = await supabase.from("profiles").select("*").in("id", ids);
+      const map: Record<string, Profile> = {};
+      for (const p of (profs as Profile[]) || []) map[p.id] = p;
+      setMemberProfiles(map);
+    })();
+  }, [isOpen, members, supabase]);
 
   if (!isOpen) return null;
 
@@ -123,6 +145,7 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
       status: form.status,
       notes: form.notes.trim() || undefined,
       url: form.url.trim() || undefined,
+      paid_by: form.paid_by || currentUserId || null,
     });
     setLoading(false);
     onClose();
@@ -273,6 +296,23 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
               </label>
               <input type="number" min="0" step="0.01" value={form.actual_amount} onChange={(e) => update("actual_amount", e.target.value)} className={input} placeholder={form.planned_amount || "0.00"} />
               <p className="text-[11px] text-gray-400 mt-1">Leave blank to use the planned amount.</p>
+            </div>
+          )}
+
+          {/* Paid by (shared trips only, done items only) */}
+          {members.length >= 2 && form.status === "done" && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1">
+                <User size={11} /> Paid by
+              </label>
+              <select value={form.paid_by} onChange={(e) => update("paid_by", e.target.value)} className={input}>
+                {members.map((m) => {
+                  const p = memberProfiles[m.user_id];
+                  const label = p?.display_name || p?.username || (m.user_id === currentUserId ? "You" : m.user_id.slice(0, 8));
+                  return <option key={m.user_id} value={m.user_id}>{m.user_id === currentUserId ? `You (${label})` : label}{m.role === "owner" ? " · owner" : ""}</option>;
+                })}
+              </select>
+              <p className="text-[11px] text-gray-400 mt-1">Tracks the per-person balance at the bottom of the trip.</p>
             </div>
           )}
 

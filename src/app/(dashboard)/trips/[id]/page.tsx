@@ -1,22 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Plus, MapPin, Calendar, Check, X, Pencil, Trash2, ExternalLink,
   TrendingUp, TrendingDown, Wallet, PiggyBank, Circle, List, CalendarDays,
-  Users, UserPlus, LogOut, Target, Clock, Hash, Bed, Plane,
+  Users, UserPlus, LogOut, Target, Clock, Hash, Bed, Plane, Zap,
   Utensils, ShoppingBag, Package,
 } from "lucide-react";
 import { useTrips } from "@/hooks/useTrips";
 import { useGoals } from "@/hooks/useGoals";
+import { useAuth } from "@/context/AuthContext";
+import { createClient } from "@/lib/supabase/client";
 import { getTripIcon, getCategoryIcon } from "@/lib/tripIcons";
 import AddTripItemModal from "@/components/AddTripItemModal";
 import InviteTripMembersModal from "@/components/InviteTripMembersModal";
 import TripCalendar from "@/components/TripCalendar";
-import type { TripItem, TripItemCategory, TripItemStatus } from "@/lib/types";
+import TripSettlement from "@/components/TripSettlement";
+import QuickLogPurchaseModal from "@/components/QuickLogPurchaseModal";
+import type { TripItem, TripItemCategory, TripItemStatus, Profile } from "@/lib/types";
 
 function fmtDate(d: string | null): string {
   if (!d) return "";
@@ -50,9 +54,11 @@ export default function TripDetailPage() {
   const {
     trips, loading, addItem, updateItem, deleteItem,
     markItemDone, markItemSkipped, markItemPlanned,
-    deleteTrip, updateTrip, inviteToTrip, removeTripMember, leaveTrip,
+    deleteTrip, updateTrip, inviteToTrip, inviteFriendToTrip, removeTripMember, leaveTrip, quickLogPurchase,
   } = useTrips();
   const { goals } = useGoals();
+  const { user } = useAuth();
+  const supabase = createClient();
   const trip = trips.find((t) => t.id === id);
 
   const [showItemModal, setShowItemModal] = useState(false);
@@ -61,6 +67,20 @@ export default function TripDetailPage() {
   const [categoryFilter, setCategoryFilter] = useState<"all" | TripItemCategory>("all");
   const [view, setView] = useState<"list" | "calendar">("list");
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showQuickLog, setShowQuickLog] = useState(false);
+  const [memberProfiles, setMemberProfiles] = useState<Record<string, Profile>>({});
+
+  // Fetch member profiles for paid-by display
+  useEffect(() => {
+    if (!trip || trip.members.length === 0) return;
+    (async () => {
+      const ids = trip.members.map((m) => m.user_id);
+      const { data } = await supabase.from("profiles").select("*").in("id", ids);
+      const map: Record<string, Profile> = {};
+      for (const p of (data as Profile[]) || []) map[p.id] = p;
+      setMemberProfiles(map);
+    })();
+  }, [trip, supabase]);
 
   if (loading && !trip) {
     return <div className="text-center text-gray-400 py-20">Loading trip...</div>;
@@ -274,6 +294,11 @@ export default function TripDetailPage() {
         </div>
       </div>
 
+      {/* Settlement / who-paid-what (shared trips only) */}
+      {trip.members.length >= 2 && (
+        <TripSettlement trip={trip} currentUserId={user?.id ?? null} />
+      )}
+
       {/* Itinerary header + view toggle */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
@@ -290,6 +315,11 @@ export default function TripDetailPage() {
               <CalendarDays size={13} /> Calendar
             </button>
           </div>
+          <button onClick={() => setShowQuickLog(true)}
+            className="bg-white border border-amber-200 hover:border-amber-300 hover:bg-amber-50 text-amber-700 text-sm font-medium px-3 py-2 rounded-lg flex items-center gap-1.5 transition-all"
+            title="Quick-log a purchase you just made (adds as 'done' immediately)">
+            <Zap size={14} /> Log purchase
+          </button>
           <button onClick={() => { setEditItem(null); setShowItemModal(true); }} className="text-white text-sm font-medium px-3 py-2 rounded-lg flex items-center gap-1.5 transition-all hover:shadow-lg"
             style={{ background: trip.color, boxShadow: `0 4px 12px ${trip.color}33` }}>
             <Plus size={14} /> Add item
@@ -344,7 +374,11 @@ export default function TripDetailPage() {
           ) : (
             <div className="space-y-2">
               {items.map((item, i) => (
-                <TripItemCard key={item.id} item={item} trip={trip} onEdit={() => { setEditItem(item); setShowItemModal(true); }}
+                <TripItemCard key={item.id} item={item} trip={trip}
+                  memberProfiles={memberProfiles}
+                  currentUserId={user?.id ?? null}
+                  isShared={trip.members.length >= 2}
+                  onEdit={() => { setEditItem(item); setShowItemModal(true); }}
                   onDone={() => markItemDone(item)} onSkip={() => markItemSkipped(item.id)} onReset={() => markItemPlanned(item.id)}
                   onDelete={() => { if (confirm(`Delete "${item.name}"?`)) deleteItem(item.id); }} delay={i * 0.02} />
               ))}
@@ -359,6 +393,8 @@ export default function TripDetailPage() {
         tripColor={trip.color}
         item={editItem}
         remainingBudget={unallocated}
+        members={trip.members}
+        currentUserId={user?.id ?? null}
         onClose={() => { setShowItemModal(false); setEditItem(null); }}
         onSave={handleAddOrSave}
       />
@@ -367,7 +403,17 @@ export default function TripDetailPage() {
         trip={trip}
         onClose={() => setShowInviteModal(false)}
         onInvite={inviteToTrip}
+        onInviteFriend={inviteFriendToTrip}
         onRemoveMember={removeTripMember}
+      />
+      <QuickLogPurchaseModal
+        isOpen={showQuickLog}
+        tripColor={trip.color}
+        tripName={trip.name}
+        members={trip.members}
+        currentUserId={user?.id ?? null}
+        onClose={() => setShowQuickLog(false)}
+        onSave={async (data) => { await quickLogPurchase(trip.id, data); }}
       />
     </div>
   );
@@ -397,6 +443,7 @@ function LegendDot({ color, label, opacity = 1 }: { color: string; label: string
 
 function TripItemCard({
   item, trip, onEdit, onDone, onSkip, onReset, onDelete, delay,
+  memberProfiles, currentUserId, isShared,
 }: {
   item: TripItem;
   trip: { color: string };
@@ -406,6 +453,9 @@ function TripItemCard({
   onReset: () => void;
   onDelete: () => void;
   delay?: number;
+  memberProfiles?: Record<string, Profile>;
+  currentUserId?: string | null;
+  isShared?: boolean;
 }) {
   const CatIcon = getCategoryIcon(item.category);
   const planned = Number(item.planned_amount);
@@ -414,7 +464,11 @@ function TripItemCard({
 
   const isLodging = item.category === "lodging";
   const isTransport = item.category === "transport";
-  const hasBookingInfo = !!(item.location || item.confirmation_code || item.start_time || item.end_time || item.end_date);
+  const payerId = item.paid_by || item.user_id;
+  const payerProfile = payerId ? memberProfiles?.[payerId] : undefined;
+  const payerName = !payerId ? null : payerId === currentUserId ? "You" : (payerProfile?.display_name || payerProfile?.username || payerId.slice(0, 8));
+  const showPayer = isShared && item.status === "done" && !!payerId;
+  const hasBookingInfo = !!(item.location || item.confirmation_code || item.start_time || item.end_time || item.end_date) || showPayer;
 
   return (
     <motion.div
@@ -488,9 +542,18 @@ function TripItemCard({
           </div>
         </div>
 
-        {/* Booking info block — shown for lodging/transport or when any booking field set */}
-        {hasBookingInfo && (isLodging || isTransport || item.location || item.confirmation_code) && (
+        {/* Booking info block — shown for lodging/transport, when any booking field set, or when shared+done */}
+        {hasBookingInfo && (isLodging || isTransport || item.location || item.confirmation_code || showPayer) && (
           <div className="mt-2.5 pl-12 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
+            {showPayer && (
+              <div className="flex items-center gap-1.5 text-gray-500">
+                <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold text-white shrink-0"
+                  style={{ background: `hsl(${((payerId?.charCodeAt(0) || 0) * 31) % 360}, 55%, 55%)` }}>
+                  {(payerName || "?").charAt(0).toUpperCase()}
+                </div>
+                <span>Paid by <span className="font-medium text-gray-700">{payerName}</span></span>
+              </div>
+            )}
             {item.location && (
               <div className="flex items-center gap-1.5 text-gray-500">
                 <MapPin size={11} className="text-gray-400 shrink-0" />

@@ -254,6 +254,7 @@ export interface GoalInvite {
   goal_id: string;
   token: string;
   email: string | null;
+  target_user_id: string | null;
   invited_by: string | null;
   expires_at: string;
   accepted_by: string | null;
@@ -321,6 +322,7 @@ export interface TripInvite {
   trip_id: string;
   token: string;
   email: string | null;
+  target_user_id: string | null;   // direct invite to a specific user (no email needed)
   invited_by: string | null;
   expires_at: string;
   accepted_by: string | null;
@@ -332,6 +334,7 @@ export interface TripItem {
   id: string;
   trip_id: string;
   user_id: string | null;
+  paid_by: string | null;      // who actually paid (may differ from creator)
   name: string;
   category: TripItemCategory;
   planned_amount: number;
@@ -347,6 +350,21 @@ export interface TripItem {
   url: string | null;
   display_order: number;
   created_at: string;
+}
+
+// Balance entry per member on a shared trip
+export interface TripMemberBalance {
+  userId: string;
+  paid: number;        // total actual_amount they paid for done items
+  share: number;       // their fair share (totalActual / memberCount)
+  balance: number;     // paid - share: positive = owed money, negative = owes money
+}
+
+// A concrete settlement suggestion: `from` owes `to` `amount`
+export interface TripSettlementEntry {
+  fromUserId: string;
+  toUserId: string;
+  amount: number;
 }
 
 export interface TripWithStats extends Trip {
@@ -365,6 +383,9 @@ export interface TripWithStats extends Trip {
   overBudget: boolean;     // totalActual + plannedUpcoming > total_budget
   daysUntilStart: number | null;
   daysUntilEnd: number | null;
+  // Per-member spending balances (only meaningful on shared trips with ≥2 members)
+  balances: TripMemberBalance[];
+  settlements: TripSettlementEntry[];
 }
 
 // ---- Debts / IOUs ----

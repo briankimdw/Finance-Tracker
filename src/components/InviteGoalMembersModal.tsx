@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { X, Mail, Copy, Users, Check, Trash2, CheckCircle, AlertCircle, UserPlus, Sparkles } from "lucide-react";
+import { X, Mail, Copy, Users, Check, Trash2, CheckCircle, AlertCircle, UserPlus, Sparkles, Search, Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useFriends } from "@/hooks/useFriends";
@@ -20,10 +20,11 @@ interface InviteGoalMembersModalProps {
   goal: GoalWithStats | null;
   onClose: () => void;
   onInvite: (goalId: string, email: string) => Promise<InviteResult | null>;
+  onInviteFriend?: (goalId: string, friendUserId: string) => Promise<{ ok: boolean; error?: string }>;
   onRemoveMember?: (goalId: string, userId: string) => Promise<void>;
 }
 
-export default function InviteGoalMembersModal({ isOpen, goal, onClose, onInvite, onRemoveMember }: InviteGoalMembersModalProps) {
+export default function InviteGoalMembersModal({ isOpen, goal, onClose, onInvite, onInviteFriend, onRemoveMember }: InviteGoalMembersModalProps) {
   const { user } = useAuth();
   const { friends } = useFriends();
   const supabase = createClient();
@@ -33,7 +34,8 @@ export default function InviteGoalMembersModal({ isOpen, goal, onClose, onInvite
   const [memberProfiles, setMemberProfiles] = useState<Record<string, Profile>>({});
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ kind: "success" | "warn" | "error"; text: string } | null>(null);
-  const [addingFriendId, setAddingFriendId] = useState<string | null>(null);
+  const [invitingFriendId, setInvitingFriendId] = useState<string | null>(null);
+  const [friendQuery, setFriendQuery] = useState("");
 
   useEffect(() => {
     if (!isOpen || !goal) return;
@@ -73,28 +75,24 @@ export default function InviteGoalMembersModal({ isOpen, goal, onClose, onInvite
     setPendingInvites((data as GoalInvite[]) || []);
   };
 
-  const handleAddFriend = async (friendUserId: string) => {
-    setAddingFriendId(friendUserId);
+  const handleInviteFriend = async (friendUserId: string) => {
+    if (!onInviteFriend) return;
+    setInvitingFriendId(friendUserId);
     setNotice(null);
-    // Ensure goal is marked shared
-    if (!goal.is_shared) {
-      await supabase.from("goals").update({ is_shared: true }).eq("id", goal.id);
-    }
-    const { error } = await supabase.from("goal_members").insert({
-      goal_id: goal.id,
-      user_id: friendUserId,
-      role: "member",
-    });
-    setAddingFriendId(null);
-    if (error) {
-      if ((error as unknown as { code?: string }).code === "23505") {
-        setNotice({ kind: "warn", text: "Already on this goal." });
-      } else {
-        setNotice({ kind: "error", text: error.message });
-      }
+    const res = await onInviteFriend(goal.id, friendUserId);
+    setInvitingFriendId(null);
+    if (res.ok) {
+      setNotice({ kind: "success", text: "Invite sent — they'll see it on their Friends page." });
     } else {
-      setNotice({ kind: "success", text: "Added to the goal." });
+      setNotice({ kind: "warn", text: res.error || "Couldn't send invite." });
     }
+    const { data } = await supabase
+      .from("goal_invites")
+      .select("*")
+      .eq("goal_id", goal.id)
+      .is("accepted_at", null)
+      .order("created_at", { ascending: false });
+    setPendingInvites((data as GoalInvite[]) || []);
   };
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -144,8 +142,18 @@ export default function InviteGoalMembersModal({ isOpen, goal, onClose, onInvite
   const inputClass = "w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm";
 
   const memberIds = new Set(goal.members.map((m) => m.user_id));
+  const pendingUserIds = new Set(pendingInvites.map((p) => p.target_user_id).filter((id): id is string => !!id));
   const pendingEmails = new Set(pendingInvites.map((p) => (p.email || "").toLowerCase()));
-  const invitableFriends = friends.filter((f) => !memberIds.has(f.userId));
+  const q = friendQuery.trim().toLowerCase();
+  const invitableFriends = friends
+    .filter((f) => !memberIds.has(f.userId))
+    .filter((f) => {
+      if (!q) return true;
+      const name = (f.profile?.display_name || "").toLowerCase();
+      const username = (f.profile?.username || "").toLowerCase();
+      const email = (f.profile?.email || "").toLowerCase();
+      return name.includes(q) || username.includes(q) || email.includes(q);
+    });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -159,10 +167,10 @@ export default function InviteGoalMembersModal({ isOpen, goal, onClose, onInvite
           <button onClick={onClose} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"><X size={20} /></button>
         </div>
 
-        {/* Friends quick-add */}
+        {/* Friends lookup + invite */}
         <div className="p-5 border-b border-gray-100">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5"><Users size={12} /> Invite friends</h3>
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5"><Users size={12} /> Invite a friend</h3>
             <Link href="/friends" className="text-[11px] text-blue-600 hover:text-blue-700 font-medium">Manage →</Link>
           </div>
           {friends.length === 0 ? (
@@ -172,37 +180,50 @@ export default function InviteGoalMembersModal({ isOpen, goal, onClose, onInvite
                 <div>
                   <p className="text-xs font-semibold text-blue-900">No friends yet</p>
                   <p className="text-[11px] text-blue-700 mt-0.5">
-                    <Link href="/friends" className="underline font-medium">Add friends</Link> by username or email, and you can invite them here with one click.
+                    <Link href="/friends" className="underline font-medium">Add friends</Link> by username or email. Then invite them here.
                   </p>
                 </div>
               </div>
             </div>
-          ) : invitableFriends.length === 0 ? (
-            <p className="text-xs text-gray-400">All your friends are already on this goal.</p>
           ) : (
-            <div className="space-y-1.5 max-h-56 overflow-y-auto">
-              {invitableFriends.map((f) => {
-                const initial = (f.profile?.display_name || f.profile?.username || "?").charAt(0).toUpperCase();
-                const isPending = f.profile?.email ? pendingEmails.has(f.profile.email.toLowerCase()) : false;
-                return (
-                  <div key={f.userId} className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 text-xs font-semibold text-blue-700">{initial}</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{f.profile?.display_name || f.profile?.username || "Friend"}</p>
-                      <p className="text-[11px] text-gray-400 truncate">{f.profile?.username ? <>@{f.profile.username}</> : f.profile?.email}</p>
-                    </div>
-                    {isPending ? (
-                      <span className="text-[10px] font-semibold text-amber-600 px-2 py-1">PENDING</span>
-                    ) : (
-                      <button onClick={() => handleAddFriend(f.userId)} disabled={addingFriendId === f.userId}
-                        className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
-                        <UserPlus size={11} /> Add
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            <>
+              <div className="relative mb-2">
+                <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input type="text" value={friendQuery} onChange={(e) => setFriendQuery(e.target.value)}
+                  placeholder="Search friends…"
+                  className="w-full bg-white border border-gray-200 rounded-lg pl-7 pr-3 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-xs" />
+              </div>
+              {invitableFriends.length === 0 ? (
+                <p className="text-xs text-gray-400">{q ? "No friends match." : "All your friends are already on this goal."}</p>
+              ) : (
+                <div className="space-y-1.5 max-h-56 overflow-y-auto">
+                  {invitableFriends.map((f) => {
+                    const initial = (f.profile?.display_name || f.profile?.username || "?").charAt(0).toUpperCase();
+                    const pendingByEmail = f.profile?.email ? pendingEmails.has(f.profile.email.toLowerCase()) : false;
+                    const pendingByFriend = pendingUserIds.has(f.userId);
+                    const isPending = pendingByEmail || pendingByFriend;
+                    return (
+                      <div key={f.userId} className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 text-xs font-semibold text-blue-700">{initial}</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{f.profile?.display_name || f.profile?.username || "Friend"}</p>
+                          <p className="text-[11px] text-gray-400 truncate">{f.profile?.username ? <>@{f.profile.username}</> : f.profile?.email}</p>
+                        </div>
+                        {isPending ? (
+                          <span className="text-[10px] font-semibold text-amber-600 flex items-center gap-1 px-2 py-1"><Clock size={10} /> PENDING</span>
+                        ) : (
+                          <button onClick={() => handleInviteFriend(f.userId)} disabled={invitingFriendId === f.userId}
+                            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
+                            <UserPlus size={11} /> Invite
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-[11px] text-gray-400 mt-2">They&apos;ll see an invite on their Friends page and have to accept it to join.</p>
+            </>
           )}
         </div>
 

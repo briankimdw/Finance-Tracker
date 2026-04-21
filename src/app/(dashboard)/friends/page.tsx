@@ -1,14 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   UserPlus, Check, X, Clock, Users, AlertCircle, CheckCircle,
-  AtSign, Search, Trash2, User as UserIcon, Sparkles,
+  AtSign, Search, Trash2, User as UserIcon, Sparkles, Plane, Target, MapPin,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useFriends } from "@/hooks/useFriends";
 import { useProfile } from "@/hooks/useProfile";
+import { usePendingInvites } from "@/hooks/usePendingInvites";
+import { getTripIcon } from "@/lib/tripIcons";
+import { getGoalIcon } from "@/lib/goalIcons";
 
 function Avatar({ name, size = 40 }: { name: string | null | undefined; size?: number }) {
   const initial = (name || "?").charAt(0).toUpperCase();
@@ -26,6 +30,7 @@ export default function FriendsPage() {
   const { user } = useAuth();
   const { profile, setUsername, updateDisplayName } = useProfile();
   const { friends, incoming, outgoing, loading, sendRequest, acceptRequest, rejectRequest, cancelRequest, removeFriend } = useFriends();
+  const { trips: tripInvites, goals: goalInvites, acceptTripInvite, declineTripInvite, acceptGoalInvite, declineGoalInvite } = usePendingInvites();
 
   const [usernameInput, setUsernameInput] = useState("");
   const [usernameSaving, setUsernameSaving] = useState(false);
@@ -179,6 +184,80 @@ export default function FriendsPage() {
           Only verified friends can be added to your trips without email invites.
         </p>
       </div>
+
+      {/* Pending trip/goal invites */}
+      {(tripInvites.length > 0 || goalInvites.length > 0) && (
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Plane size={14} className="text-gray-400" />
+              <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">You&apos;re invited</h2>
+            </div>
+            <span className="text-xs font-medium bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full">{tripInvites.length + goalInvites.length}</span>
+          </div>
+          <div className="space-y-2">
+            {tripInvites.map(({ invite, trip, inviter }) => {
+              if (!trip) return null;
+              const Icon = getTripIcon(trip.icon);
+              return (
+                <motion.div key={invite.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-sky-50/50 border border-sky-100">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: trip.color, color: "white" }}>
+                    <Icon size={16} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-sky-700">
+                        <Plane size={10} /> TRIP
+                      </span>
+                      <p className="text-sm font-semibold text-gray-900 truncate">{trip.name}</p>
+                    </div>
+                    <p className="text-[11px] text-gray-500 truncate">
+                      {inviter ? (inviter.display_name || inviter.username || "Someone") : "Someone"} invited you
+                      {trip.destination && <> · <MapPin size={9} className="inline -mt-0.5" /> {trip.destination}</>}
+                    </p>
+                  </div>
+                  <button onClick={() => acceptTripInvite(invite)} className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
+                    <Check size={12} /> Accept
+                  </button>
+                  <button onClick={() => declineTripInvite(invite)} className="border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
+                    <X size={12} /> Decline
+                  </button>
+                </motion.div>
+              );
+            })}
+            {goalInvites.map(({ invite, goal, inviter }) => {
+              if (!goal) return null;
+              const Icon = getGoalIcon(goal.icon);
+              return (
+                <motion.div key={invite.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-blue-50/50 border border-blue-100">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${goal.color}`, color: "white" }}>
+                    <Icon size={16} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
+                        <Target size={10} /> GOAL
+                      </span>
+                      <p className="text-sm font-semibold text-gray-900 truncate">{goal.name}</p>
+                    </div>
+                    <p className="text-[11px] text-gray-500 truncate">
+                      {inviter ? (inviter.display_name || inviter.username || "Someone") : "Someone"} invited you to save together · ${Number(goal.target_amount).toFixed(0)} target
+                    </p>
+                  </div>
+                  <button onClick={() => acceptGoalInvite(invite)} className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
+                    <Check size={12} /> Accept
+                  </button>
+                  <button onClick={() => declineGoalInvite(invite)} className="border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
+                    <X size={12} /> Decline
+                  </button>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Incoming requests */}
       {incoming.length > 0 && (
