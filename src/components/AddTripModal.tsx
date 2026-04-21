@@ -4,8 +4,10 @@ import { useState, useEffect } from "react";
 import {
   X, Plane, Globe, MapPin, Compass, Mountain, Palmtree,
   Building2, Tent, Ship, Backpack, Camera, Heart,
-  Image as ImageIcon, DollarSign, Calendar,
+  Image as ImageIcon, DollarSign, Calendar, Target, Users,
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { useGoals } from "@/hooks/useGoals";
 import type { Trip, TripStatus } from "@/lib/types";
 
 const COLORS = [
@@ -39,6 +41,7 @@ const STATUSES: { value: TripStatus; label: string }[] = [
 interface AddTripModalProps {
   isOpen: boolean;
   trip?: Trip | null;
+  defaultGoalId?: string | null;  // preselect a goal when invoked from Goals page
   onClose: () => void;
   onSave: (data: {
     name: string;
@@ -51,10 +54,14 @@ interface AddTripModalProps {
     notes?: string;
     image_url?: string;
     status?: TripStatus;
+    goal_id?: string | null;
+    is_shared?: boolean;
   }) => Promise<void>;
 }
 
-export default function AddTripModal({ isOpen, trip, onClose, onSave }: AddTripModalProps) {
+export default function AddTripModal({ isOpen, trip, defaultGoalId, onClose, onSave }: AddTripModalProps) {
+  const { user } = useAuth();
+  const { goals } = useGoals();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: "",
@@ -67,6 +74,8 @@ export default function AddTripModal({ isOpen, trip, onClose, onSave }: AddTripM
     notes: "",
     image_url: "",
     status: "planning" as TripStatus,
+    goal_id: "",
+    is_shared: false,
   });
 
   useEffect(() => {
@@ -82,26 +91,33 @@ export default function AddTripModal({ isOpen, trip, onClose, onSave }: AddTripM
         notes: trip.notes ?? "",
         image_url: trip.image_url ?? "",
         status: trip.status,
+        goal_id: trip.goal_id ?? "",
+        is_shared: !!trip.is_shared,
       });
     } else {
+      // Preselect goal if provided; also prefill name/budget/destination from goal
+      const g = defaultGoalId ? goals.find((x) => x.id === defaultGoalId) : null;
       setForm({
-        name: "",
+        name: g?.name ?? "",
         destination: "",
         start_date: "",
-        end_date: "",
-        total_budget: "",
-        color: "#3b82f6",
+        end_date: g?.target_date ?? "",
+        total_budget: g ? String(g.target_amount ?? "") : "",
+        color: g?.color ?? "#3b82f6",
         icon: "Plane",
         notes: "",
-        image_url: "",
+        image_url: g?.image_url ?? "",
         status: "planning",
+        goal_id: defaultGoalId ?? "",
+        is_shared: false,
       });
     }
-  }, [trip, isOpen]);
+  }, [trip, isOpen, defaultGoalId, goals]);
 
   if (!isOpen) return null;
 
-  const update = (key: keyof typeof form, value: string) => setForm((p) => ({ ...p, [key]: value }));
+  const update = <K extends keyof typeof form>(key: K, value: typeof form[K]) =>
+    setForm((p) => ({ ...p, [key]: value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,6 +134,8 @@ export default function AddTripModal({ isOpen, trip, onClose, onSave }: AddTripM
       notes: form.notes.trim() || undefined,
       image_url: form.image_url.trim() || undefined,
       status: form.status,
+      goal_id: form.goal_id || null,
+      is_shared: form.is_shared,
     });
     setLoading(false);
     onClose();
@@ -224,12 +242,47 @@ export default function AddTripModal({ isOpen, trip, onClose, onSave }: AddTripM
             <textarea value={form.notes} onChange={(e) => update("notes", e.target.value)} rows={2} className={input + " resize-none"} placeholder="Travel companions, booking refs..." />
           </div>
 
+          {/* Link to Goal */}
+          {user && goals.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Target size={11} /> Link to a savings goal <span className="text-gray-400 font-normal">(optional)</span></label>
+              <select value={form.goal_id} onChange={(e) => update("goal_id", e.target.value)} className={input}>
+                <option value="">— None —</option>
+                {goals.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name} · ${g.saved.toFixed(0)} / ${Number(g.target_amount).toFixed(0)}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-gray-400 mt-1">Track this trip against a savings goal — progress shown on both pages.</p>
+            </div>
+          )}
+
+          {/* Share toggle */}
+          {user && (
+            <button type="button" onClick={() => update("is_shared", !form.is_shared)}
+              className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${form.is_shared ? "border-purple-300 bg-purple-50" : "border-gray-200 bg-white hover:bg-gray-50"}`}>
+              <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${form.is_shared ? "bg-purple-100 text-purple-600" : "bg-gray-100 text-gray-400"}`}>
+                  <Users size={14} />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium text-gray-900">Share with travel companions</p>
+                  <p className="text-[11px] text-gray-500">Invite people to co-plan and track</p>
+                </div>
+              </div>
+              <div className={`w-9 h-5 rounded-full p-0.5 transition-colors ${form.is_shared ? "bg-purple-600" : "bg-gray-200"}`}>
+                <div className={`w-4 h-4 bg-white rounded-full transition-transform ${form.is_shared ? "translate-x-4" : ""}`} />
+              </div>
+            </button>
+          )}
+
           {/* Submit */}
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 px-4 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-medium">Cancel</button>
             <button type="submit" disabled={loading} className="flex-1 py-2.5 px-4 rounded-lg text-white text-sm font-medium disabled:opacity-50 transition-all hover:shadow-lg"
               style={{ background: form.color, boxShadow: loading ? undefined : `0 4px 12px ${form.color}33` }}>
-              {loading ? "Saving..." : trip ? "Save changes" : "Create trip"}
+              {loading ? "Saving..." : trip ? "Save changes" : form.is_shared ? "Create shared trip" : "Create trip"}
             </button>
           </div>
         </form>

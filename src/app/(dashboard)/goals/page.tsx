@@ -1,15 +1,18 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Link from "next/link";
 import {
   Plus, Pencil, Trash2, GripVertical, Check, Calendar,
   Target, Sparkles, Trophy, ChevronDown, ChevronUp, Trash, ArrowUp, ArrowDown,
-  ExternalLink, Users, UserPlus, LogOut,
+  ExternalLink, Users, UserPlus, LogOut, Plane,
 } from "lucide-react";
 import AddGoalModal from "@/components/AddGoalModal";
 import AddContributionModal from "@/components/AddContributionModal";
+import AddTripModal from "@/components/AddTripModal";
 import InviteGoalMembersModal from "@/components/InviteGoalMembersModal";
 import { useGoals } from "@/hooks/useGoals";
+import { useTrips } from "@/hooks/useTrips";
 import { getGoalIcon } from "@/lib/goalIcons";
 import type { Goal, GoalWithStats } from "@/lib/types";
 
@@ -28,10 +31,12 @@ function formatTargetDate(targetDate: string | null, days: number | null): strin
 
 export default function GoalsPage() {
   const { goals, loading, createGoal, updateGoal, deleteGoal, reorderGoals, addContribution, deleteContribution, inviteToGoal, removeMember, leaveGoal } = useGoals();
+  const { trips, createTrip } = useTrips();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editGoal, setEditGoal] = useState<Goal | null>(null);
   const [contribGoal, setContribGoal] = useState<GoalWithStats | null>(null);
   const [inviteGoal, setInviteGoal] = useState<GoalWithStats | null>(null);
+  const [tripFromGoalId, setTripFromGoalId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const dragIdx = useRef<number | null>(null);
@@ -190,6 +195,14 @@ export default function GoalsPage() {
                                     <Users size={10} /> SHARED · {g.members.length}
                                   </span>
                                 )}
+                                {(() => {
+                                  const relatedTrip = trips.find((t) => t.goal_id === g.id);
+                                  return relatedTrip ? (
+                                    <Link href={`/trips/${relatedTrip.id}`} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-sky-700 hover:bg-sky-200" title={relatedTrip.name}>
+                                      <Plane size={10} /> TRIP · ${relatedTrip.totalActual.toFixed(0)}/${Number(relatedTrip.total_budget).toFixed(0)}
+                                    </Link>
+                                  ) : null;
+                                })()}
                                 {isComplete && (
                                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700">
                                     <Trophy size={10} /> COMPLETE
@@ -243,6 +256,24 @@ export default function GoalsPage() {
                               {g.is_shared && g.isOwner && (
                                 <button onClick={() => setInviteGoal(g)} className="text-gray-400 hover:text-purple-600 p-1.5 rounded" title="Invite members"><UserPlus size={14} /></button>
                               )}
+                              {(() => {
+                                const relatedTrip = trips.find((t) => t.goal_id === g.id);
+                                if (relatedTrip) {
+                                  return (
+                                    <Link href={`/trips/${relatedTrip.id}`} className="text-gray-400 hover:text-sky-600 p-1.5 rounded" title={`Open linked trip: ${relatedTrip.name}`}>
+                                      <Plane size={14} />
+                                    </Link>
+                                  );
+                                }
+                                if (g.category === "travel" && g.isOwner) {
+                                  return (
+                                    <button onClick={() => setTripFromGoalId(g.id)} className="text-gray-400 hover:text-sky-600 p-1.5 rounded" title="Plan a trip from this goal">
+                                      <Plane size={14} />
+                                    </button>
+                                  );
+                                }
+                                return null;
+                              })()}
                               {g.isOwner && (
                                 <button onClick={() => { setEditGoal(g); setShowAddModal(true); }} className="text-gray-400 hover:text-blue-600 p-1.5 rounded" title="Edit"><Pencil size={14} /></button>
                               )}
@@ -362,6 +393,12 @@ export default function GoalsPage() {
       <AddGoalModal isOpen={showAddModal} goal={editGoal} onClose={() => { setShowAddModal(false); setEditGoal(null); }} onSave={handleSave} />
       <AddContributionModal isOpen={!!contribGoal} goal={contribGoal} onClose={() => setContribGoal(null)} onSave={addContribution} />
       <InviteGoalMembersModal isOpen={!!inviteGoal} goal={inviteGoal} onClose={() => setInviteGoal(null)} onInvite={inviteToGoal} onRemoveMember={removeMember} />
+      <AddTripModal
+        isOpen={!!tripFromGoalId}
+        defaultGoalId={tripFromGoalId}
+        onClose={() => setTripFromGoalId(null)}
+        onSave={async (data) => { await createTrip(data); }}
+      />
     </div>
   );
 }

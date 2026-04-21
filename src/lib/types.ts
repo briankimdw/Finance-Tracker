@@ -259,6 +259,8 @@ export type TripItemStatus = "planned" | "done" | "skipped";
 export interface Trip {
   id: string;
   user_id: string | null;
+  goal_id: string | null;
+  is_shared: boolean;
   name: string;
   destination: string | null;
   start_date: string | null;
@@ -273,6 +275,27 @@ export interface Trip {
   created_at: string;
 }
 
+export interface TripMember {
+  id: string;
+  trip_id: string;
+  user_id: string;
+  role: "owner" | "member";
+  joined_at: string;
+  email?: string;
+}
+
+export interface TripInvite {
+  id: string;
+  trip_id: string;
+  token: string;
+  email: string | null;
+  invited_by: string | null;
+  expires_at: string;
+  accepted_by: string | null;
+  accepted_at: string | null;
+  created_at: string;
+}
+
 export interface TripItem {
   id: string;
   trip_id: string;
@@ -282,6 +305,11 @@ export interface TripItem {
   planned_amount: number;
   actual_amount: number;
   item_date: string | null;
+  end_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  location: string | null;
+  confirmation_code: string | null;
   status: TripItemStatus;
   notes: string | null;
   url: string | null;
@@ -291,6 +319,9 @@ export interface TripItem {
 
 export interface TripWithStats extends Trip {
   items: TripItem[];
+  members: TripMember[];
+  isOwner: boolean;
+  myRole: "owner" | "member" | null;
   // totals computed over items
   totalPlanned: number;    // sum of planned_amount on all items
   totalActual: number;     // sum of actual_amount for items with status='done'

@@ -7,6 +7,7 @@ import { useRealtimeRefetch } from "@/lib/useRealtimeRefetch";
 import type {
   Trip,
   TripItem,
+  TripMember,
   TripWithStats,
   TripItemCategory,
   TripItemStatus,
@@ -32,12 +33,13 @@ export function useTrips() {
     try {
       let tripsQ = supabase
         .from("trips")
-        .select("*")
+        .select("*, trip_members(id, trip_id, user_id, role, joined_at)")
         .order("display_order", { ascending: true })
         .order("created_at", { ascending: false });
       let itemsQ = supabase
         .from("trip_items")
         .select("*")
+        .order("item_date", { ascending: true, nullsFirst: false })
         .order("display_order", { ascending: true })
         .order("created_at", { ascending: true });
 
@@ -50,7 +52,7 @@ export function useTrips() {
       if (tripsRes.error) console.error("[useTrips] trips error:", tripsRes.error);
       if (itemsRes.error) console.error("[useTrips] items error:", itemsRes.error);
 
-      const rawTrips = (tripsRes.data || []) as Trip[];
+      const rawTrips = (tripsRes.data || []) as (Trip & { trip_members: TripMember[] })[];
       const rawItems = (itemsRes.data || []) as TripItem[];
 
       const enriched: TripWithStats[] = rawTrips.map((t) => {
@@ -70,9 +72,15 @@ export function useTrips() {
         const remaining = budget - totalActual - plannedUpcoming;
         const progress = budget > 0 ? Math.min(100, (totalActual / budget) * 100) : 0;
         const overBudget = totalActual + plannedUpcoming > budget && budget > 0;
+        const members = t.trip_members || [];
+        const myMember = user ? members.find((m) => m.user_id === user.id) : null;
+        const isOwner = user ? (t.user_id === user.id || myMember?.role === "owner") : false;
         return {
           ...t,
           items,
+          members,
+          isOwner,
+          myRole: myMember?.role ?? null,
           totalPlanned,
           totalActual,
           plannedUpcoming,
@@ -97,7 +105,10 @@ export function useTrips() {
   useEffect(() => {
     fetchTrips();
   }, [fetchTrips]);
-  useRealtimeRefetch(["trips", "trip_items"], fetchTrips);
+  useRealtimeRefetch(
+    ["trips", "trip_items", "trip_members", "trip_invites"],
+    fetchTrips
+  );
 
   // ---------- Trip CRUD ----------
   const createTrip = async (data: {
@@ -111,6 +122,8 @@ export function useTrips() {
     notes?: string;
     image_url?: string;
     status?: TripStatus;
+    goal_id?: string | null;
+    is_shared?: boolean;
   }) => {
     const maxOrder = trips.length > 0 ? Math.max(...trips.map((t) => t.display_order)) : 0;
     const { data: inserted, error } = await supabase
@@ -127,11 +140,22 @@ export function useTrips() {
         notes: data.notes || null,
         image_url: data.image_url || null,
         status: data.status || "planning",
+        goal_id: data.goal_id || null,
+        is_shared: !!data.is_shared && !!user,
         display_order: maxOrder + 1,
       })
       .select()
       .single();
     if (error) console.error("[useTrips] createTrip error:", error);
+
+    // Add creator as owner member row
+    if (!error && inserted && user) {
+      await supabase.from("trip_members").insert({
+        trip_id: inserted.id,
+        user_id: user.id,
+        role: "owner",
+      });
+    }
     await fetchTrips();
     return inserted as Trip | null;
   };
@@ -164,6 +188,11 @@ export function useTrips() {
       planned_amount: number;
       actual_amount?: number;
       item_date?: string | null;
+      end_date?: string | null;
+      start_time?: string | null;
+      end_time?: string | null;
+      location?: string | null;
+      confirmation_code?: string | null;
       status?: TripItemStatus;
       notes?: string;
       url?: string;
@@ -179,6 +208,11 @@ export function useTrips() {
       planned_amount: data.planned_amount,
       actual_amount: data.actual_amount ?? 0,
       item_date: data.item_date || null,
+      end_date: data.end_date || null,
+      start_time: data.start_time || null,
+      end_time: data.end_time || null,
+      location: data.location || null,
+      confirmation_code: data.confirmation_code || null,
       status: data.status || "planned",
       notes: data.notes || null,
       url: data.url || null,
@@ -200,7 +234,6 @@ export function useTrips() {
     await fetchTrips();
   };
 
-  // Convenience: mark done with actual amount (or default to planned if not given)
   const markItemDone = async (item: TripItem, actual?: number) => {
     await updateItem(item.id, {
       status: "done",
@@ -231,6 +264,40 @@ export function useTrips() {
     );
   };
 
+  // ---------- Members / invites ----------
+  const inviteToTrip = async (
+    tripId: string,
+    email: string
+  ): Promise<{ token: string; joinUrl: string; emailSent: boolean; reason?: string } | null> => {
+    try {
+      const res = await fetch("/api/trips/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tripId, email }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        console.error("[useTrips] inviteToTrip error:", body.error);
+        return null;
+      }
+      return body;
+    } catch (err) {
+      console.error("[useTrips] inviteToTrip threw:", err);
+      return null;
+    }
+  };
+
+  const removeTripMember = async (tripId: string, memberUserId: string) => {
+    await supabase.from("trip_members").delete().eq("trip_id", tripId).eq("user_id", memberUserId);
+    await fetchTrips();
+  };
+
+  const leaveTrip = async (tripId: string) => {
+    if (!user) return;
+    await supabase.from("trip_members").delete().eq("trip_id", tripId).eq("user_id", user.id);
+    await fetchTrips();
+  };
+
   return {
     trips,
     loading,
@@ -246,5 +313,8 @@ export function useTrips() {
     markItemSkipped,
     markItemPlanned,
     reorderItems,
+    inviteToTrip,
+    removeTripMember,
+    leaveTrip,
   };
 }

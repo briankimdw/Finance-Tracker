@@ -6,28 +6,61 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Plus, MapPin, Calendar, Check, X, Pencil, Trash2, ExternalLink,
-  TrendingUp, TrendingDown, Wallet, PiggyBank, Circle, GripVertical,
+  TrendingUp, TrendingDown, Wallet, PiggyBank, Circle, List, CalendarDays,
+  Users, UserPlus, LogOut, Target, Clock, Hash, Bed, Plane,
+  Utensils, ShoppingBag, Package,
 } from "lucide-react";
 import { useTrips } from "@/hooks/useTrips";
+import { useGoals } from "@/hooks/useGoals";
 import { getTripIcon, getCategoryIcon } from "@/lib/tripIcons";
 import AddTripItemModal from "@/components/AddTripItemModal";
-import type { TripItem, TripItemStatus } from "@/lib/types";
+import InviteTripMembersModal from "@/components/InviteTripMembersModal";
+import TripCalendar from "@/components/TripCalendar";
+import type { TripItem, TripItemCategory, TripItemStatus } from "@/lib/types";
 
 function fmtDate(d: string | null): string {
   if (!d) return "";
   return new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+function fmtTime(t: string | null): string {
+  if (!t) return "";
+  // t is 'HH:MM[:SS]' → show as 'h:mm AM/PM'
+  const [h, m] = t.split(":").map((x) => parseInt(x, 10));
+  if (isNaN(h)) return t;
+  const period = h >= 12 ? "PM" : "AM";
+  const hh = h % 12 === 0 ? 12 : h % 12;
+  return `${hh}:${String(m || 0).padStart(2, "0")} ${period}`;
+}
+
+const CATEGORY_CHOICES: { value: TripItemCategory | "all"; label: string; Icon: typeof Bed }[] = [
+  { value: "all", label: "All", Icon: Package },
+  { value: "lodging", label: "Lodging", Icon: Bed },
+  { value: "transport", label: "Transport", Icon: Plane },
+  { value: "food", label: "Food", Icon: Utensils },
+  { value: "activity", label: "Activity", Icon: MapPin },
+  { value: "shopping", label: "Shopping", Icon: ShoppingBag },
+  { value: "other", label: "Other", Icon: Package },
+];
+
 export default function TripDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = typeof params?.id === "string" ? params.id : "";
-  const { trips, loading, addItem, updateItem, deleteItem, markItemDone, markItemSkipped, markItemPlanned, deleteTrip, updateTrip } = useTrips();
+  const {
+    trips, loading, addItem, updateItem, deleteItem,
+    markItemDone, markItemSkipped, markItemPlanned,
+    deleteTrip, updateTrip, inviteToTrip, removeTripMember, leaveTrip,
+  } = useTrips();
+  const { goals } = useGoals();
   const trip = trips.find((t) => t.id === id);
 
   const [showItemModal, setShowItemModal] = useState(false);
   const [editItem, setEditItem] = useState<TripItem | null>(null);
-  const [filter, setFilter] = useState<"all" | TripItemStatus>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | TripItemStatus>("all");
+  const [categoryFilter, setCategoryFilter] = useState<"all" | TripItemCategory>("all");
+  const [view, setView] = useState<"list" | "calendar">("list");
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   if (loading && !trip) {
     return <div className="text-center text-gray-400 py-20">Loading trip...</div>;
@@ -43,21 +76,27 @@ export default function TripDetailPage() {
   }
 
   const Icon = getTripIcon(trip.icon);
-  const items = filter === "all" ? trip.items : trip.items.filter((i) => i.status === filter);
+  const linkedGoal = trip.goal_id ? goals.find((g) => g.id === trip.goal_id) : null;
 
-  // Budget math
+  let items = trip.items;
+  if (statusFilter !== "all") items = items.filter((i) => i.status === statusFilter);
+  if (categoryFilter !== "all") items = items.filter((i) => i.category === categoryFilter);
+
   const budget = Number(trip.total_budget);
   const { totalActual, plannedUpcoming, skippedSavings, overBudget } = trip;
   const projected = totalActual + plannedUpcoming;
-  const available = budget - totalActual;
-  const unallocated = available - plannedUpcoming; // what's still free to plan
+  const unallocated = budget - totalActual - plannedUpcoming;
 
-  const counts = {
+  const statusCounts = {
     all: trip.items.length,
     planned: trip.items.filter((i) => i.status === "planned").length,
     done: trip.items.filter((i) => i.status === "done").length,
     skipped: trip.items.filter((i) => i.status === "skipped").length,
   };
+
+  // Per-category totals for filter chip badges
+  const categoryCounts: Record<string, number> = { all: trip.items.length };
+  for (const i of trip.items) categoryCounts[i.category] = (categoryCounts[i.category] || 0) + 1;
 
   const handleAddOrSave = async (data: Parameters<typeof addItem>[1]) => {
     if (editItem) {
@@ -67,6 +106,11 @@ export default function TripDetailPage() {
         planned_amount: data.planned_amount,
         actual_amount: data.actual_amount ?? 0,
         item_date: data.item_date ?? null,
+        end_date: data.end_date ?? null,
+        start_time: data.start_time ?? null,
+        end_time: data.end_time ?? null,
+        location: data.location ?? null,
+        confirmation_code: data.confirmation_code ?? null,
         status: data.status,
         notes: data.notes ?? null,
         url: data.url ?? null,
@@ -79,7 +123,6 @@ export default function TripDetailPage() {
 
   return (
     <div className="space-y-5">
-      {/* Back link */}
       <Link href="/trips" className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 w-fit">
         <ArrowLeft size={12} /> All trips
       </Link>
@@ -107,6 +150,16 @@ export default function TripDetailPage() {
                   trip.status === "planning" ? "bg-blue-100 text-blue-700" :
                   trip.status === "cancelled" ? "bg-gray-200 text-gray-600" : "bg-amber-100 text-amber-700"
                 }`}>{trip.status.toUpperCase()}</span>
+                {trip.is_shared && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700">
+                    <Users size={10} /> SHARED · {trip.members.length}
+                  </span>
+                )}
+                {linkedGoal && (
+                  <Link href="/goals" className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 hover:bg-blue-200" title={`Linked to goal: ${linkedGoal.name}`}>
+                    <Target size={10} /> {linkedGoal.name}
+                  </Link>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-gray-500">
                 {trip.destination && <span className="flex items-center gap-1"><MapPin size={11} /> {trip.destination}</span>}
@@ -120,15 +173,54 @@ export default function TripDetailPage() {
                 )}
               </div>
               {trip.notes && <p className="text-xs text-gray-500 mt-2 whitespace-pre-line">{trip.notes}</p>}
+
+              {/* Member avatars */}
+              {trip.is_shared && trip.members.length > 0 && (
+                <div className="flex items-center gap-1.5 mt-2">
+                  <div className="flex -space-x-1.5">
+                    {trip.members.slice(0, 6).map((m, mi) => {
+                      const initial = m.user_id.charAt(0).toUpperCase();
+                      return (
+                        <div key={m.id} className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold text-white ring-2 ring-white"
+                          style={{ background: `hsl(${(mi * 73) % 360}, 55%, 55%)` }}
+                          title={m.role === "owner" ? "Owner" : "Member"}>
+                          {initial}
+                        </div>
+                      );
+                    })}
+                    {trip.members.length > 6 && (
+                      <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-semibold text-gray-500 ring-2 ring-white">+{trip.members.length - 6}</div>
+                    )}
+                  </div>
+                  {trip.isOwner && (
+                    <button onClick={() => setShowInviteModal(true)} className="text-[11px] font-medium text-blue-600 hover:text-blue-700 flex items-center gap-0.5 ml-1">
+                      <UserPlus size={11} /> Invite
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
-              {trip.status !== "completed" && (
+              {trip.isOwner && !trip.is_shared && (
+                <button onClick={() => { updateTrip(trip.id, { is_shared: true }); setShowInviteModal(true); }}
+                  className="text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 px-2.5 py-1.5 rounded-md font-medium flex items-center gap-1"><UserPlus size={12} /> Invite</button>
+              )}
+              {trip.isOwner && trip.is_shared && (
+                <button onClick={() => setShowInviteModal(true)}
+                  className="text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 px-2.5 py-1.5 rounded-md font-medium flex items-center gap-1"><UserPlus size={12} /> Invite</button>
+              )}
+              {trip.isOwner && trip.status !== "completed" && (
                 <button onClick={() => updateTrip(trip.id, { status: "completed" })}
                   className="text-xs bg-green-50 hover:bg-green-100 text-green-700 px-2.5 py-1.5 rounded-md font-medium">Mark done</button>
               )}
-              <button onClick={() => { if (confirm(`Delete "${trip.name}"?`)) { deleteTrip(trip.id); router.push("/trips"); } }}
-                className="text-gray-300 hover:text-red-500 p-1.5 rounded" title="Delete trip"><Trash2 size={14} /></button>
+              {trip.isOwner ? (
+                <button onClick={() => { if (confirm(`Delete "${trip.name}"?`)) { deleteTrip(trip.id); router.push("/trips"); } }}
+                  className="text-gray-300 hover:text-red-500 p-1.5 rounded" title="Delete trip"><Trash2 size={14} /></button>
+              ) : (
+                <button onClick={() => { if (confirm(`Leave "${trip.name}"? You won't be able to see or contribute to it anymore.`)) { leaveTrip(trip.id); router.push("/trips"); } }}
+                  className="text-gray-300 hover:text-red-500 p-1.5 rounded" title="Leave trip"><LogOut size={14} /></button>
+              )}
             </div>
           </div>
         </div>
@@ -155,9 +247,7 @@ export default function TripDetailPage() {
           <span className="text-gray-900 font-bold tabular-nums">${totalActual.toFixed(2)} / ${budget.toFixed(2)}</span>
         </div>
         <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
-          {/* Actual spent */}
           <div className="h-full absolute top-0 left-0 rounded-full transition-all" style={{ width: `${budget > 0 ? Math.min(100, (totalActual / budget) * 100) : 0}%`, background: trip.color }} />
-          {/* Planned upcoming ghost */}
           {plannedUpcoming > 0 && (
             <div className="h-full absolute top-0 rounded-r-full transition-all opacity-40"
               style={{
@@ -184,120 +274,83 @@ export default function TripDetailPage() {
         </div>
       </div>
 
-      {/* Itinerary header + filter tabs */}
-      <div className="flex items-center justify-between">
+      {/* Itinerary header + view toggle */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h2 className="text-sm font-semibold text-gray-900">Itinerary</h2>
-          <p className="text-xs text-gray-400">Plan items, check them off as you go. Skipped items free up their budget.</p>
+          <p className="text-xs text-gray-400">Plan items, check them off as you go. Skipped items free their budget.</p>
         </div>
-        <button onClick={() => { setEditItem(null); setShowItemModal(true); }} className="text-white text-sm font-medium px-3 py-2 rounded-lg flex items-center gap-1.5 transition-all hover:shadow-lg"
-          style={{ background: trip.color, boxShadow: `0 4px 12px ${trip.color}33` }}>
-          <Plus size={14} /> Add item
-        </button>
+        <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="inline-flex items-center border border-gray-200 rounded-lg bg-white p-0.5">
+            <button onClick={() => setView("list")} className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-md ${view === "list" ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-900"}`}>
+              <List size={13} /> List
+            </button>
+            <button onClick={() => setView("calendar")} className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-md ${view === "calendar" ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-900"}`}>
+              <CalendarDays size={13} /> Calendar
+            </button>
+          </div>
+          <button onClick={() => { setEditItem(null); setShowItemModal(true); }} className="text-white text-sm font-medium px-3 py-2 rounded-lg flex items-center gap-1.5 transition-all hover:shadow-lg"
+            style={{ background: trip.color, boxShadow: `0 4px 12px ${trip.color}33` }}>
+            <Plus size={14} /> Add item
+          </button>
+        </div>
       </div>
 
-      {/* Filter pills */}
-      <div className="flex items-center gap-2 text-xs">
-        {(["all", "planned", "done", "skipped"] as const).map((f) => (
-          <button key={f} onClick={() => setFilter(f)}
-            className={`px-2.5 py-1 rounded-full font-medium transition-colors ${filter === f ? "bg-gray-900 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"}`}>
-            {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
-            <span className="ml-1 text-[10px] opacity-70">{counts[f]}</span>
+      {/* Category filter chips (shown in both views) */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+        {CATEGORY_CHOICES.map(({ value, label, Icon: CIcon }) => (
+          <button key={value} onClick={() => setCategoryFilter(value)}
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+              categoryFilter === value ? "bg-gray-900 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"
+            }`}>
+            <CIcon size={11} /> {label}
+            <span className={`text-[10px] ${categoryFilter === value ? "opacity-70" : "opacity-60"}`}>{categoryCounts[value] || 0}</span>
           </button>
         ))}
       </div>
 
-      {/* Items list */}
-      {trip.items.length === 0 ? (
-        <div className="bg-white border border-dashed border-gray-300 rounded-xl p-10 text-center">
-          <p className="text-sm font-semibold text-gray-700">No items yet</p>
-          <p className="text-xs text-gray-400 mt-1">Add hotels, flights, dinners, activities — anything you want to track spending on.</p>
-          <button onClick={() => setShowItemModal(true)} className="mt-3 text-sm font-medium text-white px-3 py-1.5 rounded-lg" style={{ background: trip.color }}>
-            <Plus size={12} className="inline -ml-0.5 mr-0.5" /> Add your first item
-          </button>
-        </div>
-      ) : items.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
-          <p className="text-xs text-gray-400">No {filter} items.</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {items.map((item, i) => {
-            const CatIcon = getCategoryIcon(item.category);
-            const planned = Number(item.planned_amount);
-            const actual = Number(item.actual_amount);
-            const diff = actual - planned;
-            return (
-              <motion.div key={item.id}
-                initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, delay: i * 0.02 }}
-                className={`group bg-white border rounded-xl p-3 hover:shadow-sm transition-all ${
-                  item.status === "done" ? "border-green-200" :
-                  item.status === "skipped" ? "border-gray-200 opacity-60" :
-                  "border-gray-200"
-                }`}>
-                <div className="flex items-center gap-3">
-                  <GripVertical size={12} className="text-gray-200 hidden sm:block" />
+      {/* Calendar view */}
+      {view === "calendar" && (
+        <TripCalendar trip={trip} onSelectItem={(it) => { setEditItem(it); setShowItemModal(true); }} />
+      )}
 
-                  {/* Category icon */}
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${trip.color}15`, color: trip.color }}>
-                    <CatIcon size={16} />
-                  </div>
+      {/* List view */}
+      {view === "list" && (
+        <>
+          {/* Status filter pills */}
+          <div className="flex items-center gap-2 text-xs">
+            {(["all", "planned", "done", "skipped"] as const).map((f) => (
+              <button key={f} onClick={() => setStatusFilter(f)}
+                className={`px-2.5 py-1 rounded-full font-medium transition-colors ${statusFilter === f ? "bg-gray-900 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"}`}>
+                {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
+                <span className="ml-1 text-[10px] opacity-70">{statusCounts[f]}</span>
+              </button>
+            ))}
+          </div>
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className={`text-sm font-semibold ${item.status === "skipped" ? "line-through text-gray-400" : "text-gray-900"}`}>{item.name}</p>
-                      {item.status === "done" && <span className="text-[10px] font-bold bg-green-100 text-green-700 px-1.5 py-0.5 rounded">DONE</span>}
-                      {item.status === "skipped" && <span className="text-[10px] font-bold bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded">SKIPPED</span>}
-                      {item.url && (
-                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-blue-600" title="Open link"><ExternalLink size={12} /></a>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5 text-[11px] text-gray-400 flex-wrap">
-                      <span className="capitalize">{item.category}</span>
-                      {item.item_date && <><span>·</span><span className="flex items-center gap-0.5"><Calendar size={10} /> {fmtDate(item.item_date)}</span></>}
-                      {item.notes && <><span>·</span><span className="truncate max-w-[200px]">{item.notes}</span></>}
-                    </div>
-                  </div>
-
-                  {/* Amount */}
-                  <div className="text-right shrink-0">
-                    {item.status === "done" ? (
-                      <>
-                        <p className="text-sm font-bold text-gray-900 tabular-nums">${actual.toFixed(2)}</p>
-                        {diff !== 0 && (
-                          <p className={`text-[10px] tabular-nums ${diff > 0 ? "text-red-600" : "text-green-600"}`}>
-                            {diff > 0 ? `+$${diff.toFixed(2)} over` : `−$${Math.abs(diff).toFixed(2)} saved`}
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                      <p className={`text-sm font-semibold tabular-nums ${item.status === "skipped" ? "text-gray-400 line-through" : "text-gray-700"}`}>
-                        ${planned.toFixed(2)}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {item.status !== "done" && (
-                      <button onClick={() => markItemDone(item)} className="text-gray-400 hover:text-green-600 p-1 rounded hover:bg-green-50" title="Mark done"><Check size={14} /></button>
-                    )}
-                    {item.status !== "skipped" && (
-                      <button onClick={() => markItemSkipped(item.id)} className="text-gray-400 hover:text-amber-600 p-1 rounded hover:bg-amber-50" title="Skip"><X size={14} /></button>
-                    )}
-                    {item.status !== "planned" && (
-                      <button onClick={() => markItemPlanned(item.id)} className="text-gray-400 hover:text-blue-600 p-1 rounded hover:bg-blue-50" title="Reset to planned"><Circle size={14} /></button>
-                    )}
-                    <button onClick={() => { setEditItem(item); setShowItemModal(true); }} className="text-gray-400 hover:text-blue-600 p-1 rounded hover:bg-blue-50" title="Edit"><Pencil size={13} /></button>
-                    <button onClick={() => { if (confirm(`Delete "${item.name}"?`)) deleteItem(item.id); }} className="text-gray-300 hover:text-red-500 p-1 rounded hover:bg-red-50" title="Delete"><Trash2 size={13} /></button>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+          {trip.items.length === 0 ? (
+            <div className="bg-white border border-dashed border-gray-300 rounded-xl p-10 text-center">
+              <p className="text-sm font-semibold text-gray-700">No items yet</p>
+              <p className="text-xs text-gray-400 mt-1">Add hotels, flights, dinners, activities — anything you want to track spending on.</p>
+              <button onClick={() => setShowItemModal(true)} className="mt-3 text-sm font-medium text-white px-3 py-1.5 rounded-lg" style={{ background: trip.color }}>
+                <Plus size={12} className="inline -ml-0.5 mr-0.5" /> Add your first item
+              </button>
+            </div>
+          ) : items.length === 0 ? (
+            <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
+              <p className="text-xs text-gray-400">No items match these filters.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {items.map((item, i) => (
+                <TripItemCard key={item.id} item={item} trip={trip} onEdit={() => { setEditItem(item); setShowItemModal(true); }}
+                  onDone={() => markItemDone(item)} onSkip={() => markItemSkipped(item.id)} onReset={() => markItemPlanned(item.id)}
+                  onDelete={() => { if (confirm(`Delete "${item.name}"?`)) deleteItem(item.id); }} delay={i * 0.02} />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <AddTripItemModal
@@ -308,6 +361,13 @@ export default function TripDetailPage() {
         remainingBudget={unallocated}
         onClose={() => { setShowItemModal(false); setEditItem(null); }}
         onSave={handleAddOrSave}
+      />
+      <InviteTripMembersModal
+        isOpen={showInviteModal}
+        trip={trip}
+        onClose={() => setShowInviteModal(false)}
+        onInvite={inviteToTrip}
+        onRemoveMember={removeTripMember}
       />
     </div>
   );
@@ -332,5 +392,129 @@ function LegendDot({ color, label, opacity = 1 }: { color: string; label: string
       <span className="w-2 h-2 rounded-full" style={{ background: color, opacity }} />
       {label}
     </span>
+  );
+}
+
+function TripItemCard({
+  item, trip, onEdit, onDone, onSkip, onReset, onDelete, delay,
+}: {
+  item: TripItem;
+  trip: { color: string };
+  onEdit: () => void;
+  onDone: () => void;
+  onSkip: () => void;
+  onReset: () => void;
+  onDelete: () => void;
+  delay?: number;
+}) {
+  const CatIcon = getCategoryIcon(item.category);
+  const planned = Number(item.planned_amount);
+  const actual = Number(item.actual_amount);
+  const diff = actual - planned;
+
+  const isLodging = item.category === "lodging";
+  const isTransport = item.category === "transport";
+  const hasBookingInfo = !!(item.location || item.confirmation_code || item.start_time || item.end_time || item.end_date);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, delay }}
+      className={`group bg-white border rounded-xl hover:shadow-sm transition-all overflow-hidden ${
+        item.status === "done" ? "border-green-200" :
+        item.status === "skipped" ? "border-gray-200 opacity-60" :
+        "border-gray-200"
+      }`}>
+      <div className="p-3">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${trip.color}15`, color: trip.color }}>
+            <CatIcon size={16} />
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className={`text-sm font-semibold ${item.status === "skipped" ? "line-through text-gray-400" : "text-gray-900"}`}>{item.name}</p>
+              {item.status === "done" && <span className="text-[10px] font-bold bg-green-100 text-green-700 px-1.5 py-0.5 rounded">DONE</span>}
+              {item.status === "skipped" && <span className="text-[10px] font-bold bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded">SKIPPED</span>}
+              {item.url && (
+                <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-blue-600" title="Open link" onClick={(e) => e.stopPropagation()}><ExternalLink size={12} /></a>
+              )}
+            </div>
+            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-gray-400 flex-wrap">
+              <span className="capitalize">{item.category}</span>
+              {item.item_date && (
+                <><span>·</span><span className="flex items-center gap-0.5">
+                  <Calendar size={10} /> {fmtDate(item.item_date)}
+                  {item.end_date && ` → ${fmtDate(item.end_date)}`}
+                </span></>
+              )}
+              {(item.start_time || item.end_time) && (
+                <><span>·</span><span className="flex items-center gap-0.5">
+                  <Clock size={10} /> {fmtTime(item.start_time)}{item.end_time ? ` – ${fmtTime(item.end_time)}` : ""}
+                </span></>
+              )}
+            </div>
+          </div>
+
+          <div className="text-right shrink-0">
+            {item.status === "done" ? (
+              <>
+                <p className="text-sm font-bold text-gray-900 tabular-nums">${actual.toFixed(2)}</p>
+                {diff !== 0 && (
+                  <p className={`text-[10px] tabular-nums ${diff > 0 ? "text-red-600" : "text-green-600"}`}>
+                    {diff > 0 ? `+$${diff.toFixed(2)} over` : `−$${Math.abs(diff).toFixed(2)} saved`}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className={`text-sm font-semibold tabular-nums ${item.status === "skipped" ? "text-gray-400 line-through" : "text-gray-700"}`}>
+                ${planned.toFixed(2)}
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            {item.status !== "done" && (
+              <button onClick={onDone} className="text-gray-400 hover:text-green-600 p-1 rounded hover:bg-green-50" title="Mark done"><Check size={14} /></button>
+            )}
+            {item.status !== "skipped" && (
+              <button onClick={onSkip} className="text-gray-400 hover:text-amber-600 p-1 rounded hover:bg-amber-50" title="Skip"><X size={14} /></button>
+            )}
+            {item.status !== "planned" && (
+              <button onClick={onReset} className="text-gray-400 hover:text-blue-600 p-1 rounded hover:bg-blue-50" title="Reset to planned"><Circle size={14} /></button>
+            )}
+            <button onClick={onEdit} className="text-gray-400 hover:text-blue-600 p-1 rounded hover:bg-blue-50" title="Edit"><Pencil size={13} /></button>
+            <button onClick={onDelete} className="text-gray-300 hover:text-red-500 p-1 rounded hover:bg-red-50" title="Delete"><Trash2 size={13} /></button>
+          </div>
+        </div>
+
+        {/* Booking info block — shown for lodging/transport or when any booking field set */}
+        {hasBookingInfo && (isLodging || isTransport || item.location || item.confirmation_code) && (
+          <div className="mt-2.5 pl-12 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
+            {item.location && (
+              <div className="flex items-center gap-1.5 text-gray-500">
+                <MapPin size={11} className="text-gray-400 shrink-0" />
+                <span className="truncate" title={item.location}>{item.location}</span>
+              </div>
+            )}
+            {item.confirmation_code && (
+              <div className="flex items-center gap-1.5 text-gray-500">
+                <Hash size={11} className="text-gray-400 shrink-0" />
+                <span className="font-mono text-gray-700 truncate">{item.confirmation_code}</span>
+              </div>
+            )}
+            {item.notes && (
+              <div className="flex items-center gap-1.5 text-gray-500 sm:col-span-2">
+                <span className="text-gray-400 shrink-0">✎</span>
+                <span className="truncate" title={item.notes}>{item.notes}</span>
+              </div>
+            )}
+          </div>
+        )}
+        {!hasBookingInfo && item.notes && (
+          <p className="mt-2 pl-12 text-[11px] text-gray-500 truncate" title={item.notes}>✎ {item.notes}</p>
+        )}
+      </div>
+    </motion.div>
   );
 }
