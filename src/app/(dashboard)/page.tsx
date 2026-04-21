@@ -17,6 +17,8 @@ import TransferModal from "@/components/TransferModal";
 import AddContributionModal from "@/components/AddContributionModal";
 import AddCashAccountModal from "@/components/AddCashAccountModal";
 import CashAccountDetailsSheet from "@/components/CashAccountDetailsSheet";
+import EditItemModal from "@/components/EditItemModal";
+import EditIncomeModal from "@/components/EditIncomeModal";
 import QuickAdd from "@/components/QuickAdd";
 import Charts from "@/components/Charts";
 import NetWorthChart from "@/components/NetWorthChart";
@@ -187,6 +189,8 @@ export default function DashboardPage() {
   const [detailsAccountId, setDetailsAccountId] = useState<string | null>(null);
   const [editAccount, setEditAccount] = useState<CashAccount | null>(null);
   const [showAddAccount, setShowAddAccount] = useState(false);
+  const [editItem, setEditItem] = useState<Item | null>(null);
+  const [editIncome, setEditIncome] = useState<Income | null>(null);
 
   const handleRefresh = () => { refetchStats(); refetchItems(); refetchIncome(); refetchIncomeList(); refetchExpenses(); refetchMonthlyExpenses(); refetchMonthlyIncome(); refetchMetals(); refetchMetalProfit(); refetchCash(); refetchCards(); refetchDebts(); refetchGoals(); refetchTrips(); fetchHeatMap(); refetchCharts(); };
   const handleQuickAdd = async (saved: Parameters<typeof quickAdd>[0]) => { await quickAdd(saved); handleRefresh(); };
@@ -221,15 +225,15 @@ export default function DashboardPage() {
   }, [user, totalCash, metalStats.totalValue, stats.inventoryValue, totalTheyOwe, totalCardDebt, totalIOwe, netWorth]);
 
   const topCards = [
-    { label: `${monthName} Net`, value: monthlyNet, icon: Scale, iconBg: monthlyNet >= 0 ? "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/40" : "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40", valueColor: monthlyNet >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400" },
+    { label: `${monthName} Net`, value: monthlyNet, icon: Scale, iconBg: monthlyNet >= 0 ? "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/40" : "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40", valueColor: monthlyNet >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400", href: "/budget" as string | undefined },
     { label: "Cash & Checking", value: totalCash, icon: Wallet, iconBg: "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/40", valueColor: "text-green-600 dark:text-green-400", href: "/cards" as string | undefined },
     { label: "Card Debt", value: totalCardDebt, icon: CreditCard, iconBg: "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40", valueColor: "text-red-600 dark:text-red-400", negative: true, href: "/cards" as string | undefined },
     { label: "Metals Portfolio", value: metalStats.totalValue, icon: Coins, iconBg: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40", valueColor: "text-amber-600 dark:text-amber-400", href: "/metals" as string | undefined },
   ];
 
   const bottomCards = [
-    { label: `${monthName} Income`, display: `$${monthlyIncome.toFixed(2)}`, icon: DollarSign, iconBg: "text-emerald-600 bg-emerald-50", valueColor: "text-emerald-600" },
-    { label: `${monthName} Expenses`, display: `-$${monthlyExpenses.toFixed(2)}`, icon: CreditCard, iconBg: "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40", valueColor: "text-red-600 dark:text-red-400" },
+    { label: `${monthName} Income`, display: `$${monthlyIncome.toFixed(2)}`, icon: DollarSign, iconBg: "text-emerald-600 bg-emerald-50", valueColor: "text-emerald-600", href: "/income" as string | undefined },
+    { label: `${monthName} Expenses`, display: `-$${monthlyExpenses.toFixed(2)}`, icon: CreditCard, iconBg: "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40", valueColor: "text-red-600 dark:text-red-400", href: "/expenses" as string | undefined },
     { label: "Owed to Me", display: `$${totalTheyOwe.toFixed(2)}`, icon: ArrowUpRight, iconBg: "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/40", valueColor: "text-green-600 dark:text-green-400", href: "/debts" as string | undefined },
     { label: "I Owe", display: `-$${totalIOwe.toFixed(2)}`, icon: Scale, iconBg: "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40", valueColor: "text-red-600 dark:text-red-400", href: "/debts" as string | undefined },
   ];
@@ -492,18 +496,31 @@ export default function DashboardPage() {
           </div>
           <div className="space-y-2">
             {upcomingPayments.slice(0, 4).map((c) => (
-              <div key={c.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100/80 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-8 rounded-sm" style={{ background: c.color }} />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{c.name}{c.last_four ? ` ••${c.last_four}` : ""}</p>
-                    <p className={`text-xs font-medium ${getDueColor(c.daysUntilDue)}`}>{formatDueDate(c.nextDueDate, c.daysUntilDue)}</p>
+              <div key={c.id} className="group relative">
+                <Link
+                  href="/cards"
+                  className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100/80 dark:hover:bg-gray-700/60 transition-colors cursor-pointer"
+                  aria-label={`View ${c.name} card details`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-8 rounded-sm" style={{ background: c.color }} />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{c.name}{c.last_four ? ` ••${c.last_four}` : ""}</p>
+                      <p className={`text-xs font-medium ${getDueColor(c.daysUntilDue)}`}>{formatDueDate(c.nextDueDate, c.daysUntilDue)}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-base font-bold text-red-600 dark:text-red-400 tabular-nums">${c.balance.toFixed(2)}</span>
-                  <button onClick={() => setPayCard(c)} className="text-xs bg-green-600 hover:bg-green-700 text-white font-medium px-3 py-1.5 rounded-md transition-colors">Pay</button>
-                </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-base font-bold text-red-600 dark:text-red-400 tabular-nums">${c.balance.toFixed(2)}</span>
+                    {/* Spacer reserves layout room for the overlay Pay button */}
+                    <span aria-hidden className="text-xs font-medium px-3 py-1.5 opacity-0 pointer-events-none">Pay</span>
+                  </div>
+                </Link>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setPayCard(c); }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs bg-green-600 hover:bg-green-700 text-white font-medium px-3 py-1.5 rounded-md transition-colors z-10"
+                >
+                  Pay
+                </button>
               </div>
             ))}
           </div>
@@ -524,30 +541,39 @@ export default function DashboardPage() {
             {goals.filter((g) => !g.completed).slice(0, 4).map((g) => {
               const Icon = getGoalIcon(g.icon);
               return (
-                <div key={g.id} className="group flex items-center gap-3">
-                  <Link href="/goals" className="shrink-0 transition-transform hover:scale-105">
-                    {g.image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={g.image_url} alt="" className="w-9 h-9 rounded-xl object-cover border border-gray-100 dark:border-gray-800" onError={(e) => { const i = e.target as HTMLImageElement; i.style.display = "none"; i.nextElementSibling?.classList.remove("hidden"); }} />
-                    ) : null}
-                    <div className={`${g.image_url ? "hidden" : ""} w-9 h-9 rounded-xl flex items-center justify-center`} style={{ background: `${g.color}15`, color: g.color }}>
-                      <Icon size={16} />
+                <div key={g.id} className="group relative rounded-lg -mx-2 px-2 py-1 hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors">
+                  <Link href="/goals" className="flex items-center gap-3" aria-label={`View ${g.name} goal`}>
+                    <div className="shrink-0 transition-transform group-hover:scale-105">
+                      {g.image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={g.image_url} alt="" className="w-9 h-9 rounded-xl object-cover border border-gray-100 dark:border-gray-800" onError={(e) => { const i = e.target as HTMLImageElement; i.style.display = "none"; i.nextElementSibling?.classList.remove("hidden"); }} />
+                      ) : null}
+                      <div className={`${g.image_url ? "hidden" : ""} w-9 h-9 rounded-xl flex items-center justify-center`} style={{ background: `${g.color}15`, color: g.color }}>
+                        <Icon size={16} />
+                      </div>
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline justify-between mb-1">
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{g.name}</span>
+                        <span className="text-xs font-medium tabular-nums shrink-0 ml-2" style={{ color: g.color }}>{g.progress.toFixed(0)}%</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full transition-all rounded-full" style={{ width: `${Math.min(100, g.progress)}%`, background: g.color }} />
+                      </div>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 tabular-nums">${g.saved.toFixed(2)} of ${Number(g.target_amount).toFixed(2)}</p>
+                    </div>
+                    {/* Spacer reserves layout room for the overlay Add button */}
+                    <span aria-hidden className="shrink-0 px-2.5 py-1.5 opacity-0 pointer-events-none text-xs">
+                      <Plus size={12} className="inline -ml-0.5" />
+                    </span>
                   </Link>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline justify-between mb-1">
-                      <Link href="/goals" className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{g.name}</Link>
-                      <span className="text-xs font-medium tabular-nums shrink-0 ml-2" style={{ color: g.color }}>{g.progress.toFixed(0)}%</span>
-                    </div>
-                    <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                      <div className="h-full transition-all rounded-full" style={{ width: `${Math.min(100, g.progress)}%`, background: g.color }} />
-                    </div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 tabular-nums">${g.saved.toFixed(2)} of ${Number(g.target_amount).toFixed(2)}</p>
-                  </div>
-                  <button onClick={() => setContribGoalId(g.id)}
-                    className="shrink-0 text-xs font-medium text-white px-2.5 py-1.5 rounded-md transition-all hover:shadow-md opacity-0 group-hover:opacity-100"
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setContribGoalId(g.id); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-white px-2.5 py-1.5 rounded-md transition-all hover:shadow-md opacity-0 group-hover:opacity-100 z-10"
                     style={{ background: g.color }}
-                    title="Add money">
+                    title="Add money"
+                    aria-label={`Add money to ${g.name}`}
+                  >
                     <Plus size={12} className="inline -ml-0.5" />
                   </button>
                 </div>
@@ -637,7 +663,15 @@ export default function DashboardPage() {
               recentItems.slice(0, 5).map((item) => {
                 const profit = item.status === "sold" ? Number(item.sale_price) - Number(item.purchase_price) - Number(item.fees || 0) - Number(item.shipping_costs || 0) : null;
                 return (
-                  <div key={item.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <div
+                    key={item.id}
+                    onClick={() => setEditItem(item)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEditItem(item); } }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Edit ${item.name}`}
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  >
                     <div className={`p-2 rounded-lg ${item.status === "sold" ? "bg-green-50 dark:bg-green-950/40" : "bg-blue-50 dark:bg-blue-950/40"}`}>
                       {item.status === "sold" ? <ArrowUpRight size={16} className="text-green-600 dark:text-green-400" /> : <Package size={16} className="text-blue-600 dark:text-blue-400" />}
                     </div>
@@ -653,7 +687,12 @@ export default function DashboardPage() {
                       )}
                     </div>
                     {item.status === "active" && (
-                      <button onClick={() => setSoldItem(item)} className="text-xs font-medium bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-100 border border-green-200 dark:border-green-800 px-2.5 py-1 rounded-md shrink-0">Sell</button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSoldItem(item); }}
+                        className="text-xs font-medium bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-100 border border-green-200 dark:border-green-800 px-2.5 py-1 rounded-md shrink-0"
+                      >
+                        Sell
+                      </button>
                     )}
                   </div>
                 );
@@ -671,7 +710,15 @@ export default function DashboardPage() {
               <EmptyState icon={Wallet} title="No income entries yet" subtitle="Income you log will appear here" />
             ) : (
               recentIncomes.slice(0, 5).map((inc) => (
-                <div key={inc.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <div
+                  key={inc.id}
+                  onClick={() => setEditIncome(inc)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEditIncome(inc); } }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Edit ${inc.source} income`}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
                   <div className={`p-2 rounded-lg ${inc.type === "main" ? "bg-blue-50 dark:bg-blue-950/40" : "bg-purple-50 dark:bg-purple-950/40"}`}>
                     {inc.type === "main" ? <Briefcase size={16} className="text-blue-600 dark:text-blue-400" /> : <Zap size={16} className="text-purple-600 dark:text-purple-400" />}
                   </div>
@@ -734,6 +781,9 @@ export default function DashboardPage() {
           handleRefresh();
         }}
       />
+
+      <EditItemModal isOpen={!!editItem} item={editItem} onClose={() => setEditItem(null)} onUpdated={handleRefresh} />
+      <EditIncomeModal isOpen={!!editIncome} income={editIncome} onClose={() => setEditIncome(null)} onUpdated={handleRefresh} />
     </div>
   );
 }

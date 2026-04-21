@@ -41,8 +41,8 @@ export default function MetalHistoryPage() {
               const meta = firstHolding ? METALS[firstHolding.metal] : null;
               const qty = firstHolding ? Number(firstHolding.quantity) : 0;
 
-              return (
-                <div key={tx.id} className="px-5 py-4 flex items-center gap-4 hover:bg-gray-50/60 transition-colors">
+              const rowInner = (
+                <>
                   <div className={`p-2 rounded-lg ${isBuy ? "bg-blue-50 dark:bg-blue-950/40" : "bg-green-50 dark:bg-green-950/40"}`}>
                     {isBuy
                       ? <ArrowDownRight size={16} className="text-blue-600 dark:text-blue-400" />
@@ -79,7 +79,20 @@ export default function MetalHistoryPage() {
                       </p>
                     )}
                   </div>
-                </div>
+                </>
+              );
+
+              // Link buy transactions to portfolio, sell transactions to portfolio too
+              // (there's no per-transaction detail view).
+              return (
+                <Link
+                  key={tx.id}
+                  href="/metals"
+                  className="px-5 py-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
+                  aria-label={`View ${tx.type} transaction on metals portfolio`}
+                >
+                  {rowInner}
+                </Link>
               );
             })}
           </div>

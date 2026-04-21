@@ -669,13 +669,25 @@ function TripItemCard({
         dragMomentum={false}
         onDragEnd={handleDragEnd}
         style={{ x: isMobile ? x : 0 }}
-        className={`group bg-white dark:bg-gray-900 border rounded-xl hover:shadow-sm transition-colors overflow-hidden relative ${
+        className={`group bg-white dark:bg-gray-900 border rounded-xl hover:shadow-sm hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50/40 dark:hover:bg-gray-800/30 transition-colors overflow-hidden relative ${
           item.status === "done" ? "border-green-200 dark:border-green-800" :
           item.status === "skipped" ? "border-gray-200 dark:border-gray-800 opacity-60" :
           "border-gray-200 dark:border-gray-800"
-        } ${isMobile ? "touch-pan-y cursor-grab active:cursor-grabbing" : ""}`}
+        } ${isMobile ? "touch-pan-y cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
       >
-        <div className="p-3">
+        <div
+          className="p-3"
+          role="button"
+          tabIndex={0}
+          aria-label={`Edit ${item.name}`}
+          onClick={onEdit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onEdit();
+            }
+          }}
+        >
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${trip.color}15`, color: trip.color }}>
             <CatIcon size={16} />
@@ -725,16 +737,16 @@ function TripItemCard({
 
           <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
             {item.status !== "done" && (
-              <button onClick={onDone} className="text-gray-400 dark:text-gray-500 hover:text-green-600 p-1 rounded hover:bg-green-50 dark:hover:bg-green-950/40" title="Mark done"><Check size={14} /></button>
+              <button onClick={(e) => { e.stopPropagation(); onDone(); }} className="text-gray-400 dark:text-gray-500 hover:text-green-600 p-1 rounded hover:bg-green-50 dark:hover:bg-green-950/40" title="Mark done"><Check size={14} /></button>
             )}
             {item.status !== "skipped" && (
-              <button onClick={onSkip} className="text-gray-400 dark:text-gray-500 hover:text-amber-600 p-1 rounded hover:bg-amber-50 dark:hover:bg-amber-950/40" title="Skip"><X size={14} /></button>
+              <button onClick={(e) => { e.stopPropagation(); onSkip(); }} className="text-gray-400 dark:text-gray-500 hover:text-amber-600 p-1 rounded hover:bg-amber-50 dark:hover:bg-amber-950/40" title="Skip"><X size={14} /></button>
             )}
             {item.status !== "planned" && (
-              <button onClick={onReset} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-950/40" title="Reset to planned"><Circle size={14} /></button>
+              <button onClick={(e) => { e.stopPropagation(); onReset(); }} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-950/40" title="Reset to planned"><Circle size={14} /></button>
             )}
-            <button onClick={onEdit} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-950/40" title="Edit"><Pencil size={13} /></button>
-            <button onClick={onDelete} className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/40" title="Delete"><Trash2 size={13} /></button>
+            <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-950/40" title="Edit"><Pencil size={13} /></button>
+            <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/40" title="Delete"><Trash2 size={13} /></button>
           </div>
         </div>
 

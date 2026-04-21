@@ -5,8 +5,12 @@ import {
   ChevronLeft, ChevronRight, TrendingUp, Briefcase, Zap,
   X, CalendarDays, DollarSign, CreditCard, ArrowDownRight,
 } from "lucide-react";
+import EditItemModal from "@/components/EditItemModal";
+import EditIncomeModal from "@/components/EditIncomeModal";
+import EditExpenseModal from "@/components/EditExpenseModal";
 import { useCalendar, getCalendarDays } from "@/hooks/useCalendar";
 import type { DayData } from "@/hooks/useCalendar";
+import type { Item, Income, Expense } from "@/lib/types";
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -37,8 +41,11 @@ export default function CalendarPage() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [selectedDay, setSelectedDay] = useState<{ date: string; data: DayData } | null>(null);
   const [viewFilter, setViewFilter] = useState<ViewFilter>("all");
+  const [editItem, setEditItem] = useState<Item | null>(null);
+  const [editIncome, setEditIncome] = useState<Income | null>(null);
+  const [editExpense, setEditExpense] = useState<Expense | null>(null);
 
-  const { dayMap, monthTotal, monthEarned, monthSpent, loading } = useCalendar(year, month);
+  const { dayMap, monthTotal, monthEarned, monthSpent, loading, refetch } = useCalendar(year, month);
   const calendarDays = getCalendarDays(year, month);
   const today = now.toISOString().split("T")[0];
 
@@ -202,7 +209,15 @@ export default function CalendarPage() {
             {(viewFilter === "all" || viewFilter === "income") && selectedDay.data.items.map((item) => {
               const profit = Number(item.sale_price) - Number(item.purchase_price) - Number(item.fees || 0) - Number(item.shipping_costs || 0);
               return (
-                <div key={item.id} className="flex items-center gap-3 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100/80 transition-colors">
+                <div
+                  key={item.id}
+                  onClick={() => setEditItem(item)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEditItem(item); } }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Edit ${item.name}`}
+                  className="flex items-center gap-3 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100/80 dark:hover:bg-gray-700/60 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
                   <div className="p-2 rounded-lg bg-emerald-50"><TrendingUp size={16} className="text-emerald-600" /></div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-900 dark:text-gray-100 font-medium truncate">{item.name}</p>
@@ -215,7 +230,15 @@ export default function CalendarPage() {
 
             {/* Income */}
             {(viewFilter === "all" || viewFilter === "income") && selectedDay.data.incomes.map((inc) => (
-              <div key={inc.id} className="flex items-center gap-3 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100/80 transition-colors">
+              <div
+                key={inc.id}
+                onClick={() => setEditIncome(inc)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEditIncome(inc); } }}
+                role="button"
+                tabIndex={0}
+                aria-label={`Edit ${inc.source} income`}
+                className="flex items-center gap-3 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100/80 dark:hover:bg-gray-700/60 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
                 <div className={`p-2 rounded-lg ${inc.type === "main" ? "bg-blue-50 dark:bg-blue-950/40" : "bg-purple-50 dark:bg-purple-950/40"}`}>
                   {inc.type === "main" ? <Briefcase size={16} className="text-blue-600 dark:text-blue-400" /> : <Zap size={16} className="text-purple-600 dark:text-purple-400" />}
                 </div>
@@ -229,7 +252,15 @@ export default function CalendarPage() {
 
             {/* Expenses */}
             {(viewFilter === "all" || viewFilter === "expenses") && selectedDay.data.expenses.map((exp) => (
-              <div key={exp.id} className="flex items-center gap-3 p-3.5 rounded-xl bg-red-50/50 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors">
+              <div
+                key={exp.id}
+                onClick={() => setEditExpense(exp)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEditExpense(exp); } }}
+                role="button"
+                tabIndex={0}
+                aria-label={`Edit ${exp.name} expense`}
+                className="flex items-center gap-3 p-3.5 rounded-xl bg-red-50/50 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
                 <div className="p-2 rounded-lg bg-red-50 dark:bg-red-950/40"><ArrowDownRight size={16} className="text-red-500" /></div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-gray-900 dark:text-gray-100 font-medium truncate">{exp.name}</p>
@@ -241,6 +272,10 @@ export default function CalendarPage() {
           </div>
         </div>
       )}
+
+      <EditItemModal isOpen={!!editItem} item={editItem} onClose={() => setEditItem(null)} onUpdated={refetch} />
+      <EditIncomeModal isOpen={!!editIncome} income={editIncome} onClose={() => setEditIncome(null)} onUpdated={refetch} />
+      <EditExpenseModal isOpen={!!editExpense} expense={editExpense} onClose={() => setEditExpense(null)} onUpdated={refetch} />
     </div>
   );
 }

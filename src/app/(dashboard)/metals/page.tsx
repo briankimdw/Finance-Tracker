@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Trash2, Pencil, History, Coins } from "lucide-react";
+import { Plus, Trash2, History, Coins } from "lucide-react";
 import AddHoldingModal from "@/components/AddHoldingModal";
 import SellHoldingModal from "@/components/SellHoldingModal";
 import EditHoldingModal from "@/components/EditHoldingModal";
@@ -100,7 +100,11 @@ export default function MetalsPage() {
                   const pnl = value - cost;
                   const meta = METALS[h.metal];
                   return (
-                    <tr key={h.id} className="hover:bg-gray-50/80 even:bg-gray-50/40">
+                    <tr
+                      key={h.id}
+                      onClick={() => setEditHolding(h)}
+                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 even:bg-gray-50/40 dark:even:bg-gray-800/20 transition-colors"
+                    >
                       <td className="px-4 py-3.5">
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${meta.iconBg}`}>{meta.name}</span>
                       </td>
@@ -116,9 +120,25 @@ export default function MetalsPage() {
                       </td>
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-2">
-                          <button onClick={() => setEditHolding(h)} className="text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-blue-200 dark:border-blue-800 px-2.5 py-1 rounded-md transition-colors">Edit</button>
-                          <button onClick={() => setSellHolding(h)} className="text-xs bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-100 border border-green-200 dark:border-green-800 px-2.5 py-1 rounded-md transition-colors">Sell</button>
-                          <button onClick={() => deleteHolding(h.id)} className="text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors" title="Delete"><Trash2 size={14} /></button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setEditHolding(h); }}
+                            className="text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-blue-200 dark:border-blue-800 px-2.5 py-1 rounded-md transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setSellHolding(h); }}
+                            className="text-xs bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-100 border border-green-200 dark:border-green-800 px-2.5 py-1 rounded-md transition-colors"
+                          >
+                            Sell
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); deleteHolding(h.id); }}
+                            className="text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         </div>
                       </td>
                     </tr>

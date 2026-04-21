@@ -217,12 +217,24 @@ export default function GoalsPage() {
                     onDragOver={(e) => onDragOver(e, i)}
                     onDragEnd={onDragEnd}
                     onDrop={(e) => onDrop(e, i)}
-                    className={`group bg-white dark:bg-gray-900 border rounded-xl shadow-sm overflow-hidden transition-all cursor-move ${isOver ? "border-blue-400 ring-2 ring-blue-200 -translate-y-0.5" : "border-gray-200 dark:border-gray-800 hover:shadow-md"}`}>
+                    className={`group bg-white dark:bg-gray-900 border rounded-xl shadow-sm overflow-hidden transition-all ${isOver ? "border-blue-400 ring-2 ring-blue-200 -translate-y-0.5" : "border-gray-200 dark:border-gray-800 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-700"}`}>
 
-                    {/* Main card content */}
-                    <div className="p-5">
+                    {/* Main card content — entire row is clickable to open Add Money */}
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Add money to ${g.name}`}
+                      onClick={() => setContribGoal(g)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setContribGoal(g);
+                        }
+                      }}
+                      className="p-5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-inset"
+                    >
                       <div className="flex items-start gap-4">
-                        <GripVertical size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-400 mt-2 shrink-0" />
+                        <GripVertical size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-400 mt-2 shrink-0 cursor-move" />
 
                         {/* Icon or image */}
                         {g.image_url ? (
@@ -271,7 +283,7 @@ export default function GoalsPage() {
                                 {(() => {
                                   const relatedTrip = trips.find((t) => t.goal_id === g.id);
                                   return relatedTrip ? (
-                                    <Link href={`/trips/${relatedTrip.id}`} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 hover:bg-sky-200" title={relatedTrip.name}>
+                                    <Link href={`/trips/${relatedTrip.id}`} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 hover:bg-sky-200" title={relatedTrip.name}>
                                       <Plane size={10} /> TRIP · ${relatedTrip.totalActual.toFixed(0)}/${Number(relatedTrip.total_budget).toFixed(0)}
                                     </Link>
                                   ) : null;
@@ -311,7 +323,7 @@ export default function GoalsPage() {
                                   </div>
                                   {g.isOwner && (
                                     <button
-                                      onClick={() => setInviteGoal(g)}
+                                      onClick={(e) => { e.stopPropagation(); setInviteGoal(g); }}
                                       className="text-[10px] font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-0.5 ml-1"
                                     >
                                       <UserPlus size={10} /> Invite
@@ -322,25 +334,25 @@ export default function GoalsPage() {
                             </div>
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                               {isComplete && (
-                                <button onClick={() => updateGoal(g.id, { completed: true })} className="text-xs text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/40 p-1.5 rounded" title="Mark complete">
+                                <button onClick={(e) => { e.stopPropagation(); updateGoal(g.id, { completed: true }); }} className="text-xs text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/40 p-1.5 rounded" title="Mark complete">
                                   <Check size={14} />
                                 </button>
                               )}
                               {g.is_shared && g.isOwner && (
-                                <button onClick={() => setInviteGoal(g)} className="text-gray-400 dark:text-gray-500 hover:text-purple-600 p-1.5 rounded" title="Invite members"><UserPlus size={14} /></button>
+                                <button onClick={(e) => { e.stopPropagation(); setInviteGoal(g); }} className="text-gray-400 dark:text-gray-500 hover:text-purple-600 p-1.5 rounded" title="Invite members"><UserPlus size={14} /></button>
                               )}
                               {(() => {
                                 const relatedTrip = trips.find((t) => t.goal_id === g.id);
                                 if (relatedTrip) {
                                   return (
-                                    <Link href={`/trips/${relatedTrip.id}`} className="text-gray-400 dark:text-gray-500 hover:text-sky-600 p-1.5 rounded" title={`Open linked trip: ${relatedTrip.name}`}>
+                                    <Link href={`/trips/${relatedTrip.id}`} onClick={(e) => e.stopPropagation()} className="text-gray-400 dark:text-gray-500 hover:text-sky-600 p-1.5 rounded" title={`Open linked trip: ${relatedTrip.name}`}>
                                       <Plane size={14} />
                                     </Link>
                                   );
                                 }
                                 if (g.category === "travel" && g.isOwner) {
                                   return (
-                                    <button onClick={() => setTripFromGoalId(g.id)} className="text-gray-400 dark:text-gray-500 hover:text-sky-600 p-1.5 rounded" title="Plan a trip from this goal">
+                                    <button onClick={(e) => { e.stopPropagation(); setTripFromGoalId(g.id); }} className="text-gray-400 dark:text-gray-500 hover:text-sky-600 p-1.5 rounded" title="Plan a trip from this goal">
                                       <Plane size={14} />
                                     </button>
                                   );
@@ -348,12 +360,12 @@ export default function GoalsPage() {
                                 return null;
                               })()}
                               {g.isOwner && (
-                                <button onClick={() => { setEditGoal(g); setShowAddModal(true); }} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 rounded" title="Edit"><Pencil size={14} /></button>
+                                <button onClick={(e) => { e.stopPropagation(); setEditGoal(g); setShowAddModal(true); }} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 rounded" title="Edit"><Pencil size={14} /></button>
                               )}
                               {g.isOwner ? (
-                                <button onClick={() => handleDeleteGoal(g, true)} className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1.5 rounded" title="Delete"><Trash2 size={14} /></button>
+                                <button onClick={(e) => { e.stopPropagation(); handleDeleteGoal(g, true); }} className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1.5 rounded" title="Delete"><Trash2 size={14} /></button>
                               ) : (
-                                <button onClick={() => handleLeaveGoal(g)} className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1.5 rounded" title="Leave goal"><LogOut size={14} /></button>
+                                <button onClick={(e) => { e.stopPropagation(); handleLeaveGoal(g); }} className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1.5 rounded" title="Leave goal"><LogOut size={14} /></button>
                               )}
                             </div>
                           </div>
@@ -399,6 +411,7 @@ export default function GoalsPage() {
                             )}
                             {linkedTripForSync && tripSpent > 0 && (
                               <Link href={`/trips/${linkedTripForSync.id}`}
+                                onClick={(e) => e.stopPropagation()}
                                 className="inline-flex items-center gap-1 hover:text-sky-700 dark:hover:text-sky-300 transition-colors">
                                 <span className="w-2 h-2 rounded-sm" style={{
                                   background: `repeating-linear-gradient(135deg, ${g.color}aa 0 3px, ${g.color}66 3px 6px)`,
@@ -414,10 +427,10 @@ export default function GoalsPage() {
                               {isComplete ? "🎉 Goal reached!" : `$${combinedRemaining.toFixed(2)} to go`}
                             </span>
                             <div className="flex items-center gap-2">
-                              <button onClick={() => setContribGoal(g)} className="text-xs font-medium text-white px-3 py-1.5 rounded-md transition-all hover:shadow-md" style={{ background: g.color }}>
+                              <button onClick={(e) => { e.stopPropagation(); setContribGoal(g); }} className="text-xs font-medium text-white px-3 py-1.5 rounded-md transition-all hover:shadow-md" style={{ background: g.color }}>
                                 <Plus size={12} className="inline -ml-0.5" /> Add Money
                               </button>
-                              <button onClick={() => toggleExpand(g.id)} className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 p-1.5 rounded hover:bg-gray-50 dark:hover:bg-gray-800">
+                              <button onClick={(e) => { e.stopPropagation(); toggleExpand(g.id); }} className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 p-1.5 rounded hover:bg-gray-50 dark:hover:bg-gray-800" title={isExpanded ? "Collapse history" : "Show history"}>
                                 {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                               </button>
                             </div>
