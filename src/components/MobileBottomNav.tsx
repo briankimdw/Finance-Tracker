@@ -6,10 +6,11 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, CreditCard, WalletCards, Wallet, MoreHorizontal,
-  Package, History, Coins, CalendarDays, Target, HandCoins, PieChart, Plane, X,
+  Package, History, Coins, CalendarDays, Target, HandCoins, PieChart, Plane, Users, X,
   LogOut, LogIn, User, TrendingUp,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useFriends } from "@/hooks/useFriends";
 
 const primaryTabs = [
   { href: "/", label: "Home", icon: LayoutDashboard },
@@ -21,6 +22,7 @@ const primaryTabs = [
 const moreItems = [
   { href: "/income", label: "Income", icon: Wallet, color: "text-green-600 bg-green-50" },
   { href: "/debts", label: "Debts", icon: HandCoins, color: "text-amber-600 bg-amber-50" },
+  { href: "/friends", label: "Friends", icon: Users, color: "text-indigo-600 bg-indigo-50" },
   { href: "/goals", label: "Goals", icon: Target, color: "text-blue-600 bg-blue-50" },
   { href: "/trips", label: "Trips", icon: Plane, color: "text-sky-600 bg-sky-50" },
   { href: "/inventory", label: "Inventory", icon: Package, color: "text-orange-600 bg-orange-50" },
@@ -32,6 +34,8 @@ const moreItems = [
 export default function MobileBottomNav() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
+  const { incoming } = useFriends();
+  const pendingCount = incoming.length;
   const [moreOpen, setMoreOpen] = useState(false);
 
   const isActive = (href: string) => pathname === href;
@@ -71,12 +75,13 @@ export default function MobileBottomNav() {
                 {moreItems.map((item) => {
                   const Icon = item.icon;
                   const active = isActive(item.href);
+                  const badge = item.href === "/friends" && pendingCount > 0 ? pendingCount : 0;
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
                       onClick={() => setMoreOpen(false)}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all ${
+                      className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl transition-all ${
                         active ? "bg-blue-50 ring-2 ring-blue-200" : "bg-gray-50 hover:bg-gray-100"
                       }`}
                     >
@@ -84,6 +89,9 @@ export default function MobileBottomNav() {
                         <Icon size={20} />
                       </div>
                       <span className="text-xs font-medium text-gray-700">{item.label}</span>
+                      {badge > 0 && (
+                        <span className="absolute top-2 right-2 min-w-[18px] h-[18px] bg-blue-600 text-white text-[10px] font-bold rounded-full px-1 flex items-center justify-center">{badge}</span>
+                      )}
                     </Link>
                   );
                 })}

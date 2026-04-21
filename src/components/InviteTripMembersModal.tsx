@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Mail, Copy, Users, Check, Trash2, CheckCircle, AlertCircle } from "lucide-react";
+import Link from "next/link";
+import { X, Mail, Copy, Users, Check, Trash2, CheckCircle, AlertCircle, UserPlus, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
-import type { TripWithStats, TripInvite, TripMember } from "@/lib/types";
+import { useFriends } from "@/hooks/useFriends";
+import type { TripWithStats, TripInvite, TripMember, Profile } from "@/lib/types";
 
 interface InviteResult {
   token: string;
@@ -23,12 +25,15 @@ interface InviteTripMembersModalProps {
 
 export default function InviteTripMembersModal({ isOpen, trip, onClose, onInvite, onRemoveMember }: InviteTripMembersModalProps) {
   const { user } = useAuth();
+  const { friends } = useFriends();
   const supabase = createClient();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [pending, setPending] = useState<TripInvite[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ kind: "success" | "warn" | "error"; text: string } | null>(null);
+  const [memberProfiles, setMemberProfiles] = useState<Record<string, Profile>>({});
+  const [addingFriendId, setAddingFriendId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen || !trip) return;
@@ -40,6 +45,17 @@ export default function InviteTripMembersModal({ isOpen, trip, onClose, onInvite
         .is("accepted_at", null)
         .order("created_at", { ascending: false });
       setPending((invs as TripInvite[]) || []);
+
+      // Fetch member profiles for nicer display
+      const memberIds = trip.members.map((m) => m.user_id);
+      if (memberIds.length > 0) {
+        const { data: profs } = await supabase.from("profiles").select("*").in("id", memberIds);
+        const map: Record<string, Profile> = {};
+        for (const p of (profs as Profile[]) || []) map[p.id] = p;
+        setMemberProfiles(map);
+      } else {
+        setMemberProfiles({});
+      }
     })();
   }, [isOpen, trip, supabase]);
 
@@ -56,6 +72,31 @@ export default function InviteTripMembersModal({ isOpen, trip, onClose, onInvite
       .is("accepted_at", null)
       .order("created_at", { ascending: false });
     setPending((data as TripInvite[]) || []);
+  };
+
+  // Direct-add friend (no email needed — friendship already verified)
+  const handleAddFriend = async (friendUserId: string) => {
+    setAddingFriendId(friendUserId);
+    setNotice(null);
+    // Ensure trip is marked shared
+    if (!trip.is_shared) {
+      await supabase.from("trips").update({ is_shared: true }).eq("id", trip.id);
+    }
+    const { error } = await supabase.from("trip_members").insert({
+      trip_id: trip.id,
+      user_id: friendUserId,
+      role: "member",
+    });
+    setAddingFriendId(null);
+    if (error) {
+      if ((error as unknown as { code?: string }).code === "23505") {
+        setNotice({ kind: "warn", text: "Already on this trip." });
+      } else {
+        setNotice({ kind: "error", text: error.message });
+      }
+    } else {
+      setNotice({ kind: "success", text: "Added to the trip." });
+    }
   };
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -104,11 +145,16 @@ export default function InviteTripMembersModal({ isOpen, trip, onClose, onInvite
 
   const input = "w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm";
 
+  // Friends not yet on the trip
+  const memberIds = new Set(trip.members.map((m) => m.user_id));
+  const pendingEmails = new Set(pending.map((p) => (p.email || "").toLowerCase()));
+  const invitableFriends = friends.filter((f) => !memberIds.has(f.userId));
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl shadow-gray-900/10 border border-gray-100">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Travel companions</h2>
             <p className="text-xs text-gray-400 truncate">{trip.name}</p>
@@ -116,17 +162,66 @@ export default function InviteTripMembersModal({ isOpen, trip, onClose, onInvite
           <button onClick={onClose} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"><X size={20} /></button>
         </div>
 
+        {/* Friends quick-add */}
+        <div className="p-5 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5"><Users size={12} /> Invite friends</h3>
+            <Link href="/friends" className="text-[11px] text-blue-600 hover:text-blue-700 font-medium">Manage →</Link>
+          </div>
+
+          {friends.length === 0 ? (
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <Sparkles size={14} className="text-blue-600 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs font-semibold text-blue-900">No friends yet</p>
+                  <p className="text-[11px] text-blue-700 mt-0.5">
+                    <Link href="/friends" className="underline font-medium">Add friends</Link> by username or email, and you can invite them here with one click (no email needed).
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : invitableFriends.length === 0 ? (
+            <p className="text-xs text-gray-400">All your friends are already on this trip.</p>
+          ) : (
+            <div className="space-y-1.5 max-h-56 overflow-y-auto">
+              {invitableFriends.map((f) => {
+                const initial = (f.profile?.display_name || f.profile?.username || "?").charAt(0).toUpperCase();
+                const isPending = f.profile?.email ? pendingEmails.has(f.profile.email.toLowerCase()) : false;
+                return (
+                  <div key={f.userId} className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 text-xs font-semibold text-blue-700">{initial}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{f.profile?.display_name || f.profile?.username || "Friend"}</p>
+                      <p className="text-[11px] text-gray-400 truncate">{f.profile?.username ? <>@{f.profile.username}</> : f.profile?.email}</p>
+                    </div>
+                    {isPending ? (
+                      <span className="text-[10px] font-semibold text-amber-600 px-2 py-1">PENDING</span>
+                    ) : (
+                      <button onClick={() => handleAddFriend(f.userId)} disabled={addingFriendId === f.userId}
+                        className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
+                        <UserPlus size={11} /> Add
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Email invite */}
         <form onSubmit={handleInvite} className="p-5 space-y-3 border-b border-gray-100">
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            <span className="flex items-center gap-1.5"><Mail size={14} className="text-gray-400" /> Invite by email</span>
+            <span className="flex items-center gap-1.5"><Mail size={14} className="text-gray-400" /> Or invite by email</span>
           </label>
           <div className="flex gap-2">
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className={input} placeholder="friend@example.com" />
             <button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-2.5 px-4 rounded-lg shrink-0 transition-all hover:shadow-lg hover:shadow-blue-600/20">
-              {loading ? "Sending..." : "Send invite"}
+              {loading ? "Sending..." : "Send"}
             </button>
           </div>
-          {notice ? (
+          {notice && (
             <div className={`flex items-start gap-2 text-xs rounded-lg px-3 py-2 ${
               notice.kind === "success" ? "bg-green-50 text-green-700 border border-green-100" :
               notice.kind === "warn" ? "bg-amber-50 text-amber-700 border border-amber-100" :
@@ -135,14 +230,13 @@ export default function InviteTripMembersModal({ isOpen, trip, onClose, onInvite
               {notice.kind === "success" ? <CheckCircle size={13} className="mt-0.5 shrink-0" /> : <AlertCircle size={13} className="mt-0.5 shrink-0" />}
               <span>{notice.text}</span>
             </div>
-          ) : (
-            <p className="text-xs text-gray-400">We&apos;ll email them a link from NetWorth. Replies go to your inbox ({user?.email}).</p>
           )}
+          <p className="text-[11px] text-gray-400">Use email for people who aren&apos;t your friends yet or don&apos;t have a NetWorth account. Reply-To is your email ({user?.email}).</p>
         </form>
 
         {pending.length > 0 && (
           <div className="p-5 border-b border-gray-100">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Pending invites</h3>
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Pending email invites</h3>
             <div className="space-y-2">
               {pending.map((inv) => (
                 <div key={inv.id} className="flex items-center gap-2 p-2.5 rounded-lg bg-gray-50">
@@ -167,17 +261,19 @@ export default function InviteTripMembersModal({ isOpen, trip, onClose, onInvite
           </h3>
           <div className="space-y-2">
             {trip.members.map((m) => {
-              const initial = m.user_id.charAt(0).toUpperCase();
+              const p = memberProfiles[m.user_id];
+              const displayName = p?.display_name || p?.username || (user?.id === m.user_id ? "You" : m.user_id.slice(0, 8));
+              const initial = displayName.charAt(0).toUpperCase();
               const isMe = user?.id === m.user_id;
               return (
                 <div key={m.id} className="flex items-center gap-2 p-2.5 rounded-lg bg-gray-50">
                   <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center shrink-0 text-[11px] font-semibold text-blue-700">{initial}</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-900 truncate">
-                      {isMe ? "You" : m.user_id.slice(0, 8)}
+                      {isMe ? "You" : displayName}
                       {m.role === "owner" && <span className="ml-1.5 text-[10px] font-semibold text-amber-600">OWNER</span>}
                     </p>
-                    <p className="text-[10px] text-gray-400">Joined {new Date(m.joined_at).toLocaleDateString()}</p>
+                    <p className="text-[10px] text-gray-400">{p?.username ? <>@{p.username} · </> : ""}Joined {new Date(m.joined_at).toLocaleDateString()}</p>
                   </div>
                   {trip.isOwner && m.role !== "owner" && onRemoveMember && (
                     <button onClick={() => handleRemoveMember(m)} className="text-gray-300 hover:text-red-500 p-1.5 rounded" title="Remove"><Trash2 size={13} /></button>

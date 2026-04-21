@@ -1,3 +1,35 @@
+// ---- Profiles & friends ----
+
+export interface Profile {
+  id: string;
+  username: string | null;
+  display_name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type FriendRequestStatus = "pending" | "accepted" | "rejected";
+
+export interface FriendRequest {
+  id: string;
+  from_user: string;
+  to_user: string;
+  status: FriendRequestStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+// Enriched: a friend relationship with the other person's profile
+export interface Friend {
+  requestId: string;      // friend_requests.id
+  userId: string;         // the other person's user id
+  profile: Profile | null;
+  since: string;          // friend_requests.updated_at when accepted
+  direction: "incoming" | "outgoing"; // who originally sent the request
+}
+
 export type ItemStatus = "active" | "sold";
 
 export type ItemCondition =

@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useFriends } from "@/hooks/useFriends";
 import {
-  LayoutDashboard, Package, History, CalendarDays, Wallet, CreditCard, Coins, WalletCards, Target, HandCoins, PieChart, Plane,
+  LayoutDashboard, Package, History, CalendarDays, Wallet, CreditCard, Coins, WalletCards, Target, HandCoins, PieChart, Plane, Users,
   LogOut, LogIn, TrendingUp, User,
 } from "lucide-react";
 
@@ -28,11 +29,14 @@ const navItems: NavItem[] = [
   { href: "/goals", label: "Goals", icon: Target },
   { href: "/trips", label: "Trips", icon: Plane },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
+  { href: "/friends", label: "Friends", icon: Users, divider: true },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
+  const { incoming } = useFriends();
+  const pendingCount = incoming.length;
 
   return (
     <>
@@ -60,6 +64,7 @@ export default function Sidebar() {
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
+            const badge = item.href === "/friends" && pendingCount > 0 ? pendingCount : 0;
             return (
               <div key={item.href}>
                 {item.divider && <div className="my-2 border-t border-gray-200/60" />}
@@ -70,7 +75,10 @@ export default function Sidebar() {
                       : "text-gray-500 hover:text-gray-900 hover:bg-white/60"
                   }`}>
                   <Icon size={18} />
-                  {item.label}
+                  <span className="flex-1">{item.label}</span>
+                  {badge > 0 && (
+                    <span className="min-w-[18px] h-[18px] bg-blue-600 text-white text-[10px] font-bold rounded-full px-1.5 flex items-center justify-center">{badge}</span>
+                  )}
                 </Link>
               </div>
             );
