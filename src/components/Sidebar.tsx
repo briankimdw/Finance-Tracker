@@ -10,6 +10,8 @@ import {
   LogOut, LogIn, TrendingUp, UserCog,
 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
+import { Command } from "lucide-react";
+import { useCommandPaletteContext } from "@/context/CommandPaletteContext";
 
 interface NavItem {
   href: string;
@@ -41,6 +43,7 @@ export default function Sidebar() {
   const { incoming } = useFriends();
   const { trips: tripInvites, goals: goalInvites } = usePendingInvites();
   const { profile } = useProfile();
+  const palette = useCommandPaletteContext();
   const pendingCount = incoming.length + tripInvites.length + goalInvites.length;
   const avatarUrl = profile?.avatar_url || null;
   const avatarInitial = (profile?.display_name || profile?.username || user?.email || "?").charAt(0).toUpperCase();
@@ -131,6 +134,20 @@ export default function Sidebar() {
                   <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-400 rounded-full ring-2 ring-white" />
                 )}
               </Link>
+              {palette && (
+                <button
+                  type="button"
+                  onClick={palette.open}
+                  className="flex items-center gap-2 w-full px-2.5 py-1.5 mb-1 rounded-md text-[11px] font-medium text-gray-500 bg-white border border-gray-200 hover:border-blue-200 hover:text-gray-900 hover:bg-gray-50 transition-all"
+                  title="Open command palette"
+                >
+                  <Command size={12} />
+                  <span className="flex-1 text-left">Quick search</span>
+                  <kbd className="flex items-center gap-0.5 px-1 py-0.5 rounded border border-gray-200 bg-gray-50 text-[9px] font-semibold text-gray-500">
+                    {"\u2318"}K
+                  </kbd>
+                </button>
+              )}
               <button onClick={signOut}
                 className="flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium text-gray-400 hover:text-red-600 hover:bg-red-50 w-full transition-all">
                 <LogOut size={18} /> Sign Out

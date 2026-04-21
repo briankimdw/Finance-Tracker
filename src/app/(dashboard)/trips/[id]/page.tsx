@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useMotionValue, animate } from "framer-motion";
 import {
   ArrowLeft, Plus, MapPin, Calendar, Check, X, Pencil, Trash2, ExternalLink,
   TrendingUp, TrendingDown, Wallet, PiggyBank, Circle, List, CalendarDays,
@@ -74,6 +74,32 @@ export default function TripDetailPage() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showQuickLog, setShowQuickLog] = useState(false);
   const [memberProfiles, setMemberProfiles] = useState<Record<string, Profile>>({});
+
+  // Mobile detection for swipe-to-delete on itinerary items
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 1024px)");
+    setIsMobile(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  // Sticky collapsing mini-header (mobile): track when the hero has scrolled past
+  const heroRef = useRef<HTMLDivElement>(null);
+  const { scrollY } = useScroll();
+  const [showMiniHeader, setShowMiniHeader] = useState(false);
+  useEffect(() => {
+    const unsubscribe = scrollY.on("change", (y) => {
+      const hero = heroRef.current;
+      if (!hero) return;
+      // Show mini-header once we've scrolled past ~80% of the hero height
+      const threshold = hero.offsetTop + hero.offsetHeight * 0.8;
+      setShowMiniHeader(y > threshold);
+    });
+    return () => unsubscribe();
+  }, [scrollY]);
 
   // Fetch member profiles for paid-by display
   useEffect(() => {
@@ -244,12 +270,37 @@ export default function TripDetailPage() {
 
   return (
     <div className="space-y-5">
+      {/* Sticky collapsing mini-header (mobile only) — appears once hero is scrolled past */}
+      <AnimatePresence>
+        {showMiniHeader && (
+          <motion.div
+            key="mini-header"
+            initial={{ y: -48, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -48, opacity: 0 }}
+            transition={{ type: "spring", damping: 24, stiffness: 280 }}
+            className="lg:hidden fixed top-14 left-0 right-0 z-20 bg-white/95 backdrop-blur-md border-b border-gray-200/60 px-3 py-2 flex items-center gap-2"
+          >
+            <Link href="/trips" className="p-1.5 -ml-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100" aria-label="Back to trips">
+              <ArrowLeft size={18} />
+            </Link>
+            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: trip.color }} />
+            <span className="text-sm font-semibold text-gray-900 truncate flex-1">{trip.name}</span>
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${
+              trip.status === "active" ? "bg-green-100 text-green-700" :
+              trip.status === "planning" ? "bg-blue-100 text-blue-700" :
+              trip.status === "cancelled" ? "bg-gray-200 text-gray-600" : "bg-amber-100 text-amber-700"
+            }`}>{trip.status.toUpperCase()}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Link href="/trips" className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 w-fit">
         <ArrowLeft size={12} /> All trips
       </Link>
 
       {/* Hero header */}
-      <div className="relative overflow-hidden rounded-2xl border border-gray-200 shadow-sm">
+      <div ref={heroRef} className="relative overflow-hidden rounded-2xl border border-gray-200 shadow-sm">
         {trip.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={trip.image_url} alt="" className="w-full h-40 object-cover" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
@@ -479,6 +530,7 @@ export default function TripDetailPage() {
                   memberProfiles={memberProfiles}
                   currentUserId={user?.id ?? null}
                   isShared={trip.members.length >= 2}
+                  isMobile={isMobile}
                   onEdit={() => { setEditItem(item); setShowItemModal(true); }}
                   onDone={() => handleMarkDone(item)} onSkip={() => handleMarkSkipped(item)} onReset={() => markItemPlanned(item.id)}
                   onDelete={() => handleDeleteItem(item)} delay={i * 0.02} />
@@ -544,7 +596,7 @@ function LegendDot({ color, label, opacity = 1 }: { color: string; label: string
 
 function TripItemCard({
   item, trip, onEdit, onDone, onSkip, onReset, onDelete, delay,
-  memberProfiles, currentUserId, isShared,
+  memberProfiles, currentUserId, isShared, isMobile,
 }: {
   item: TripItem;
   trip: { color: string };
@@ -557,6 +609,7 @@ function TripItemCard({
   memberProfiles?: Record<string, Profile>;
   currentUserId?: string | null;
   isShared?: boolean;
+  isMobile?: boolean;
 }) {
   const CatIcon = getCategoryIcon(item.category);
   const planned = Number(item.planned_amount);
@@ -578,16 +631,51 @@ function TripItemCard({
   const showSplit = isShared && item.status === "done" && splits.length > 0;
   const hasBookingInfo = !!(item.location || item.confirmation_code || item.start_time || item.end_time || item.end_date) || showPayer || showSplit;
 
+  // Swipe-to-delete (mobile only)
+  const x = useMotionValue(0);
+  const handleDragEnd = (_: unknown, info: { offset: { x: number } }) => {
+    if (info.offset.x < -80) {
+      // Snap fully open, then fire delete. If user cancels, card springs back on re-render.
+      animate(x, -160, { type: "spring", damping: 28, stiffness: 320 });
+      onDelete();
+      // Snap back to 0 after a beat so the card doesn't stay open if the delete is cancelled.
+      setTimeout(() => animate(x, 0, { type: "spring", damping: 28, stiffness: 320 }), 250);
+    } else {
+      animate(x, 0, { type: "spring", damping: 28, stiffness: 320 });
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, delay }}
-      className={`group bg-white border rounded-xl hover:shadow-sm transition-all overflow-hidden ${
-        item.status === "done" ? "border-green-200" :
-        item.status === "skipped" ? "border-gray-200 opacity-60" :
-        "border-gray-200"
-      }`}>
-      <div className="p-3">
+      className="relative rounded-xl overflow-hidden"
+    >
+      {/* Swipe-revealed delete action (mobile only) */}
+      {isMobile && (
+        <button
+          onClick={onDelete}
+          aria-label="Delete item"
+          className="lg:hidden absolute inset-y-0 right-0 w-40 bg-red-500 text-white flex items-center justify-end pr-6 gap-2 font-semibold text-sm"
+        >
+          <Trash2 size={18} /> Delete
+        </button>
+      )}
+
+      <motion.div
+        drag={isMobile ? "x" : false}
+        dragConstraints={{ left: -160, right: 0 }}
+        dragElastic={0.15}
+        dragMomentum={false}
+        onDragEnd={handleDragEnd}
+        style={{ x: isMobile ? x : 0 }}
+        className={`group bg-white border rounded-xl hover:shadow-sm transition-colors overflow-hidden relative ${
+          item.status === "done" ? "border-green-200" :
+          item.status === "skipped" ? "border-gray-200 opacity-60" :
+          "border-gray-200"
+        } ${isMobile ? "touch-pan-y cursor-grab active:cursor-grabbing" : ""}`}
+      >
+        <div className="p-3">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${trip.color}15`, color: trip.color }}>
             <CatIcon size={16} />
@@ -706,7 +794,8 @@ function TripItemCard({
         {!hasBookingInfo && item.notes && (
           <p className="mt-2 pl-12 text-[11px] text-gray-500 truncate" title={item.notes}>✎ {item.notes}</p>
         )}
-      </div>
+        </div>
+      </motion.div>
     </motion.div>
   );
 }

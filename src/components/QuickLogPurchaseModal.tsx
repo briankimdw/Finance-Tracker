@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { DollarSign, User, Bed, Plane, Utensils, MapPin, ShoppingBag, Package } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { User, Bed, Plane, Utensils, MapPin, ShoppingBag, Package, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import SplitEditor from "@/components/SplitEditor";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import NumericInput from "@/components/ui/NumericInput";
+import { equalSplit } from "@/hooks/useTrips";
 import type { TripItemCategory, TripMember, Profile, SplitInput } from "@/lib/types";
 
 const CATEGORIES: { value: TripItemCategory; label: string; Icon: typeof Bed }[] = [
@@ -69,6 +71,21 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
   const update = <K extends keyof typeof form>(key: K, value: typeof form[K]) =>
     setForm((p) => ({ ...p, [key]: value }));
 
+  const amountNum = parseFloat(form.amount) || 0;
+  const hasMembers = members.length >= 2;
+
+  // Live equal-split preview for the chip
+  const perPersonPreview = useMemo(() => {
+    if (!hasMembers || amountNum <= 0) return null;
+    const ids = members.map((m) => m.user_id);
+    const shares = equalSplit(amountNum, ids);
+    if (shares.length === 0) return null;
+    // All shares are near-equal; use the first as the display value
+    return { perPerson: shares[0].amount, ways: ids.length };
+  }, [amountNum, hasMembers, members]);
+
+  const canSubmit = !!form.name.trim() && amountNum > 0 && !loading && (!showSplit || splitsValid);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.amount) return;
@@ -88,23 +105,60 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
   };
 
   const input = "w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm";
-  const hasMembers = members.length >= 2;
 
   const sheetTitle = tripName ? `${tripName} · Log a purchase` : "Log a purchase";
+
+  const submitLabel = loading
+    ? "Logging..."
+    : amountNum > 0
+      ? `Log $${amountNum.toFixed(2)}`
+      : "Log purchase";
 
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} title={sheetTitle} size="sm">
       <form onSubmit={handleSubmit} className="space-y-3">
+          {/* 1. Hero amount input */}
+          <div className="flex flex-col items-center">
+            <NumericInput
+              size="hero"
+              value={form.amount}
+              onChange={(v) => update("amount", v)}
+              autoFocus
+              required
+              ariaLabel="Amount"
+              placeholder="0.00"
+            />
+
+            {/* 2. Live split preview chip (shared trips with members only) */}
+            {hasMembers && perPersonPreview && !showSplit && (
+              <button
+                type="button"
+                onClick={() => setShowSplit(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1 -mt-1 rounded-full bg-blue-50 text-blue-700 text-[11px] font-medium border border-blue-100 hover:bg-blue-100 transition-colors"
+              >
+                <Users size={11} />
+                <span className="tabular-nums">
+                  ${perPersonPreview.perPerson.toFixed(2)} per person · {perPersonPreview.ways} ways
+                </span>
+              </button>
+            )}
+          </div>
+
+          {/* 3. Description / name */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">What did you buy?</label>
-            <input type="text" required value={form.name} onChange={(e) => update("name", e.target.value)} className={input} placeholder="Taxi to hotel, street snacks, museum tickets..." autoFocus />
+            <input
+              type="text"
+              required
+              value={form.name}
+              onChange={(e) => update("name", e.target.value)}
+              className={input}
+              placeholder="Taxi to hotel, street snacks, museum tickets..."
+              autoCapitalize="words"
+            />
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><DollarSign size={11} /> Amount</label>
-            <input type="number" min="0" step="0.01" required value={form.amount} onChange={(e) => update("amount", e.target.value)} className={input} placeholder="0.00" />
-          </div>
-
+          {/* 4. Category */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Category</label>
             <div className="grid grid-cols-3 gap-1.5">
@@ -117,6 +171,7 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
             </div>
           </div>
 
+          {/* 5. Paid by */}
           {hasMembers && (
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5 flex items-center gap-1"><User size={11} /> Who paid</label>
@@ -144,30 +199,20 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
             </div>
           )}
 
+          {/* 6. Notes */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Notes <span className="text-gray-400 font-normal">(optional)</span></label>
             <input type="text" value={form.notes} onChange={(e) => update("notes", e.target.value)} className={input} placeholder="Quick note..." />
           </div>
 
-          {/* Split — collapsible. Default: equal split among everyone. */}
-          {hasMembers && (() => {
-            const amt = parseFloat(form.amount) || 0;
-            if (!showSplit) {
-              return (
-                <button type="button" onClick={() => setShowSplit(true)}
-                  className="w-full text-left p-2.5 rounded-lg border border-dashed border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 text-[11px] text-gray-500 hover:text-blue-700 transition-colors flex items-center justify-between">
-                  <span>Split equally among {members.length} {members.length === 1 ? "member" : "members"}</span>
-                  <span className="font-medium">Customize →</span>
-                </button>
-              );
-            }
-            if (amt <= 0) {
-              return <p className="text-[11px] text-gray-400 text-center py-2">Enter an amount to customize the split</p>;
-            }
-            return (
+          {/* Expanded split editor (when user taps the preview chip) */}
+          {hasMembers && showSplit && (
+            amountNum <= 0 ? (
+              <p className="text-[11px] text-gray-400 text-center py-2">Enter an amount to customize the split</p>
+            ) : (
               <SplitEditor
                 key="quicklog"
-                total={amt}
+                total={amountNum}
                 members={members}
                 currentUserId={currentUserId}
                 onChange={(s, valid) => {
@@ -175,14 +220,19 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
                   setSplitsValid(valid);
                 }}
               />
-            );
-          })()}
+            )
+          )}
 
+          {/* 7. Submit */}
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 px-4 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-medium">Cancel</button>
-            <button type="submit" disabled={loading} className="flex-1 py-2.5 px-4 rounded-lg text-white text-sm font-medium disabled:opacity-50 transition-all hover:shadow-lg"
-              style={{ background: tripColor, boxShadow: loading ? undefined : `0 4px 12px ${tripColor}33` }}>
-              {loading ? "Logging..." : "Log purchase"}
+            <button
+              type="submit"
+              disabled={!canSubmit}
+              className="flex-[2] py-2.5 px-4 rounded-lg text-white text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-lg tabular-nums"
+              style={{ background: tripColor, boxShadow: loading ? undefined : `0 4px 12px ${tripColor}33` }}
+            >
+              {submitLabel}
             </button>
           </div>
         </form>
