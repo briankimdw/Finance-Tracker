@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     `;
     const text = `${inviterName} (${inviterEmail}) invited you to save together on NetWorth Tracker for "${goal.name}".\n\nAccept the invite: ${joinUrl}\n\nThis link expires in 14 days.`;
 
-    const { error: sendErr } = await resend.emails.send({
+    const sendRes = await resend.emails.send({
       from: fromAddress,
       to: email,
       replyTo: inviterEmail,
@@ -102,15 +102,17 @@ export async function POST(req: NextRequest) {
       text,
     });
 
-    if (sendErr) {
-      // Invite row was still created — user can copy the link manually.
+    if (sendRes.error) {
+      // Log the full Resend error so it shows up in Vercel runtime logs
+      console.error("[invite] Resend send error:", JSON.stringify(sendRes.error));
       return NextResponse.json({
         token,
         joinUrl,
         emailSent: false,
-        reason: sendErr.message || "Resend error",
+        reason: sendRes.error.message || "Resend error",
       });
     }
+    console.log("[invite] email sent ok id=", sendRes.data?.id, "to=", email, "from=", fromAddress);
 
     return NextResponse.json({ token, joinUrl, emailSent: true });
   } catch (err) {

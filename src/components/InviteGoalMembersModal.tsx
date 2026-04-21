@@ -62,12 +62,19 @@ export default function InviteGoalMembersModal({ isOpen, goal, onClose, onInvite
       return;
     }
     if (result.emailSent) {
-      setNotice({ kind: "success", text: `Invite sent to ${email.trim()}.` });
+      setNotice({ kind: "success", text: `Invite sent to ${email.trim()}. Ask them to check spam if they don't see it.` });
     } else {
       // Invite row was created but email didn't send — show the copy-link path
+      const reason = result.reason || "";
+      let friendly = reason;
+      if (/only send testing emails|own email|verify a domain/i.test(reason)) {
+        friendly = "Resend's default sender only emails your own address. Verify a domain at resend.com/domains (or set RESEND_FROM_EMAIL in Vercel). For now, use the Copy link button below.";
+      } else if (/API key/i.test(reason) || reason === "RESEND_API_KEY not configured") {
+        friendly = "Email service isn't configured. Add RESEND_API_KEY in Vercel → Settings → Environment Variables, then redeploy.";
+      }
       setNotice({
         kind: "warn",
-        text: `Invite created, but email didn't send${result.reason ? ` (${result.reason})` : ""}. Copy the link below to share it.`,
+        text: `Email didn't send. ${friendly} Your invite link is ready in the list below — just hit Copy.`,
       });
     }
     setEmail("");
