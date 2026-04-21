@@ -332,6 +332,14 @@ export interface TripInvite {
   created_at: string;
 }
 
+export interface TripItemSplit {
+  id: string;
+  trip_item_id: string;
+  user_id: string;
+  amount: number;       // how much this user owes for this item
+  created_at: string;
+}
+
 export interface TripItem {
   id: string;
   trip_id: string;
@@ -352,6 +360,13 @@ export interface TripItem {
   url: string | null;
   display_order: number;
   created_at: string;
+  splits: TripItemSplit[];     // enriched by the hook
+}
+
+// Simpler input shape used from the UI — the hook normalizes to split rows
+export interface SplitInput {
+  user_id: string;
+  amount: number;
 }
 
 // Balance entry per member on a shared trip

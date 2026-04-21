@@ -468,7 +468,14 @@ function TripItemCard({
   const payerProfile = payerId ? memberProfiles?.[payerId] : undefined;
   const payerName = !payerId ? null : payerId === currentUserId ? "You" : (payerProfile?.display_name || payerProfile?.username || payerId.slice(0, 8));
   const showPayer = isShared && item.status === "done" && !!payerId;
-  const hasBookingInfo = !!(item.location || item.confirmation_code || item.start_time || item.end_time || item.end_date) || showPayer;
+  // Splits summary
+  const splits = item.splits || [];
+  const splitAmounts = splits.map((s) => Number(s.amount));
+  const splitMin = splitAmounts.length > 0 ? Math.min(...splitAmounts) : 0;
+  const splitMax = splitAmounts.length > 0 ? Math.max(...splitAmounts) : 0;
+  const isEqualSplit = splitAmounts.length > 0 && splitMax - splitMin <= 0.01;
+  const showSplit = isShared && item.status === "done" && splits.length > 0;
+  const hasBookingInfo = !!(item.location || item.confirmation_code || item.start_time || item.end_time || item.end_date) || showPayer || showSplit;
 
   return (
     <motion.div
@@ -552,6 +559,27 @@ function TripItemCard({
                   {(payerName || "?").charAt(0).toUpperCase()}
                 </div>
                 <span>Paid by <span className="font-medium text-gray-700">{payerName}</span></span>
+              </div>
+            )}
+            {showSplit && (
+              <div className="flex items-center gap-1.5 text-gray-500" title={splits.map((s) => {
+                const n = s.user_id === currentUserId ? "You" : (memberProfiles?.[s.user_id]?.display_name || memberProfiles?.[s.user_id]?.username || s.user_id.slice(0, 8));
+                return `${n}: $${Number(s.amount).toFixed(2)}`;
+              }).join(" · ")}>
+                <div className="flex -space-x-1">
+                  {splits.slice(0, 3).map((s, i) => {
+                    const initial = (s.user_id === currentUserId ? "Y" : (memberProfiles?.[s.user_id]?.display_name || memberProfiles?.[s.user_id]?.username || "?")).charAt(0).toUpperCase();
+                    return (
+                      <div key={i} className="w-3.5 h-3.5 rounded-full ring-1 ring-white flex items-center justify-center text-[7px] font-bold text-white"
+                        style={{ background: memberProfiles?.[s.user_id]?.color || `hsl(${((s.user_id?.charCodeAt(0) || 0) * 31) % 360}, 55%, 55%)` }}>
+                        {initial}
+                      </div>
+                    );
+                  })}
+                </div>
+                <span>
+                  Split {isEqualSplit ? "equally" : "custom"} — {splits.length} {splits.length === 1 ? "person" : "people"}
+                </span>
               </div>
             )}
             {item.location && (

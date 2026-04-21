@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { X, Zap, DollarSign, User, Bed, Plane, Utensils, MapPin, ShoppingBag, Package } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { TripItemCategory, TripMember, Profile } from "@/lib/types";
+import SplitEditor from "@/components/SplitEditor";
+import type { TripItemCategory, TripMember, Profile, SplitInput } from "@/lib/types";
 
 const CATEGORIES: { value: TripItemCategory; label: string; Icon: typeof Bed }[] = [
   { value: "food", label: "Food", Icon: Utensils },
@@ -21,12 +22,15 @@ interface QuickLogPurchaseModalProps {
   members: TripMember[];
   currentUserId: string | null;
   onClose: () => void;
-  onSave: (data: { name: string; amount: number; category: TripItemCategory; paid_by: string; notes?: string }) => Promise<void>;
+  onSave: (data: { name: string; amount: number; category: TripItemCategory; paid_by: string; notes?: string; splits?: SplitInput[] }) => Promise<void>;
 }
 
 export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", tripName, members, currentUserId, onClose, onSave }: QuickLogPurchaseModalProps) {
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
+  const [showSplit, setShowSplit] = useState(false);
+  const [splits, setSplits] = useState<SplitInput[]>([]);
+  const [splitsValid, setSplitsValid] = useState(true);
   const [form, setForm] = useState({
     name: "",
     amount: "",
@@ -45,6 +49,9 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
       paid_by: currentUserId || (members[0]?.user_id ?? ""),
       notes: "",
     });
+    setShowSplit(false);
+    setSplits([]);
+    setSplitsValid(true);
   }, [isOpen, currentUserId, members]);
 
   useEffect(() => {
@@ -75,6 +82,7 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
       category: form.category,
       paid_by: form.paid_by || currentUserId || "",
       notes: form.notes.trim() || undefined,
+      splits: showSplit && splitsValid && splits.length > 0 ? splits : undefined,
     });
     setLoading(false);
     onClose();
@@ -140,6 +148,34 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
             <label className="block text-xs font-medium text-gray-600 mb-1">Notes <span className="text-gray-400 font-normal">(optional)</span></label>
             <input type="text" value={form.notes} onChange={(e) => update("notes", e.target.value)} className={input} placeholder="Quick note..." />
           </div>
+
+          {/* Split — collapsible. Default: equal split among everyone. */}
+          {hasMembers && (() => {
+            const amt = parseFloat(form.amount) || 0;
+            if (!showSplit) {
+              return (
+                <button type="button" onClick={() => setShowSplit(true)}
+                  className="w-full text-left p-2.5 rounded-lg border border-dashed border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 text-[11px] text-gray-500 hover:text-blue-700 transition-colors flex items-center justify-between">
+                  <span>Split equally among {members.length} {members.length === 1 ? "member" : "members"}</span>
+                  <span className="font-medium">Customize →</span>
+                </button>
+              );
+            }
+            if (amt <= 0) {
+              return <p className="text-[11px] text-gray-400 text-center py-2">Enter an amount to customize the split</p>;
+            }
+            return (
+              <SplitEditor
+                total={amt}
+                members={members}
+                currentUserId={currentUserId}
+                onChange={(s, valid) => {
+                  setSplits(s);
+                  setSplitsValid(valid);
+                }}
+              />
+            );
+          })()}
 
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 px-4 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-medium">Cancel</button>

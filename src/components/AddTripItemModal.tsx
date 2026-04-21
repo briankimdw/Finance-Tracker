@@ -6,7 +6,8 @@ import {
   DollarSign, Calendar, Link as LinkIcon, Clock, Hash, User,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { TripItem, TripItemCategory, TripItemStatus, TripMember, Profile } from "@/lib/types";
+import SplitEditor from "@/components/SplitEditor";
+import type { TripItem, TripItemCategory, TripItemStatus, TripMember, Profile, SplitInput } from "@/lib/types";
 
 const CATEGORIES: { value: TripItemCategory; label: string; Icon: typeof Bed }[] = [
   { value: "lodging", label: "Lodging", Icon: Bed },
@@ -48,6 +49,7 @@ interface AddTripItemModalProps {
     notes?: string;
     url?: string;
     paid_by?: string | null;
+    splits?: SplitInput[];
   }) => Promise<void>;
 }
 
@@ -55,6 +57,8 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [memberProfiles, setMemberProfiles] = useState<Record<string, Profile>>({});
+  const [splits, setSplits] = useState<SplitInput[]>([]);
+  const [splitsValid, setSplitsValid] = useState(true);
   const [form, setForm] = useState({
     name: "",
     category: "activity" as TripItemCategory,
@@ -131,11 +135,12 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
     e.preventDefault();
     if (!form.name.trim()) return;
     setLoading(true);
+    const actualFinal = form.status === "done" ? (parseFloat(form.actual_amount) || parseFloat(form.planned_amount) || 0) : 0;
     await onSave({
       name: form.name.trim(),
       category: form.category,
       planned_amount: parseFloat(form.planned_amount) || 0,
-      actual_amount: form.status === "done" ? (parseFloat(form.actual_amount) || parseFloat(form.planned_amount) || 0) : 0,
+      actual_amount: actualFinal,
       item_date: form.item_date || null,
       end_date: form.end_date || null,
       start_time: form.start_time || null,
@@ -146,6 +151,8 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
       notes: form.notes.trim() || undefined,
       url: form.url.trim() || undefined,
       paid_by: form.paid_by || currentUserId || null,
+      // Only send splits when done, shared, amount > 0, and splits are valid
+      splits: form.status === "done" && members.length >= 2 && actualFinal > 0 && splitsValid ? splits : undefined,
     });
     setLoading(false);
     onClose();
@@ -312,9 +319,26 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
                   return <option key={m.user_id} value={m.user_id}>{m.user_id === currentUserId ? `You (${label})` : label}{m.role === "owner" ? " · owner" : ""}</option>;
                 })}
               </select>
-              <p className="text-[11px] text-gray-400 mt-1">Tracks the per-person balance at the bottom of the trip.</p>
             </div>
           )}
+
+          {/* Split editor — shared trips, done items, non-zero amount */}
+          {members.length >= 2 && form.status === "done" && (() => {
+            const actualNum = parseFloat(form.actual_amount) || parseFloat(form.planned_amount) || 0;
+            if (actualNum <= 0) return null;
+            return (
+              <SplitEditor
+                total={actualNum}
+                members={members}
+                currentUserId={currentUserId ?? null}
+                initialSplits={item?.splits?.map((s) => ({ user_id: s.user_id, amount: Number(s.amount) }))}
+                onChange={(s, valid) => {
+                  setSplits(s);
+                  setSplitsValid(valid);
+                }}
+              />
+            );
+          })()}
 
           {/* URL */}
           <div>

@@ -7,6 +7,7 @@ import { useRealtimeRefetch } from "@/lib/useRealtimeRefetch";
 import type {
   Trip,
   TripItem,
+  TripItemSplit,
   TripMember,
   TripWithStats,
   TripItemCategory,
@@ -14,7 +15,23 @@ import type {
   TripStatus,
   TripMemberBalance,
   TripSettlementEntry,
+  SplitInput,
 } from "@/lib/types";
+
+/**
+ * Given a total amount and participating user_ids, return equal shares
+ * in integer cents, distributing rounding remainder to earlier participants.
+ */
+export function equalSplit(total: number, userIds: string[]): SplitInput[] {
+  if (userIds.length === 0) return [];
+  const totalCents = Math.round(total * 100);
+  const base = Math.floor(totalCents / userIds.length);
+  const rem = totalCents - base * userIds.length;
+  return userIds.map((uid, i) => ({
+    user_id: uid,
+    amount: (base + (i < rem ? 1 : 0)) / 100,
+  }));
+}
 
 function daysBetween(dateStr: string | null): number | null {
   if (!dateStr) return null;
@@ -26,33 +43,50 @@ function daysBetween(dateStr: string | null): number | null {
 
 /**
  * Compute per-member balances + minimal settlement list from done items.
- * Assumes equal split across all current members.
+ * Uses per-item splits when present (custom or partial), falls back to
+ * equal-split across all current members for any item missing splits
+ * (e.g. legacy data).
  */
 function computeSettlement(members: TripMember[], items: TripItem[]): { balances: TripMemberBalance[]; settlements: TripSettlementEntry[] } {
   if (members.length === 0) return { balances: [], settlements: [] };
 
   const memberIds = members.map((m) => m.user_id);
   const doneItems = items.filter((i) => i.status === "done");
-  const totalActual = doneItems.reduce((s, i) => s + Number(i.actual_amount), 0);
-  const share = totalActual / members.length;
 
-  // Map user_id → total paid
+  // paid per user
   const paidMap = new Map<string, number>();
   for (const uid of memberIds) paidMap.set(uid, 0);
   for (const it of doneItems) {
-    // Fallback: if paid_by not set on an older row, credit it to the creator (user_id)
     const payer = it.paid_by || it.user_id || "";
     if (paidMap.has(payer)) {
       paidMap.set(payer, (paidMap.get(payer) || 0) + Number(it.actual_amount));
     }
-    // if payer isn't a member anymore, their spend is still counted toward the pool
-    // but not toward any member's balance — which is fine: total pool already uses actual.
+  }
+
+  // owed per user (from splits; fallback to equal among all members)
+  const owedMap = new Map<string, number>();
+  for (const uid of memberIds) owedMap.set(uid, 0);
+  for (const it of doneItems) {
+    const splits = it.splits || [];
+    if (splits.length > 0) {
+      for (const s of splits) {
+        if (owedMap.has(s.user_id)) {
+          owedMap.set(s.user_id, (owedMap.get(s.user_id) || 0) + Number(s.amount));
+        }
+      }
+    } else {
+      // Fallback: equal split among all current members
+      const shares = equalSplit(Number(it.actual_amount), memberIds);
+      for (const s of shares) {
+        owedMap.set(s.user_id, (owedMap.get(s.user_id) || 0) + s.amount);
+      }
+    }
   }
 
   const balances: TripMemberBalance[] = memberIds.map((uid) => {
     const paid = Math.round((paidMap.get(uid) || 0) * 100) / 100;
-    const s = Math.round(share * 100) / 100;
-    return { userId: uid, paid, share: s, balance: Math.round((paid - s) * 100) / 100 };
+    const share = Math.round((owedMap.get(uid) || 0) * 100) / 100;
+    return { userId: uid, paid, share, balance: Math.round((paid - share) * 100) / 100 };
   });
 
   // Greedy settlement: repeatedly match the most-owed creditor to the most-indebted debtor
@@ -92,7 +126,7 @@ export function useTrips() {
         .order("created_at", { ascending: false });
       let itemsQ = supabase
         .from("trip_items")
-        .select("*")
+        .select("*, trip_item_splits(id, trip_item_id, user_id, amount, created_at)")
         .order("item_date", { ascending: true, nullsFirst: false })
         .order("display_order", { ascending: true })
         .order("created_at", { ascending: true });
@@ -107,7 +141,9 @@ export function useTrips() {
       if (itemsRes.error) console.error("[useTrips] items error:", itemsRes.error);
 
       const rawTrips = (tripsRes.data || []) as (Trip & { trip_members: TripMember[] })[];
-      const rawItems = (itemsRes.data || []) as TripItem[];
+      const rawItems = ((itemsRes.data || []) as (TripItem & { trip_item_splits: TripItemSplit[] })[]).map(
+        (i) => ({ ...i, splits: i.trip_item_splits || [] })
+      );
 
       const enriched: TripWithStats[] = rawTrips.map((t) => {
         const items = rawItems.filter((i) => i.trip_id === t.id);
@@ -163,7 +199,7 @@ export function useTrips() {
     fetchTrips();
   }, [fetchTrips]);
   useRealtimeRefetch(
-    ["trips", "trip_items", "trip_members", "trip_invites"],
+    ["trips", "trip_items", "trip_item_splits", "trip_members", "trip_invites"],
     fetchTrips
   );
 
@@ -254,41 +290,67 @@ export function useTrips() {
       notes?: string;
       url?: string;
       paid_by?: string | null;
+      splits?: SplitInput[];   // if omitted and done+shared, we auto-generate equal splits
     }
   ) => {
-    const tripItems = trips.find((t) => t.id === tripId)?.items ?? [];
+    const trip = trips.find((t) => t.id === tripId);
+    const tripItems = trip?.items ?? [];
     const maxOrder = tripItems.length > 0 ? Math.max(...tripItems.map((i) => i.display_order)) : 0;
-    const { error } = await supabase.from("trip_items").insert({
-      trip_id: tripId,
-      user_id: user?.id ?? null,
-      paid_by: data.paid_by ?? user?.id ?? null,
-      name: data.name,
-      category: data.category || "activity",
-      planned_amount: data.planned_amount,
-      actual_amount: data.actual_amount ?? 0,
-      item_date: data.item_date || null,
-      end_date: data.end_date || null,
-      start_time: data.start_time || null,
-      end_time: data.end_time || null,
-      location: data.location || null,
-      confirmation_code: data.confirmation_code || null,
-      status: data.status || "planned",
-      notes: data.notes || null,
-      url: data.url || null,
-      display_order: maxOrder + 1,
-    });
-    if (error) console.error("[useTrips] addItem error:", error);
+    const actual = data.actual_amount ?? 0;
+    const { data: inserted, error } = await supabase
+      .from("trip_items")
+      .insert({
+        trip_id: tripId,
+        user_id: user?.id ?? null,
+        paid_by: data.paid_by ?? user?.id ?? null,
+        name: data.name,
+        category: data.category || "activity",
+        planned_amount: data.planned_amount,
+        actual_amount: actual,
+        item_date: data.item_date || null,
+        end_date: data.end_date || null,
+        start_time: data.start_time || null,
+        end_time: data.end_time || null,
+        location: data.location || null,
+        confirmation_code: data.confirmation_code || null,
+        status: data.status || "planned",
+        notes: data.notes || null,
+        url: data.url || null,
+        display_order: maxOrder + 1,
+      })
+      .select("id")
+      .single();
+    if (error) {
+      console.error("[useTrips] addItem error:", error);
+      await fetchTrips();
+      return;
+    }
+
+    // Write splits if it's a done shared-trip item
+    if (inserted && data.status === "done" && actual > 0) {
+      let splits = data.splits;
+      if (!splits && trip && trip.members.length > 0) {
+        // Default: equal split among all members
+        const memberIds = trip.members.map((m) => m.user_id);
+        splits = equalSplit(actual, memberIds);
+      }
+      if (splits && splits.length > 0) {
+        await supabase.from("trip_item_splits").insert(
+          splits.map((s) => ({ trip_item_id: inserted.id, user_id: s.user_id, amount: s.amount }))
+        );
+      }
+    }
     await fetchTrips();
   };
 
   /**
    * Fast path for a one-click purchase: creates a done item with the given
-   * amount, default category other, paid_by = current user (or override).
+   * amount, default category food, paid_by = current user (or override).
    * Used for "I just bought X" on the fly.
    */
   const quickLogPurchase = async (
     tripId: string,
-    data: { name: string; amount: number; category?: TripItemCategory; paid_by?: string; notes?: string }
+    data: { name: string; amount: number; category?: TripItemCategory; paid_by?: string; notes?: string; splits?: SplitInput[] }
   ) => {
     await addItem(tripId, {
       name: data.name,
@@ -298,12 +360,27 @@ export function useTrips() {
       status: "done",
       paid_by: data.paid_by ?? user?.id,
       notes: data.notes,
+      splits: data.splits,
     });
   };
 
-  const updateItem = async (id: string, data: Partial<TripItem>) => {
-    const { error } = await supabase.from("trip_items").update(data).eq("id", id);
+  const updateItem = async (id: string, data: Partial<TripItem> & { splits?: SplitInput[] }) => {
+    const { splits, ...itemData } = data;
+    // splits isn't a column on trip_items, so strip it; ditto 'splits' field from our TripItem type
+    const { splits: _strip, ...safe } = itemData as typeof itemData & { splits?: unknown };
+    void _strip;
+    const { error } = await supabase.from("trip_items").update(safe).eq("id", id);
     if (error) console.error("[useTrips] updateItem error:", error);
+
+    // If caller passed new splits, replace existing
+    if (splits) {
+      await supabase.from("trip_item_splits").delete().eq("trip_item_id", id);
+      if (splits.length > 0) {
+        await supabase.from("trip_item_splits").insert(
+          splits.map((s) => ({ trip_item_id: id, user_id: s.user_id, amount: s.amount }))
+        );
+      }
+    }
     await fetchTrips();
   };
 
