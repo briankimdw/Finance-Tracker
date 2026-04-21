@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import {
-  X, Bed, Plane, Utensils, MapPin, ShoppingBag, Package,
+  Bed, Plane, Utensils, MapPin, ShoppingBag, Package,
   DollarSign, Calendar, Link as LinkIcon, Clock, Hash, User,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import SplitEditor from "@/components/SplitEditor";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 import type { TripItem, TripItemCategory, TripItemStatus, TripMember, Profile, SplitInput } from "@/lib/types";
 
 const CATEGORIES: { value: TripItemCategory; label: string; Icon: typeof Bed }[] = [
@@ -126,8 +127,6 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
     })();
   }, [isOpen, members, supabase]);
 
-  if (!isOpen) return null;
-
   const update = <K extends keyof typeof form>(key: K, value: typeof form[K]) =>
     setForm((p) => ({ ...p, [key]: value }));
 
@@ -181,15 +180,8 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
     "Address, neighborhood, or area";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl shadow-gray-900/10 border border-gray-100">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
-          <h2 className="text-lg font-semibold text-gray-900">{item ? "Edit Item" : "Add to Itinerary"}</h2>
-          <button onClick={onClose} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"><X size={20} /></button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+    <BottomSheet isOpen={isOpen} onClose={onClose} title={item ? "Edit Item" : "Add to Itinerary"} size="md">
+      <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">What?</label>
@@ -382,7 +374,6 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </BottomSheet>
   );
 }

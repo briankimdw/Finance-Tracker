@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Zap, DollarSign, User, Bed, Plane, Utensils, MapPin, ShoppingBag, Package } from "lucide-react";
+import { DollarSign, User, Bed, Plane, Utensils, MapPin, ShoppingBag, Package } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import SplitEditor from "@/components/SplitEditor";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 import type { TripItemCategory, TripMember, Profile, SplitInput } from "@/lib/types";
 
 const CATEGORIES: { value: TripItemCategory; label: string; Icon: typeof Bed }[] = [
@@ -65,8 +66,6 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
     })();
   }, [isOpen, members, supabase]);
 
-  if (!isOpen) return null;
-
   const update = <K extends keyof typeof form>(key: K, value: typeof form[K]) =>
     setForm((p) => ({ ...p, [key]: value }));
 
@@ -91,24 +90,11 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
   const input = "w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm";
   const hasMembers = members.length >= 2;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto shadow-2xl shadow-gray-900/10 border border-gray-100">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${tripColor}15`, color: tripColor }}>
-              <Zap size={16} />
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-gray-900">Log a purchase</h2>
-              {tripName && <p className="text-[11px] text-gray-400 truncate">{tripName}</p>}
-            </div>
-          </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"><X size={20} /></button>
-        </div>
+  const sheetTitle = tripName ? `${tripName} · Log a purchase` : "Log a purchase";
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-3">
+  return (
+    <BottomSheet isOpen={isOpen} onClose={onClose} title={sheetTitle} size="sm">
+      <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">What did you buy?</label>
             <input type="text" required value={form.name} onChange={(e) => update("name", e.target.value)} className={input} placeholder="Taxi to hotel, street snacks, museum tickets..." autoFocus />
@@ -200,7 +186,6 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </BottomSheet>
   );
 }

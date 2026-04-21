@@ -4,11 +4,13 @@ import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  User as UserIcon, AtSign, Mail, AlertCircle, CheckCircle, Camera, Trash2,
+  User as UserIcon, AtSign, Mail, Camera, Trash2,
   Palette, Save, Sparkles, ArrowLeft,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
+import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const COLORS = [
   "#3b82f6", "#8b5cf6", "#10b981", "#f59e0b",
@@ -40,6 +42,8 @@ function Avatar({ name, url, size = 96, color }: { name: string; url?: string | 
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
   const { profile, loading, setUsername, updateProfile, uploadAvatar, removeAvatar } = useProfile();
+  const { success, error: toastError, info } = useToast();
+  const confirm = useConfirm();
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const [form, setForm] = useState({
@@ -51,7 +55,6 @@ export default function ProfilePage() {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [notice, setNotice] = useState<{ kind: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     if (profile) {
@@ -81,19 +84,17 @@ export default function ProfilePage() {
   const update = <K extends keyof typeof form>(key: K, value: typeof form[K]) => {
     setForm((p) => ({ ...p, [key]: value }));
     setDirty(true);
-    setNotice(null);
   };
 
   const handleSave = async () => {
     setSaving(true);
-    setNotice(null);
 
     // Username — only save if changed
     if (form.username !== (profile?.username ?? "")) {
       const res = await setUsername(form.username);
       if (!res.ok) {
         setSaving(false);
-        setNotice({ kind: "error", text: res.error || "Couldn't save username" });
+        toastError(res.error || "Couldn't save username");
         return;
       }
     }
@@ -105,11 +106,10 @@ export default function ProfilePage() {
     });
     setSaving(false);
     if (res.ok) {
-      setNotice({ kind: "success", text: "Profile saved." });
+      success("Profile saved");
       setDirty(false);
-      setTimeout(() => setNotice(null), 2500);
     } else {
-      setNotice({ kind: "error", text: res.error || "Couldn't save" });
+      toastError(res.error || "Couldn't save");
     }
   };
 
@@ -117,31 +117,37 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      setNotice({ kind: "error", text: "Please pick an image file." });
+      toastError("Please pick an image file.");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setNotice({ kind: "error", text: "Image must be under 5 MB." });
+      toastError("Image must be under 5 MB.");
       return;
     }
     setUploading(true);
-    setNotice(null);
     const res = await uploadAvatar(file);
     setUploading(false);
     if (res.ok) {
-      setNotice({ kind: "success", text: "Avatar updated." });
-      setTimeout(() => setNotice(null), 2500);
+      success("Avatar updated");
     } else {
-      setNotice({ kind: "error", text: res.error || "Upload failed" });
+      toastError(res.error || "Upload failed");
     }
     if (fileRef.current) fileRef.current.value = "";
   };
 
   const handleRemoveAvatar = async () => {
-    if (!confirm("Remove your avatar?")) return;
-    await removeAvatar();
-    setNotice({ kind: "success", text: "Avatar removed." });
-    setTimeout(() => setNotice(null), 2500);
+    const ok = await confirm({
+      title: "Remove your avatar?",
+      destructive: true,
+      confirmLabel: "Remove",
+    });
+    if (!ok) return;
+    try {
+      await removeAvatar();
+      info("Avatar removed");
+    } catch {
+      toastError("Couldn't remove avatar");
+    }
   };
 
   const displayNameForAvatar = form.display_name || form.username || user.email?.split("@")[0] || "?";
@@ -186,16 +192,6 @@ export default function ProfilePage() {
           </div>
         </div>
       </motion.div>
-
-      {notice && (
-        <div className={`flex items-start gap-2 text-xs rounded-lg px-3 py-2 ${
-          notice.kind === "success" ? "bg-green-50 text-green-700 border border-green-100" :
-          "bg-red-50 text-red-700 border border-red-100"
-        }`}>
-          {notice.kind === "success" ? <CheckCircle size={13} className="mt-0.5 shrink-0" /> : <AlertCircle size={13} className="mt-0.5 shrink-0" />}
-          <span>{notice.text}</span>
-        </div>
-      )}
 
       {/* Basic info */}
       <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
@@ -264,7 +260,6 @@ export default function ProfilePage() {
                   color: profile.color ?? "#3b82f6",
                 });
                 setDirty(false);
-                setNotice(null);
               }
             }} className="text-xs text-gray-500 hover:text-gray-700 font-medium px-3 py-2 rounded-md hover:bg-gray-50">Discard</button>
             <button onClick={handleSave} disabled={saving}

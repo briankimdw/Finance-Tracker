@@ -11,6 +11,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useFriends } from "@/hooks/useFriends";
 import { useProfile } from "@/hooks/useProfile";
 import { usePendingInvites } from "@/hooks/usePendingInvites";
+import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { getTripIcon } from "@/lib/tripIcons";
 import { getGoalIcon } from "@/lib/goalIcons";
 
@@ -40,6 +42,8 @@ export default function FriendsPage() {
   const { profile } = useProfile();
   const { friends, incoming, outgoing, loading, sendRequest, acceptRequest, rejectRequest, cancelRequest, removeFriend } = useFriends();
   const { trips: tripInvites, goals: goalInvites, acceptTripInvite, declineTripInvite, acceptGoalInvite, declineGoalInvite } = usePendingInvites();
+  const { success, error: toastError, info } = useToast();
+  const confirm = useConfirm();
 
   const [identifier, setIdentifier] = useState("");
   const [searching, setSearching] = useState(false);
@@ -53,12 +57,61 @@ export default function FriendsPage() {
     const res = await sendRequest(identifier);
     setSearching(false);
     if (res.ok) {
-      setNotice({ kind: "success", text: res.info || `Request sent to ${identifier.trim()}` });
+      const msg = res.info || `Request sent to ${identifier.trim()}`;
+      setNotice({ kind: "success", text: msg });
+      success(res.info ? msg : "Request sent");
       setIdentifier("");
     } else if (res.info) {
       setNotice({ kind: "info", text: res.info });
+      info(res.info);
     } else {
-      setNotice({ kind: "error", text: res.error || "Couldn't send request" });
+      const text = res.error || "Couldn't send request";
+      setNotice({ kind: "error", text });
+      toastError(text);
+    }
+  };
+
+  const handleAcceptFriend = async (r: typeof incoming[number]) => {
+    const name = r.from_profile?.display_name || r.from_profile?.username || "them";
+    try {
+      await acceptRequest(r.id);
+      success(`You're now friends with ${name}`);
+    } catch {
+      toastError("Couldn't accept request");
+    }
+  };
+
+  const handleRemoveFriend = async (f: typeof friends[number]) => {
+    const name = f.profile?.display_name || f.profile?.username || "this friend";
+    const ok = await confirm({
+      title: `Remove ${name}?`,
+      destructive: true,
+      confirmLabel: "Remove",
+    });
+    if (!ok) return;
+    try {
+      await removeFriend(f.userId);
+      info("Removed");
+    } catch {
+      toastError("Couldn't remove friend");
+    }
+  };
+
+  const handleAcceptTripInvite = async (item: typeof tripInvites[number]) => {
+    try {
+      await acceptTripInvite(item.invite);
+      success(`You joined ${item.trip?.name ?? "the trip"}`);
+    } catch {
+      toastError("Couldn't accept invite");
+    }
+  };
+
+  const handleAcceptGoalInvite = async (item: typeof goalInvites[number]) => {
+    try {
+      await acceptGoalInvite(item.invite);
+      success(`You joined ${item.goal?.name ?? "the goal"}`);
+    } catch {
+      toastError("Couldn't accept invite");
     }
   };
 
@@ -169,7 +222,7 @@ export default function FriendsPage() {
                       {trip.destination && <> · <MapPin size={9} className="inline -mt-0.5" /> {trip.destination}</>}
                     </p>
                   </div>
-                  <button onClick={() => acceptTripInvite(invite)} className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
+                  <button onClick={() => handleAcceptTripInvite({ invite, trip, inviter })} className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
                     <Check size={12} /> Accept
                   </button>
                   <button onClick={() => declineTripInvite(invite)} className="border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
@@ -198,7 +251,7 @@ export default function FriendsPage() {
                       {inviter ? (inviter.display_name || inviter.username || "Someone") : "Someone"} invited you to save together · ${Number(goal.target_amount).toFixed(0)} target
                     </p>
                   </div>
-                  <button onClick={() => acceptGoalInvite(invite)} className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
+                  <button onClick={() => handleAcceptGoalInvite({ invite, goal, inviter })} className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
                     <Check size={12} /> Accept
                   </button>
                   <button onClick={() => declineGoalInvite(invite)} className="border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
@@ -231,7 +284,7 @@ export default function FriendsPage() {
                     <p className="text-sm font-semibold text-gray-900 truncate">{p?.display_name || p?.username || "Someone"}</p>
                     <p className="text-[11px] text-gray-500 truncate">{p?.username ? <>@{p.username}</> : p?.email}</p>
                   </div>
-                  <button onClick={() => acceptRequest(r.id)} className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
+                  <button onClick={() => handleAcceptFriend(r)} className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
                     <Check size={12} /> Accept
                   </button>
                   <button onClick={() => rejectRequest(r.id)} className="border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
@@ -302,7 +355,7 @@ export default function FriendsPage() {
                   </p>
                 </div>
                 <button
-                  onClick={() => { if (confirm(`Remove ${f.profile?.display_name || f.profile?.username || "this friend"}?`)) removeFriend(f.userId); }}
+                  onClick={() => handleRemoveFriend(f)}
                   className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 p-1.5 rounded hover:bg-red-50 transition-opacity"
                   title="Remove friend">
                   <Trash2 size={13} />

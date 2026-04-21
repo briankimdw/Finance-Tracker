@@ -13,6 +13,10 @@ import AddTripModal from "@/components/AddTripModal";
 import InviteGoalMembersModal from "@/components/InviteGoalMembersModal";
 import { useGoals } from "@/hooks/useGoals";
 import { useTrips } from "@/hooks/useTrips";
+import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { SkeletonCard } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { getGoalIcon } from "@/lib/goalIcons";
 import type { Goal, GoalWithStats } from "@/lib/types";
 
@@ -32,6 +36,8 @@ function formatTargetDate(targetDate: string | null, days: number | null): strin
 export default function GoalsPage() {
   const { goals, loading, createGoal, updateGoal, deleteGoal, reorderGoals, addContribution, deleteContribution, inviteToGoal, inviteFriendToGoal, removeMember, leaveGoal } = useGoals();
   const { trips, createTrip } = useTrips();
+  const { success, error: toastError, info } = useToast();
+  const confirm = useConfirm();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editGoal, setEditGoal] = useState<Goal | null>(null);
   const [contribGoal, setContribGoal] = useState<GoalWithStats | null>(null);
@@ -43,11 +49,63 @@ export default function GoalsPage() {
   const [dragOver, setDragOver] = useState<number | null>(null);
 
   const handleSave = async (data: Parameters<typeof createGoal>[0]) => {
-    if (editGoal) {
-      await updateGoal(editGoal.id, { ...data, target_date: data.target_date ?? null });
-      setEditGoal(null);
-    } else {
-      await createGoal(data);
+    try {
+      if (editGoal) {
+        await updateGoal(editGoal.id, { ...data, target_date: data.target_date ?? null });
+        setEditGoal(null);
+        success("Goal updated");
+      } else {
+        await createGoal(data);
+        success("Goal created");
+      }
+    } catch {
+      toastError(editGoal ? "Couldn't update goal" : "Couldn't create goal");
+    }
+  };
+
+  const handleDeleteGoal = async (goal: GoalWithStats, withContributions: boolean) => {
+    const ok = await confirm({
+      title: `Delete "${goal.name}"?`,
+      message: withContributions ? "All contributions will be deleted too." : undefined,
+      destructive: true,
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
+    try {
+      await deleteGoal(goal.id);
+      success("Goal deleted");
+    } catch {
+      toastError("Couldn't delete goal");
+    }
+  };
+
+  const handleLeaveGoal = async (goal: GoalWithStats) => {
+    const ok = await confirm({
+      title: `Leave "${goal.name}"?`,
+      message: "You won't be able to see or contribute to it anymore.",
+      destructive: true,
+      confirmLabel: "Leave",
+    });
+    if (!ok) return;
+    try {
+      await leaveGoal(goal.id);
+      info("Left the goal");
+    } catch {
+      toastError("Couldn't leave goal");
+    }
+  };
+
+  const handleAddContribution = async (...args: Parameters<typeof addContribution>) => {
+    try {
+      const amount = Number(args[1]) || 0;
+      await addContribution(...args);
+      if (amount < 0) {
+        info(`$${Math.abs(amount).toFixed(2)} withdrawn`);
+      } else {
+        success(`$${amount.toFixed(2)} contributed`);
+      }
+    } catch {
+      toastError("Couldn't save contribution");
     }
   };
 
@@ -112,7 +170,11 @@ export default function GoalsPage() {
       )}
 
       {loading ? (
-        <div className="bg-white border border-gray-200 rounded-xl p-12 text-center text-gray-400 shadow-sm">Loading...</div>
+        <div className="space-y-3">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
       ) : goals.length === 0 ? (
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
           <div className="flex flex-col items-center justify-center py-16">
@@ -278,9 +340,9 @@ export default function GoalsPage() {
                                 <button onClick={() => { setEditGoal(g); setShowAddModal(true); }} className="text-gray-400 hover:text-blue-600 p-1.5 rounded" title="Edit"><Pencil size={14} /></button>
                               )}
                               {g.isOwner ? (
-                                <button onClick={() => { if (confirm(`Delete "${g.name}"? All contributions will be deleted too.`)) deleteGoal(g.id); }} className="text-gray-300 hover:text-red-500 p-1.5 rounded" title="Delete"><Trash2 size={14} /></button>
+                                <button onClick={() => handleDeleteGoal(g, true)} className="text-gray-300 hover:text-red-500 p-1.5 rounded" title="Delete"><Trash2 size={14} /></button>
                               ) : (
-                                <button onClick={() => { if (confirm(`Leave "${g.name}"? You won't be able to see or contribute to it anymore.`)) leaveGoal(g.id); }} className="text-gray-300 hover:text-red-500 p-1.5 rounded" title="Leave goal"><LogOut size={14} /></button>
+                                <button onClick={() => handleLeaveGoal(g)} className="text-gray-300 hover:text-red-500 p-1.5 rounded" title="Leave goal"><LogOut size={14} /></button>
                               )}
                             </div>
                           </div>
@@ -381,7 +443,7 @@ export default function GoalsPage() {
                     </div>
                     <Trophy size={16} className="text-amber-500" />
                     <button onClick={() => updateGoal(g.id, { completed: false })} className="text-xs text-blue-600 hover:bg-blue-50 px-2 py-1 rounded-md font-medium">Reactivate</button>
-                    <button onClick={() => { if (confirm(`Delete "${g.name}"?`)) deleteGoal(g.id); }} className="text-gray-300 hover:text-red-500 p-1.5 rounded" title="Delete"><Trash2 size={14} /></button>
+                    <button onClick={() => handleDeleteGoal(g, false)} className="text-gray-300 hover:text-red-500 p-1.5 rounded" title="Delete"><Trash2 size={14} /></button>
                   </div>
                 );
               })}
@@ -391,13 +453,20 @@ export default function GoalsPage() {
       )}
 
       <AddGoalModal isOpen={showAddModal} goal={editGoal} onClose={() => { setShowAddModal(false); setEditGoal(null); }} onSave={handleSave} />
-      <AddContributionModal isOpen={!!contribGoal} goal={contribGoal} onClose={() => setContribGoal(null)} onSave={addContribution} />
+      <AddContributionModal isOpen={!!contribGoal} goal={contribGoal} onClose={() => setContribGoal(null)} onSave={handleAddContribution} />
       <InviteGoalMembersModal isOpen={!!inviteGoal} goal={inviteGoal} onClose={() => setInviteGoal(null)} onInvite={inviteToGoal} onInviteFriend={inviteFriendToGoal} onRemoveMember={removeMember} />
       <AddTripModal
         isOpen={!!tripFromGoalId}
         defaultGoalId={tripFromGoalId}
         onClose={() => setTripFromGoalId(null)}
-        onSave={async (data) => { await createTrip(data); }}
+        onSave={async (data) => {
+          try {
+            await createTrip(data);
+            success("Trip created");
+          } catch {
+            toastError("Couldn't create trip");
+          }
+        }}
       />
     </div>
   );

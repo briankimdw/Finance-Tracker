@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import {
-  X, Plane, Globe, MapPin, Compass, Mountain, Palmtree,
+  Plane, Globe, MapPin, Compass, Mountain, Palmtree,
   Building2, Tent, Ship, Backpack, Camera, Heart,
   Image as ImageIcon, DollarSign, Calendar, Target, Users,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useGoals } from "@/hooks/useGoals";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 import type { Trip, TripStatus } from "@/lib/types";
 
 const COLORS = [
@@ -114,8 +115,6 @@ export default function AddTripModal({ isOpen, trip, defaultGoalId, onClose, onS
     }
   }, [trip, isOpen, defaultGoalId, goals]);
 
-  if (!isOpen) return null;
-
   const update = <K extends keyof typeof form>(key: K, value: typeof form[K]) =>
     setForm((p) => ({ ...p, [key]: value }));
 
@@ -144,20 +143,8 @@ export default function AddTripModal({ isOpen, trip, defaultGoalId, onClose, onS
   const input = "w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl shadow-gray-900/10 border border-gray-100">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${form.color}15`, color: form.color }}>
-              <Plane size={16} />
-            </div>
-            <h2 className="text-lg font-semibold text-gray-900">{trip ? "Edit Trip" : "New Trip"}</h2>
-          </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"><X size={20} /></button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+    <BottomSheet isOpen={isOpen} onClose={onClose} title={trip ? "Edit Trip" : "New Trip"} size="lg">
+      <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Trip name</label>
@@ -286,7 +273,6 @@ export default function AddTripModal({ isOpen, trip, defaultGoalId, onClose, onS
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </BottomSheet>
   );
 }

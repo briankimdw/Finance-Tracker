@@ -20,6 +20,9 @@ import InviteTripMembersModal from "@/components/InviteTripMembersModal";
 import TripCalendar from "@/components/TripCalendar";
 import TripSettlement from "@/components/TripSettlement";
 import QuickLogPurchaseModal from "@/components/QuickLogPurchaseModal";
+import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import type { TripItem, TripItemCategory, TripItemStatus, Profile } from "@/lib/types";
 
 function fmtDate(d: string | null): string {
@@ -58,6 +61,8 @@ export default function TripDetailPage() {
   } = useTrips();
   const { goals } = useGoals();
   const { user } = useAuth();
+  const { success, error: toastError, info } = useToast();
+  const confirm = useConfirm();
   const supabase = createClient();
   const trip = trips.find((t) => t.id === id);
 
@@ -83,7 +88,20 @@ export default function TripDetailPage() {
   }, [trip, supabase]);
 
   if (loading && !trip) {
-    return <div className="text-center text-gray-400 py-20">Loading trip...</div>;
+    return (
+      <div className="space-y-5">
+        <Skeleton className="h-3 w-16" />
+        <Skeleton className="h-52 rounded-2xl" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Skeleton className="h-20 rounded-xl" />
+          <Skeleton className="h-20 rounded-xl" />
+          <Skeleton className="h-20 rounded-xl" />
+          <Skeleton className="h-20 rounded-xl" />
+        </div>
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
+    );
   }
 
   if (!trip) {
@@ -119,25 +137,108 @@ export default function TripDetailPage() {
   for (const i of trip.items) categoryCounts[i.category] = (categoryCounts[i.category] || 0) + 1;
 
   const handleAddOrSave = async (data: Parameters<typeof addItem>[1]) => {
-    if (editItem) {
-      await updateItem(editItem.id, {
-        name: data.name,
-        category: data.category,
-        planned_amount: data.planned_amount,
-        actual_amount: data.actual_amount ?? 0,
-        item_date: data.item_date ?? null,
-        end_date: data.end_date ?? null,
-        start_time: data.start_time ?? null,
-        end_time: data.end_time ?? null,
-        location: data.location ?? null,
-        confirmation_code: data.confirmation_code ?? null,
-        status: data.status,
-        notes: data.notes ?? null,
-        url: data.url ?? null,
-      });
-      setEditItem(null);
-    } else {
-      await addItem(trip.id, data);
+    try {
+      if (editItem) {
+        await updateItem(editItem.id, {
+          name: data.name,
+          category: data.category,
+          planned_amount: data.planned_amount,
+          actual_amount: data.actual_amount ?? 0,
+          item_date: data.item_date ?? null,
+          end_date: data.end_date ?? null,
+          start_time: data.start_time ?? null,
+          end_time: data.end_time ?? null,
+          location: data.location ?? null,
+          confirmation_code: data.confirmation_code ?? null,
+          status: data.status,
+          notes: data.notes ?? null,
+          url: data.url ?? null,
+        });
+        setEditItem(null);
+        success("Item updated");
+      } else {
+        await addItem(trip.id, data);
+        success("Item added");
+      }
+    } catch {
+      toastError(editItem ? "Couldn't update item" : "Couldn't add item");
+    }
+  };
+
+  const handleDeleteTrip = async () => {
+    const ok = await confirm({
+      title: `Delete "${trip.name}"?`,
+      message: "All itinerary items will be deleted too.",
+      destructive: true,
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
+    try {
+      await deleteTrip(trip.id);
+      success("Trip deleted");
+      router.push("/trips");
+    } catch {
+      toastError("Couldn't delete trip");
+    }
+  };
+
+  const handleLeaveTrip = async () => {
+    const ok = await confirm({
+      title: `Leave "${trip.name}"?`,
+      message: "You won't be able to see or contribute to it anymore.",
+      destructive: true,
+      confirmLabel: "Leave",
+    });
+    if (!ok) return;
+    try {
+      await leaveTrip(trip.id);
+      info("Left the trip");
+      router.push("/trips");
+    } catch {
+      toastError("Couldn't leave trip");
+    }
+  };
+
+  const handleDeleteItem = async (item: TripItem) => {
+    const ok = await confirm({
+      title: `Delete "${item.name}"?`,
+      destructive: true,
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
+    try {
+      await deleteItem(item.id);
+      success("Item deleted");
+    } catch {
+      toastError("Couldn't delete item");
+    }
+  };
+
+  const handleMarkDone = async (item: TripItem) => {
+    try {
+      await markItemDone(item);
+      success("Marked done");
+    } catch {
+      toastError("Couldn't mark item done");
+    }
+  };
+
+  const handleMarkSkipped = async (item: TripItem) => {
+    try {
+      await markItemSkipped(item.id);
+      const freed = Number(item.planned_amount) || 0;
+      info(`Skipped — $${freed.toFixed(2)} freed up`);
+    } catch {
+      toastError("Couldn't skip item");
+    }
+  };
+
+  const handleQuickLog = async (data: Parameters<typeof quickLogPurchase>[1]) => {
+    try {
+      await quickLogPurchase(trip.id, data);
+      success("Purchase logged");
+    } catch {
+      toastError("Couldn't log purchase");
     }
   };
 
@@ -235,10 +336,10 @@ export default function TripDetailPage() {
                   className="text-xs bg-green-50 hover:bg-green-100 text-green-700 px-2.5 py-1.5 rounded-md font-medium">Mark done</button>
               )}
               {trip.isOwner ? (
-                <button onClick={() => { if (confirm(`Delete "${trip.name}"?`)) { deleteTrip(trip.id); router.push("/trips"); } }}
+                <button onClick={handleDeleteTrip}
                   className="text-gray-300 hover:text-red-500 p-1.5 rounded" title="Delete trip"><Trash2 size={14} /></button>
               ) : (
-                <button onClick={() => { if (confirm(`Leave "${trip.name}"? You won't be able to see or contribute to it anymore.`)) { leaveTrip(trip.id); router.push("/trips"); } }}
+                <button onClick={handleLeaveTrip}
                   className="text-gray-300 hover:text-red-500 p-1.5 rounded" title="Leave trip"><LogOut size={14} /></button>
               )}
             </div>
@@ -379,8 +480,8 @@ export default function TripDetailPage() {
                   currentUserId={user?.id ?? null}
                   isShared={trip.members.length >= 2}
                   onEdit={() => { setEditItem(item); setShowItemModal(true); }}
-                  onDone={() => markItemDone(item)} onSkip={() => markItemSkipped(item.id)} onReset={() => markItemPlanned(item.id)}
-                  onDelete={() => { if (confirm(`Delete "${item.name}"?`)) deleteItem(item.id); }} delay={i * 0.02} />
+                  onDone={() => handleMarkDone(item)} onSkip={() => handleMarkSkipped(item)} onReset={() => markItemPlanned(item.id)}
+                  onDelete={() => handleDeleteItem(item)} delay={i * 0.02} />
               ))}
             </div>
           )}
@@ -413,7 +514,7 @@ export default function TripDetailPage() {
         members={trip.members}
         currentUserId={user?.id ?? null}
         onClose={() => setShowQuickLog(false)}
-        onSave={async (data) => { await quickLogPurchase(trip.id, data); }}
+        onSave={handleQuickLog}
       />
     </div>
   );

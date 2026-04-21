@@ -6,6 +6,8 @@ import { X, Mail, Copy, Users, Check, Trash2, CheckCircle, AlertCircle, UserPlus
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useFriends } from "@/hooks/useFriends";
+import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import type { GoalWithStats, GoalInvite, GoalMember, Profile } from "@/lib/types";
 
 interface InviteResult {
@@ -27,6 +29,8 @@ interface InviteGoalMembersModalProps {
 export default function InviteGoalMembersModal({ isOpen, goal, onClose, onInvite, onInviteFriend, onRemoveMember }: InviteGoalMembersModalProps) {
   const { user } = useAuth();
   const { friends } = useFriends();
+  const { success, info, error: toastError } = useToast();
+  const confirm = useConfirm();
   const supabase = createClient();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -83,8 +87,10 @@ export default function InviteGoalMembersModal({ isOpen, goal, onClose, onInvite
     setInvitingFriendId(null);
     if (res.ok) {
       setNotice({ kind: "success", text: "Invite sent — they'll see it on their Friends page." });
+      success("Invite sent");
     } else {
       setNotice({ kind: "warn", text: res.error || "Couldn't send invite." });
+      toastError(res.error || "Couldn't send invite");
     }
     const { data } = await supabase
       .from("goal_invites")
@@ -104,10 +110,12 @@ export default function InviteGoalMembersModal({ isOpen, goal, onClose, onInvite
     setLoading(false);
     if (!result) {
       setNotice({ kind: "error", text: "Couldn't create the invite. Please try again." });
+      toastError("Couldn't create invite");
       return;
     }
     if (result.emailSent) {
       setNotice({ kind: "success", text: `Invite sent to ${email.trim()}.` });
+      success("Invite sent");
     } else {
       const reason = result.reason || "";
       let friendly = reason;
@@ -135,8 +143,18 @@ export default function InviteGoalMembersModal({ isOpen, goal, onClose, onInvite
 
   const handleRemoveMember = async (m: GoalMember) => {
     if (!onRemoveMember) return;
-    if (!confirm("Remove this member from the goal?")) return;
-    await onRemoveMember(goal.id, m.user_id);
+    const ok = await confirm({
+      title: "Remove this member from the goal?",
+      destructive: true,
+      confirmLabel: "Remove",
+    });
+    if (!ok) return;
+    try {
+      await onRemoveMember(goal.id, m.user_id);
+      info("Member removed");
+    } catch {
+      toastError("Couldn't remove member");
+    }
   };
 
   const inputClass = "w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm";

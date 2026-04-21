@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { X, ArrowDown, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowUp } from "lucide-react";
 import { todayEST } from "@/lib/dates";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 import type { GoalWithStats } from "@/lib/types";
 
 interface AddContributionModalProps {
@@ -19,7 +20,7 @@ export default function AddContributionModal({ isOpen, goal, onClose, onSave }: 
   const [notes, setNotes] = useState("");
   const [date, setDate] = useState(todayEST());
 
-  if (!isOpen || !goal) return null;
+  if (!goal) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,16 +41,10 @@ export default function AddContributionModal({ isOpen, goal, onClose, onSave }: 
   const newProgress = goal.target_amount > 0 ? Math.min(100, (newSaved / goal.target_amount) * 100) : 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl w-full max-w-md shadow-2xl shadow-gray-900/10 border border-gray-100">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Add Contribution</h2>
-          <button onClick={onClose} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"><X size={20} /></button>
-        </div>
-
+    <BottomSheet isOpen={isOpen} onClose={onClose} title="Add Contribution" size="md">
+      <div className="space-y-4">
         {/* Goal preview */}
-        <div className="px-5 pt-4">
+        <div>
           <div className="bg-gray-50 rounded-xl p-3.5">
             <p className="text-sm font-semibold text-gray-900">{goal.name}</p>
             <div className="flex items-baseline justify-between mt-1">
@@ -62,7 +57,7 @@ export default function AddContributionModal({ isOpen, goal, onClose, onSave }: 
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className={labelClass}>Type</label>
             <div className="grid grid-cols-2 gap-2">
@@ -111,6 +106,6 @@ export default function AddContributionModal({ isOpen, goal, onClose, onSave }: 
           </div>
         </form>
       </div>
-    </div>
+    </BottomSheet>
   );
 }

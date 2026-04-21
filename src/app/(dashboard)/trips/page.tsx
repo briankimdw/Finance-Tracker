@@ -8,6 +8,10 @@ import AddTripModal from "@/components/AddTripModal";
 import InviteTripMembersModal from "@/components/InviteTripMembersModal";
 import { useTrips } from "@/hooks/useTrips";
 import { useGoals } from "@/hooks/useGoals";
+import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { SkeletonCard } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { getTripIcon } from "@/lib/tripIcons";
 import type { Trip, TripWithStats } from "@/lib/types";
 
@@ -21,6 +25,8 @@ function formatDateRange(start: string | null, end: string | null): string {
 export default function TripsPage() {
   const { trips, loading, createTrip, updateTrip, deleteTrip, inviteToTrip, removeTripMember, leaveTrip } = useTrips();
   const { goals } = useGoals();
+  const { success, error: toastError, info } = useToast();
+  const confirm = useConfirm();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editTrip, setEditTrip] = useState<Trip | null>(null);
   const [inviteTrip, setInviteTrip] = useState<TripWithStats | null>(null);
@@ -32,11 +38,49 @@ export default function TripsPage() {
   const totalSpent = activeTrips.reduce((s, t) => s + t.totalActual, 0);
 
   const handleSave = async (data: Parameters<typeof createTrip>[0]) => {
-    if (editTrip) {
-      await updateTrip(editTrip.id, { ...data, start_date: data.start_date ?? null, end_date: data.end_date ?? null, goal_id: data.goal_id ?? null });
-      setEditTrip(null);
-    } else {
-      await createTrip(data);
+    try {
+      if (editTrip) {
+        await updateTrip(editTrip.id, { ...data, start_date: data.start_date ?? null, end_date: data.end_date ?? null, goal_id: data.goal_id ?? null });
+        setEditTrip(null);
+        success("Trip updated");
+      } else {
+        await createTrip(data);
+        success("Trip created");
+      }
+    } catch {
+      toastError(editTrip ? "Couldn't update trip" : "Couldn't create trip");
+    }
+  };
+
+  const handleDeleteTrip = async (trip: Trip) => {
+    const ok = await confirm({
+      title: `Delete "${trip.name}"?`,
+      message: "All itinerary items will be deleted too.",
+      destructive: true,
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
+    try {
+      await deleteTrip(trip.id);
+      success("Trip deleted");
+    } catch {
+      toastError("Couldn't delete trip");
+    }
+  };
+
+  const handleLeaveTrip = async (trip: Trip) => {
+    const ok = await confirm({
+      title: `Leave "${trip.name}"?`,
+      message: "You won't be able to see or contribute to it anymore.",
+      destructive: true,
+      confirmLabel: "Leave",
+    });
+    if (!ok) return;
+    try {
+      await leaveTrip(trip.id);
+      info("Left the trip");
+    } catch {
+      toastError("Couldn't leave trip");
     }
   };
 
@@ -74,20 +118,19 @@ export default function TripsPage() {
       )}
 
       {loading ? (
-        <div className="bg-white border border-gray-200 rounded-xl p-12 text-center text-gray-400 shadow-sm">Loading...</div>
-      ) : trips.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
-          <div className="flex flex-col items-center justify-center py-16">
-            <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-3">
-              <Sparkles size={22} className="text-blue-500" />
-            </div>
-            <p className="text-sm font-semibold text-gray-700">No trips yet</p>
-            <p className="text-xs text-gray-400 mt-1 max-w-xs text-center">Plan a trip with an overall budget, then add items (hotels, food, activities) and track spending as you go.</p>
-            <button onClick={() => setShowAddModal(true)} className="mt-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-1">
-              <Plus size={14} /> Plan your first trip
-            </button>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard className="hidden md:block" />
+          <SkeletonCard className="hidden md:block" />
         </div>
+      ) : trips.length === 0 ? (
+        <EmptyState
+          icon={Sparkles}
+          title="No trips yet"
+          description="Plan a trip with an overall budget, then add items (hotels, food, activities) and track spending as you go."
+          action={{ label: "Plan your first trip", onClick: () => setShowAddModal(true) }}
+        />
       ) : (
         <>
           {activeTrips.length > 0 && (
@@ -213,10 +256,10 @@ export default function TripsPage() {
                               className="text-white/80 hover:text-white bg-black/20 hover:bg-black/40 p-1.5 rounded backdrop-blur-sm" title="Edit"><Pencil size={12} /></button>
                           )}
                           {t.isOwner ? (
-                            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (confirm(`Delete "${t.name}"? All itinerary items will be deleted too.`)) deleteTrip(t.id); }}
+                            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteTrip(t); }}
                               className="text-white/80 hover:text-white bg-black/20 hover:bg-black/40 p-1.5 rounded backdrop-blur-sm" title="Delete"><Trash2 size={12} /></button>
                           ) : (
-                            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (confirm(`Leave "${t.name}"?`)) leaveTrip(t.id); }}
+                            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleLeaveTrip(t); }}
                               className="text-white/80 hover:text-white bg-black/20 hover:bg-black/40 p-1.5 rounded backdrop-blur-sm" title="Leave trip"><LogOut size={12} /></button>
                           )}
                         </div>
@@ -247,7 +290,7 @@ export default function TripsPage() {
                       </p>
                     </div>
                     {t.isOwner && (
-                      <button onClick={(e) => { e.preventDefault(); if (confirm(`Delete "${t.name}"?`)) deleteTrip(t.id); }}
+                      <button onClick={(e) => { e.preventDefault(); handleDeleteTrip(t); }}
                         className="text-gray-300 hover:text-red-500 p-1.5 rounded" title="Delete"><Trash2 size={13} /></button>
                     )}
                   </Link>

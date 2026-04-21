@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import {
-  X, Target, Plane, Home, Car, Smartphone, Gift, GraduationCap,
+  Target, Plane, Home, Car, Smartphone, Gift, GraduationCap,
   Heart, Briefcase, Music, Camera, Gamepad2, ShoppingBag, Plus,
   Tv, Bike, Trophy, Sparkles, Link as LinkIcon, Image as ImageIcon, Users,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 import type { Goal, GoalCategory } from "@/lib/types";
 
 const COLORS = [
@@ -86,8 +87,6 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
     }
   }, [goal, isOpen]);
 
-  if (!isOpen) return null;
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -114,16 +113,10 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
   const SelectedIcon = ICONS.find((i) => i.name === form.icon)?.Icon || Target;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl shadow-gray-900/10 border border-gray-100">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">{goal ? "Edit Goal" : "New Goal"}</h2>
-          <button onClick={onClose} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"><X size={20} /></button>
-        </div>
-
+    <BottomSheet isOpen={isOpen} onClose={onClose} title={goal ? "Edit Goal" : "New Goal"} size="lg">
+      <div className="space-y-4">
         {/* Preview */}
-        <div className="px-5 pt-5">
+        <div>
           <div className="rounded-xl p-4 border-2 border-dashed border-gray-200 flex items-center gap-3">
             {form.image_url ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -140,7 +133,7 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {/* Shared toggle (only when signed in, and only for new goals or goals owned by user) */}
           {user && (!goal || goal.user_id === user.id) && (
             <button
@@ -246,6 +239,6 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
           </div>
         </form>
       </div>
-    </div>
+    </BottomSheet>
   );
 }
