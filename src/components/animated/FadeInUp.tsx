@@ -9,7 +9,7 @@ interface FadeInUpProps {
   className?: string;
 }
 
-export function FadeInUp({ children, delay = 0, className = "" }: FadeInUpProps) {
+export function FadeInUp({ children, delay = 0, className="" }: FadeInUpProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -28,7 +28,7 @@ interface StaggerProps {
   staggerDelay?: number;
 }
 
-export function Stagger({ children, className = "", staggerDelay = 0.05 }: StaggerProps) {
+export function Stagger({ children, className="", staggerDelay = 0.05 }: StaggerProps) {
   return (
     <motion.div
       className={className}
@@ -44,7 +44,7 @@ export function Stagger({ children, className = "", staggerDelay = 0.05 }: Stagg
   );
 }
 
-export function StaggerItem({ children, className = "" }: { children: ReactNode; className?: string }) {
+export function StaggerItem({ children, className="" }: { children: ReactNode; className?: string }) {
   return (
     <motion.div
       className={className}

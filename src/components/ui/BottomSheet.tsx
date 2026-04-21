@@ -96,23 +96,23 @@ export function BottomSheet({
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.4 }}
             onDragEnd={handleDragEnd}
-            className={`lg:hidden absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl shadow-gray-900/20 border-t border-gray-200 overflow-hidden flex flex-col pb-safe ${MOBILE_HEIGHT[size]}`}
+            className={`lg:hidden absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-900 rounded-t-3xl shadow-2xl shadow-gray-900/20 dark:shadow-black/40 border-t border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col pb-safe ${MOBILE_HEIGHT[size]}`}
           >
             {/* Drag handle */}
             {dismissible && (
               <div className="flex justify-center pt-2.5 pb-1 shrink-0">
-                <div className="h-1 w-10 rounded-full bg-gray-300" />
+                <div className="h-1 w-10 rounded-full bg-gray-300 dark:bg-gray-700" />
               </div>
             )}
             {(title || dismissible) && (
               <div className="flex items-center justify-between px-5 pt-2 pb-3 shrink-0">
-                <h2 className="text-lg font-semibold text-gray-900">{title ?? ""}</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title ?? ""}</h2>
                 {dismissible && (
                   <button
                     type="button"
                     onClick={onClose}
                     aria-label="Close"
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                    className="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                   >
                     <X size={20} />
                   </button>
@@ -130,17 +130,17 @@ export function BottomSheet({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.97, transition: { duration: 0.15 } }}
               transition={{ type: "spring", damping: 28, stiffness: 260 }}
-              className={`pointer-events-auto relative w-full ${DESKTOP_MAX_WIDTH[size]} max-h-[90vh] bg-white rounded-2xl shadow-2xl shadow-gray-900/10 border border-gray-100 flex flex-col overflow-hidden`}
+              className={`pointer-events-auto relative w-full ${DESKTOP_MAX_WIDTH[size]} max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl shadow-gray-900/10 dark:shadow-black/40 border border-gray-100 dark:border-gray-800 flex flex-col overflow-hidden`}
             >
               {(title || dismissible) && (
-                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
-                  <h2 className="text-lg font-semibold text-gray-900">{title ?? ""}</h2>
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title ?? ""}</h2>
                   {dismissible && (
                     <button
                       type="button"
                       onClick={onClose}
                       aria-label="Close"
-                      className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                      className="p-1 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
                       <X size={20} />
                     </button>

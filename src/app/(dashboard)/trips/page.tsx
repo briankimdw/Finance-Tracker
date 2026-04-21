@@ -88,8 +88,8 @@ export default function TripsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Trips</h1>
-          <p className="text-gray-400 text-sm mt-0.5">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Trips</h1>
+          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5">
             {activeTrips.length} active · ${totalSpent.toFixed(2)} spent of ${totalBudget.toFixed(2)}
           </p>
         </div>
@@ -99,18 +99,18 @@ export default function TripsPage() {
       </div>
 
       {activeTrips.length > 0 && totalBudget > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Plane size={16} className="text-gray-400" />
-              <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Total spending</h2>
+              <Plane size={16} className="text-gray-400 dark:text-gray-500" />
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">Total spending</h2>
             </div>
-            <span className="text-sm font-bold text-gray-900">{totalBudget > 0 ? ((totalSpent / totalBudget) * 100).toFixed(1) : 0}%</span>
+            <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{totalBudget > 0 ? ((totalSpent / totalBudget) * 100).toFixed(1) : 0}%</span>
           </div>
-          <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
             <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all rounded-full" style={{ width: `${Math.min(100, (totalSpent / totalBudget) * 100)}%` }} />
           </div>
-          <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+          <div className="flex items-center justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
             <span>${totalSpent.toFixed(2)} spent</span>
             <span>${Math.max(0, totalBudget - totalSpent).toFixed(2)} left</span>
           </div>
@@ -144,7 +144,7 @@ export default function TripsPage() {
                   <motion.div key={t.id}
                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: i * 0.04 }}>
-                    <Link href={`/trips/${t.id}`} className="group relative overflow-hidden bg-white border border-gray-200 hover:border-gray-300 hover:shadow-md rounded-2xl transition-all block">
+                    <Link href={`/trips/${t.id}`} className="group relative overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-md rounded-2xl transition-all block">
                       {t.image_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={t.image_url} alt="" className="w-full h-28 object-cover" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
@@ -163,32 +163,32 @@ export default function TripsPage() {
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <h3 className="text-base font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">{t.name}</h3>
+                                  <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-600 transition-colors">{t.name}</h3>
                                   {t.is_shared && (
-                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700">
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300">
                                       <Users size={10} /> {t.members.length}
                                     </span>
                                   )}
                                   {linkedGoal && (
-                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700" title={`Linked to goal: ${linkedGoal.name}`}>
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300" title={`Linked to goal: ${linkedGoal.name}`}>
                                       <Target size={10} /> GOAL
                                     </span>
                                   )}
                                 </div>
                                 {t.destination && (
-                                  <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5 truncate">
+                                  <p className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mt-0.5 truncate">
                                     <MapPin size={10} /> {t.destination}
                                   </p>
                                 )}
                                 {(t.start_date || t.end_date) && (
-                                  <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                                  <p className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mt-0.5">
                                     <Calendar size={10} /> {formatDateRange(t.start_date, t.end_date)}
                                   </p>
                                 )}
                               </div>
                               <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${
-                                t.status === "active" ? "bg-green-100 text-green-700" :
-                                t.status === "planning" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"
+                                t.status === "active" ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300" :
+                                t.status === "planning" ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
                               }`}>
                                 {t.status.toUpperCase()}
                               </span>
@@ -211,7 +211,7 @@ export default function TripsPage() {
                                     );
                                   })}
                                   {t.members.length > 4 && (
-                                    <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-[9px] font-semibold text-gray-500 ring-2 ring-white">
+                                    <div className="w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[9px] font-semibold text-gray-500 dark:text-gray-400 ring-2 ring-white">
                                       +{t.members.length - 4}
                                     </div>
                                   )}
@@ -222,25 +222,25 @@ export default function TripsPage() {
                             {/* Budget */}
                             <div className="mt-3 flex items-baseline justify-between mb-1">
                               <div>
-                                <span className="text-lg font-bold text-gray-900 tabular-nums">${t.totalActual.toFixed(2)}</span>
-                                <span className="text-xs text-gray-400 ml-1">/ ${Number(t.total_budget).toFixed(2)}</span>
+                                <span className="text-lg font-bold text-gray-900 dark:text-gray-100 tabular-nums">${t.totalActual.toFixed(2)}</span>
+                                <span className="text-xs text-gray-400 dark:text-gray-500 ml-1">/ ${Number(t.total_budget).toFixed(2)}</span>
                               </div>
                               <span className="text-xs font-bold tabular-nums" style={{ color: t.color }}>{progress.toFixed(0)}%</span>
                             </div>
 
-                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
+                            <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mb-2">
                               <div className="h-full transition-all rounded-full" style={{ width: `${Math.min(100, progress)}%`, background: warn ? "#ef4444" : t.color }} />
                             </div>
 
                             <div className="flex items-center justify-between text-xs">
                               {warn ? (
-                                <span className="text-red-600 flex items-center gap-1"><TrendingUp size={11} /> Over budget if fully spent</span>
+                                <span className="text-red-600 dark:text-red-400 flex items-center gap-1"><TrendingUp size={11} /> Over budget if fully spent</span>
                               ) : t.skippedSavings > 0 ? (
-                                <span className="text-green-600 flex items-center gap-1"><TrendingDown size={11} /> +${t.skippedSavings.toFixed(2)} saved by skipping</span>
+                                <span className="text-green-600 dark:text-green-400 flex items-center gap-1"><TrendingDown size={11} /> +${t.skippedSavings.toFixed(2)} saved by skipping</span>
                               ) : (
-                                <span className="text-gray-500">${Math.max(0, t.remaining).toFixed(2)} headroom</span>
+                                <span className="text-gray-500 dark:text-gray-400">${Math.max(0, t.remaining).toFixed(2)} headroom</span>
                               )}
-                              <span className="text-gray-400">{t.items.length} {t.items.length === 1 ? "item" : "items"}</span>
+                              <span className="text-gray-400 dark:text-gray-500">{t.items.length} {t.items.length === 1 ? "item" : "items"}</span>
                             </div>
                           </div>
                         </div>
@@ -273,25 +273,25 @@ export default function TripsPage() {
 
           {completedTrips.length > 0 && (
             <div className="space-y-2 pt-2">
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Past & cancelled trips</h2>
+              <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Past & cancelled trips</h2>
               {completedTrips.map((t) => {
                 const Icon = getTripIcon(t.icon);
                 return (
                   <Link href={`/trips/${t.id}`} key={t.id}
-                    className="bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3 opacity-80 hover:opacity-100 hover:shadow-md transition-all">
+                    className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-3 flex items-center gap-3 opacity-80 hover:opacity-100 hover:shadow-md transition-all">
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${t.color}15`, color: t.color }}>
                       <Icon size={16} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{t.name}</p>
-                      <p className="text-xs text-gray-400 truncate">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{t.name}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
                         {t.destination ? `${t.destination} · ` : ""}
                         ${t.totalActual.toFixed(2)} spent{t.status === "cancelled" ? " · cancelled" : ""}
                       </p>
                     </div>
                     {t.isOwner && (
                       <button onClick={(e) => { e.preventDefault(); handleDeleteTrip(t); }}
-                        className="text-gray-300 hover:text-red-500 p-1.5 rounded" title="Delete"><Trash2 size={13} /></button>
+                        className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1.5 rounded" title="Delete"><Trash2 size={13} /></button>
                     )}
                   </Link>
                 );

@@ -11,13 +11,13 @@ interface ChartsProps { monthlyData: MonthlyData[]; categoryData: CategoryBreakd
 function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) {
   if (!active || !payload) return null;
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm">
-      <p className="font-medium text-gray-900 mb-1">{label}</p>
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg p-3 text-sm">
+      <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">{label}</p>
       {payload.map((entry) => (
         <div key={entry.name} className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full" style={{ background: entry.color }} />
-          <span className="text-gray-500">{entry.name}:</span>
-          <span className="font-medium text-gray-900">${entry.value.toFixed(2)}</span>
+          <span className="text-gray-500 dark:text-gray-400">{entry.name}:</span>
+          <span className="font-medium text-gray-900 dark:text-gray-100">${entry.value.toFixed(2)}</span>
         </div>
       ))}
     </div>
@@ -28,11 +28,11 @@ function PieTooltip({ active, payload }: { active?: boolean; payload?: Array<{ n
   if (!active || !payload || !payload[0]) return null;
   const d = payload[0];
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm">
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg p-3 text-sm">
       <div className="flex items-center gap-2">
         <div className="w-2 h-2 rounded-full" style={{ background: d.payload.color }} />
-        <span className="text-gray-500">{d.name}:</span>
-        <span className="font-medium text-gray-900">${d.value.toFixed(2)}</span>
+        <span className="text-gray-500 dark:text-gray-400">{d.name}:</span>
+        <span className="font-medium text-gray-900 dark:text-gray-100">${d.value.toFixed(2)}</span>
       </div>
     </div>
   );
@@ -44,10 +44,10 @@ export default function Charts({ monthlyData, categoryData }: ChartsProps) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm overflow-hidden min-w-0">
-        <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-4">Monthly Earnings</h3>
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm overflow-hidden min-w-0">
+        <h3 className="text-sm font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">Monthly Earnings</h3>
         {!hasMonthly ? (
-          <div className="h-[250px] flex items-center justify-center text-gray-300 text-sm">No data for the last 6 months</div>
+          <div className="h-[250px] flex items-center justify-center text-gray-300 dark:text-gray-600 text-sm">No data for the last 6 months</div>
         ) : (
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={monthlyData} barGap={2}>
@@ -63,10 +63,10 @@ export default function Charts({ monthlyData, categoryData }: ChartsProps) {
         )}
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm overflow-hidden min-w-0">
-        <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-4">Income Sources</h3>
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm overflow-hidden min-w-0">
+        <h3 className="text-sm font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">Income Sources</h3>
         {!hasCategory ? (
-          <div className="h-[250px] flex items-center justify-center text-gray-300 text-sm">No income data yet</div>
+          <div className="h-[250px] flex items-center justify-center text-gray-300 dark:text-gray-600 text-sm">No income data yet</div>
         ) : (
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
@@ -74,7 +74,7 @@ export default function Charts({ monthlyData, categoryData }: ChartsProps) {
                 {categoryData.map((entry, i) => <Cell key={i} fill={entry.color} stroke="white" strokeWidth={2} />)}
               </Pie>
               <Tooltip content={<PieTooltip />} />
-              <Legend formatter={(value) => <span className="text-xs text-gray-500">{value}</span>} iconSize={8} />
+              <Legend formatter={(value) => <span className="text-xs text-gray-500 dark:text-gray-400">{value}</span>} iconSize={8} />
             </PieChart>
           </ResponsiveContainer>
         )}

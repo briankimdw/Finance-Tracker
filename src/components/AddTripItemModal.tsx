@@ -157,7 +157,7 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
     onClose();
   };
 
-  const input = "w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm";
+  const input = "w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 dark:focus:border-blue-500 text-sm";
   const planned = parseFloat(form.planned_amount) || 0;
   const existingPlanned = item ? Number(item.planned_amount) : 0;
   const afterThisItem = remainingBudget - (planned - existingPlanned);
@@ -184,17 +184,17 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
       <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">What?</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">What?</label>
             <input type="text" required value={form.name} onChange={(e) => update("name", e.target.value)} className={input} placeholder={placeholderName} />
           </div>
 
           {/* Category */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">Category</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Category</label>
             <div className="grid grid-cols-3 gap-1.5">
               {CATEGORIES.map(({ value, label, Icon }) => (
                 <button key={value} type="button" onClick={() => update("category", value)}
-                  className={`flex items-center justify-center gap-1.5 py-2 rounded-lg border text-xs font-medium transition-all ${form.category === value ? "bg-blue-50 border-blue-300 text-blue-700" : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"}`}>
+                  className={`flex items-center justify-center gap-1.5 py-2 rounded-lg border text-xs font-medium transition-all ${form.category === value ? "bg-blue-50 dark:bg-blue-950/40 border-blue-300 text-blue-700 dark:text-blue-300" : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700"}`}>
                   <Icon size={13} /> {label}
                 </button>
               ))}
@@ -203,12 +203,12 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
 
           {/* Planned amount */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1">
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1">
               <DollarSign size={11} /> Planned amount
             </label>
             <input type="number" min="0" step="0.01" value={form.planned_amount} onChange={(e) => update("planned_amount", e.target.value)} className={input} placeholder="150.00" />
             {planned > 0 && (
-              <p className={`text-[11px] mt-1 ${afterThisItem < 0 ? "text-red-600" : "text-gray-400"}`}>
+              <p className={`text-[11px] mt-1 ${afterThisItem < 0 ? "text-red-600 dark:text-red-400" : "text-gray-400 dark:text-gray-500"}`}>
                 {afterThisItem >= 0
                   ? `After this: $${afterThisItem.toFixed(2)} left unallocated`
                   : `Over budget by $${Math.abs(afterThisItem).toFixed(2)}`}
@@ -220,17 +220,17 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
           {isLodging ? (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Calendar size={11} /> Check-in</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1"><Calendar size={11} /> Check-in</label>
                 <input type="date" value={form.item_date} onChange={(e) => update("item_date", e.target.value)} className={input} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Calendar size={11} /> Check-out</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1"><Calendar size={11} /> Check-out</label>
                 <input type="date" value={form.end_date} onChange={(e) => update("end_date", e.target.value)} className={input} />
               </div>
             </div>
           ) : (
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Calendar size={11} /> Date <span className="text-gray-400 font-normal">(optional)</span></label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1"><Calendar size={11} /> Date <span className="text-gray-400 dark:text-gray-500 font-normal">(optional)</span></label>
               <input type="date" value={form.item_date} onChange={(e) => update("item_date", e.target.value)} className={input} />
             </div>
           )}
@@ -239,13 +239,13 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
           {(isLodging || isTransport || isActivity) && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Clock size={11} />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1"><Clock size={11} />
                   {isTransport ? "Departure" : isLodging ? "Check-in time" : "Starts"}
                 </label>
                 <input type="time" value={form.start_time} onChange={(e) => update("start_time", e.target.value)} className={input} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Clock size={11} />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1"><Clock size={11} />
                   {isTransport ? "Arrival" : isLodging ? "Check-out time" : "Ends"}
                 </label>
                 <input type="time" value={form.end_time} onChange={(e) => update("end_time", e.target.value)} className={input} />
@@ -255,8 +255,8 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
 
           {/* Location / route */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><MapPin size={11} />
-              {isTransport ? "Route" : "Location / address"} <span className="text-gray-400 font-normal">(optional)</span>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1"><MapPin size={11} />
+              {isTransport ? "Route" : "Location / address"} <span className="text-gray-400 dark:text-gray-500 font-normal">(optional)</span>
             </label>
             <input type="text" value={form.location} onChange={(e) => update("location", e.target.value)} className={input} placeholder={placeholderLocation} />
           </div>
@@ -264,23 +264,23 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
           {/* Confirmation code */}
           {(isLodging || isTransport) && (
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Hash size={11} /> Confirmation / booking code <span className="text-gray-400 font-normal">(optional)</span></label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1"><Hash size={11} /> Confirmation / booking code <span className="text-gray-400 dark:text-gray-500 font-normal">(optional)</span></label>
               <input type="text" value={form.confirmation_code} onChange={(e) => update("confirmation_code", e.target.value)} className={input} placeholder={isTransport ? "Airline PNR / flight no." : "Booking ref"} />
             </div>
           )}
 
           {/* Status */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">Status</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Status</label>
             <div className="grid grid-cols-3 gap-1.5">
               {STATUSES.map((s) => (
                 <button key={s.value} type="button" onClick={() => update("status", s.value)}
                   className={`py-2 rounded-lg text-xs font-medium border transition-all ${
                     form.status === s.value
-                      ? s.value === "done" ? "bg-green-50 border-green-300 text-green-700"
-                      : s.value === "skipped" ? "bg-gray-100 border-gray-300 text-gray-700"
-                      : "bg-blue-50 border-blue-300 text-blue-700"
-                      : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"}`}>
+                      ? s.value === "done" ? "bg-green-50 dark:bg-green-950/40 border-green-300 text-green-700 dark:text-green-300"
+                      : s.value === "skipped" ? "bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300"
+                      : "bg-blue-50 dark:bg-blue-950/40 border-blue-300 text-blue-700 dark:text-blue-300"
+                      : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700"}`}>
                   {s.label}
                 </button>
               ))}
@@ -290,18 +290,18 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
           {/* Actual amount when done */}
           {form.status === "done" && (
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1">
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1">
                 <DollarSign size={11} /> Actual amount spent
               </label>
               <input type="number" min="0" step="0.01" value={form.actual_amount} onChange={(e) => update("actual_amount", e.target.value)} className={input} placeholder={form.planned_amount || "0.00"} />
-              <p className="text-[11px] text-gray-400 mt-1">Leave blank to use the planned amount.</p>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Leave blank to use the planned amount.</p>
             </div>
           )}
 
           {/* Paid by + Split — grouped "who's this for" block */}
           {members.length >= 2 && form.status === "done" && (
-            <div className="bg-blue-50/40 border border-blue-100 rounded-xl p-3 space-y-3">
-              <p className="text-[11px] font-semibold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="bg-blue-50/40 border border-blue-100 dark:border-blue-800 rounded-xl p-3 space-y-3">
+              <p className="text-[11px] font-semibold text-blue-900 dark:text-blue-200 uppercase tracking-wider flex items-center gap-1.5">
                 <User size={11} /> Who paid &amp; who&apos;s it for?
               </p>
 
@@ -319,11 +319,11 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
                     return (
                       <button key={m.user_id} type="button" onClick={() => update("paid_by", m.user_id)}
                         className={`flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                          isSelected ? "bg-white ring-2 ring-blue-400 shadow-sm" : "bg-white/80 border border-gray-200 text-gray-600 hover:border-gray-300"
+                          isSelected ? "bg-white dark:bg-gray-900 ring-2 ring-blue-400 shadow-sm" : "bg-white/80 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700"
                         }`}>
                         <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
                           style={{ background: color }}>{initial}</div>
-                        <span className={isSelected ? "text-gray-900" : ""}>{isCurrentUser ? "You" : name}</span>
+                        <span className={isSelected ? "text-gray-900 dark:text-gray-100" : ""}>{isCurrentUser ? "You" : name}</span>
                         {isCurrentUser && <span className="text-[9px] text-blue-500 font-semibold">(default)</span>}
                       </button>
                     );
@@ -335,7 +335,7 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
               {(() => {
                 const actualNum = parseFloat(form.actual_amount) || parseFloat(form.planned_amount) || 0;
                 if (actualNum <= 0) return (
-                  <p className="text-[11px] text-gray-400">Enter an amount to configure the split.</p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500">Enter an amount to configure the split.</p>
                 );
                 return (
                   <SplitEditor
@@ -356,18 +356,18 @@ export default function AddTripItemModal({ isOpen, item, tripColor = "#3b82f6", 
 
           {/* URL */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><LinkIcon size={11} /> Link <span className="text-gray-400 font-normal">(optional)</span></label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1"><LinkIcon size={11} /> Link <span className="text-gray-400 dark:text-gray-500 font-normal">(optional)</span></label>
             <input type="url" value={form.url} onChange={(e) => update("url", e.target.value)} className={input} placeholder="Booking URL, map link, menu..." />
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Notes <span className="text-gray-400 font-normal">(optional)</span></label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Notes <span className="text-gray-400 dark:text-gray-500 font-normal">(optional)</span></label>
             <textarea value={form.notes} onChange={(e) => update("notes", e.target.value)} rows={2} className={input + " resize-none"} placeholder="Phone number, special requests..." />
           </div>
 
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2.5 px-4 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-medium">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 px-4 rounded-lg border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium">Cancel</button>
             <button type="submit" disabled={loading} className="flex-1 py-2.5 px-4 rounded-lg text-white text-sm font-medium disabled:opacity-50 transition-all hover:shadow-lg"
               style={{ background: tripColor, boxShadow: loading ? undefined : `0 4px 12px ${tripColor}33` }}>
               {loading ? "Saving..." : item ? "Save changes" : "Add item"}

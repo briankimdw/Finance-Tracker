@@ -107,8 +107,8 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
   };
 
   const update = (field: string, value: string | boolean) => setForm((p) => ({ ...p, [field]: value }));
-  const inputClass = "w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400";
-  const labelClass = "block text-sm font-medium text-gray-700 mb-1.5";
+  const inputClass = "w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 dark:focus:border-blue-500";
+  const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5";
 
   const SelectedIcon = ICONS.find((i) => i.name === form.icon)?.Icon || Target;
 
@@ -117,7 +117,7 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
       <div className="space-y-4">
         {/* Preview */}
         <div>
-          <div className="rounded-xl p-4 border-2 border-dashed border-gray-200 flex items-center gap-3">
+          <div className="rounded-xl p-4 border-2 border-dashed border-gray-200 dark:border-gray-800 flex items-center gap-3">
             {form.image_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={form.image_url} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
@@ -127,8 +127,8 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">{form.name || "Goal name"}</p>
-              <p className="text-xs text-gray-500">${form.target_amount || "0"} target</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{form.name || "Goal name"}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">${form.target_amount || "0"} target</p>
             </div>
           </div>
         </div>
@@ -140,10 +140,10 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
               type="button"
               onClick={() => update("is_shared", !form.is_shared)}
               className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
-                form.is_shared ? "border-purple-400 bg-purple-50 text-purple-800" : "border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300"
+                form.is_shared ? "border-purple-400 bg-purple-50 dark:bg-purple-950/40 text-purple-800" : "border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700"
               }`}
             >
-              <Users size={18} className={form.is_shared ? "text-purple-600" : "text-gray-400"} />
+              <Users size={18} className={form.is_shared ? "text-purple-600 dark:text-purple-400" : "text-gray-400 dark:text-gray-500"} />
               <div className="text-left flex-1">
                 <p className="text-sm font-medium">{form.is_shared ? "Shared Goal — invite others" : "Share with others?"}</p>
                 <p className="text-xs opacity-70">{form.is_shared ? "Everyone can contribute. You stay the owner." : "Toggle to track a goal together with friends/family"}</p>
@@ -160,7 +160,7 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
             <div>
               <label className={labelClass}>Target Amount *</label>
               <div className="relative">
-                <span className="absolute left-3 top-2.5 text-gray-400">$</span>
+                <span className="absolute left-3 top-2.5 text-gray-400 dark:text-gray-500">$</span>
                 <input type="number" step="0.01" min="0" value={form.target_amount} onChange={(e) => update("target_amount", e.target.value)} required className={`${inputClass} pl-7`} placeholder="0.00" />
               </div>
             </div>
@@ -175,7 +175,7 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
           <div>
             <label className={labelClass}>Target Date</label>
             <input type="date" value={form.target_date} onChange={(e) => update("target_date", e.target.value)} className={inputClass} />
-            <p className="text-xs text-gray-400 mt-1">Optional — when you want to reach this goal</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Optional — when you want to reach this goal</p>
           </div>
 
           <div>
@@ -183,7 +183,7 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
             <div className="grid grid-cols-9 gap-2">
               {ICONS.map(({ name, Icon }) => (
                 <button key={name} type="button" onClick={() => update("icon", name)}
-                  className={`aspect-square rounded-lg flex items-center justify-center transition-all ${form.icon === name ? "ring-2 ring-offset-1 ring-gray-400" : "hover:bg-gray-100"}`}
+                  className={`aspect-square rounded-lg flex items-center justify-center transition-all ${form.icon === name ? "ring-2 ring-offset-1 ring-gray-400" : "hover:bg-gray-100 dark:hover:bg-gray-800"}`}
                   style={form.icon === name ? { background: `${form.color}20`, color: form.color } : { color: "#6b7280" }}>
                   <Icon size={16} />
                 </button>
@@ -206,24 +206,24 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
           <div>
             <label className={labelClass}>
               <span className="flex items-center gap-1.5">
-                <ImageIcon size={13} className="text-gray-400" />
+                <ImageIcon size={13} className="text-gray-400 dark:text-gray-500" />
                 Image URL
               </span>
             </label>
             <input type="url" value={form.image_url} onChange={(e) => update("image_url", e.target.value)} className={inputClass} placeholder="https://..." />
-            <p className="text-xs text-gray-400 mt-1">Paste an image link — it&apos;ll show on the goal card instead of the icon</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Paste an image link — it&apos;ll show on the goal card instead of the icon</p>
           </div>
 
           {/* Product link */}
           <div>
             <label className={labelClass}>
               <span className="flex items-center gap-1.5">
-                <LinkIcon size={13} className="text-gray-400" />
+                <LinkIcon size={13} className="text-gray-400 dark:text-gray-500" />
                 Link
               </span>
             </label>
             <input type="url" value={form.url} onChange={(e) => update("url", e.target.value)} className={inputClass} placeholder="https://apple.com/macbook-pro" />
-            <p className="text-xs text-gray-400 mt-1">Link to the product or inspiration</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Link to the product or inspiration</p>
           </div>
 
           <div>
@@ -232,7 +232,7 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
           </div>
 
           <div className="flex gap-3 pt-1">
-            <button type="button" onClick={onClose} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 px-4 rounded-xl transition-colors">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium py-2.5 px-4 rounded-xl transition-colors">Cancel</button>
             <button type="submit" disabled={loading} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-2.5 px-4 rounded-xl transition-all hover:shadow-lg hover:shadow-blue-600/20 flex items-center justify-center gap-1">
               {loading ? "Saving..." : (<>{goal ? "Save" : <><Plus size={16} /> Create Goal</>}</>)}
             </button>

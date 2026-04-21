@@ -17,36 +17,36 @@ export default function SalesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Sales History</h1>
-        <p className="text-gray-400 text-sm mt-0.5">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Sales History</h1>
+        <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5">
           {filtered.length} sales &middot; ${totalRevenue.toFixed(2)} revenue &middot;{" "}
-          <span className={totalProfit >= 0 ? "text-green-600" : "text-red-600"}>{totalProfit >= 0 ? "+" : ""}${totalProfit.toFixed(2)} profit</span>
+          <span className={totalProfit >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}>{totalProfit >= 0 ? "+" : ""}${totalProfit.toFixed(2)} profit</span>
         </p>
       </div>
 
       <FilterBar filters={filters} onChange={setFilters} />
 
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200 text-left">
-                <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Item</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Category</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Cost</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Sale Price</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Fees</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Profit</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">ROI</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Sale Date</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Sold On</th>
+              <tr className="border-b border-gray-200 dark:border-gray-800 text-left">
+                <th className="px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Item</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Category</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Cost</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Sale Price</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Fees</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Profit</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">ROI</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Sale Date</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Sold On</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {loading ? (
-                <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
+                <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">Loading...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">{items.length === 0 ? "No sales yet. Mark items as sold to see them here!" : "No sales match your filters."}</td></tr>
+                <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">{items.length === 0 ? "No sales yet. Mark items as sold to see them here!" : "No sales match your filters."}</td></tr>
               ) : (
                 filtered.map((item) => {
                   const cost = Number(item.purchase_price);
@@ -56,15 +56,15 @@ export default function SalesPage() {
                   const roi = cost > 0 ? (profit / cost) * 100 : 0;
                   return (
                     <tr key={item.id} className="hover:bg-gray-50/80 even:bg-gray-50/40">
-                      <td className="px-4 py-3.5 text-sm text-gray-900 font-medium">{item.name}</td>
-                      <td className="px-4 py-3.5 text-sm text-gray-500">{item.category}</td>
-                      <td className="px-4 py-3.5 text-sm text-gray-700">${cost.toFixed(2)}</td>
-                      <td className="px-4 py-3.5 text-sm text-gray-700">${sale.toFixed(2)}</td>
-                      <td className="px-4 py-3.5 text-sm text-gray-500">${fees.toFixed(2)}</td>
-                      <td className="px-4 py-3.5 text-sm"><span className={`font-semibold ${profit >= 0 ? "text-green-600" : "text-red-600"}`}>{profit >= 0 ? "+" : ""}${profit.toFixed(2)}</span></td>
-                      <td className="px-4 py-3.5 text-sm"><span className={`font-medium ${roi >= 0 ? "text-green-600" : "text-red-600"}`}>{roi.toFixed(1)}%</span></td>
-                      <td className="px-4 py-3.5 text-sm text-gray-500">{item.sale_date ? new Date(item.sale_date).toLocaleDateString() : "--"}</td>
-                      <td className="px-4 py-3.5 text-sm text-gray-500">{item.platform_sold || "--"}</td>
+                      <td className="px-4 py-3.5 text-sm text-gray-900 dark:text-gray-100 font-medium">{item.name}</td>
+                      <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">{item.category}</td>
+                      <td className="px-4 py-3.5 text-sm text-gray-700 dark:text-gray-300">${cost.toFixed(2)}</td>
+                      <td className="px-4 py-3.5 text-sm text-gray-700 dark:text-gray-300">${sale.toFixed(2)}</td>
+                      <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">${fees.toFixed(2)}</td>
+                      <td className="px-4 py-3.5 text-sm"><span className={`font-semibold ${profit >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>{profit >= 0 ? "+" : ""}${profit.toFixed(2)}</span></td>
+                      <td className="px-4 py-3.5 text-sm"><span className={`font-medium ${roi >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>{roi.toFixed(1)}%</span></td>
+                      <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">{item.sale_date ? new Date(item.sale_date).toLocaleDateString() : "--"}</td>
+                      <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">{item.platform_sold || "--"}</td>
                     </tr>
                   );
                 })

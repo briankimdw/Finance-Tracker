@@ -133,8 +133,8 @@ export default function TripDetailPage() {
   if (!trip) {
     return (
       <div className="text-center py-20">
-        <p className="text-gray-500">Trip not found.</p>
-        <Link href="/trips" className="text-blue-600 hover:text-blue-700 font-medium text-sm mt-3 inline-block">← Back to trips</Link>
+        <p className="text-gray-500 dark:text-gray-400">Trip not found.</p>
+        <Link href="/trips" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium text-sm mt-3 inline-block">← Back to trips</Link>
       </div>
     );
   }
@@ -281,26 +281,26 @@ export default function TripDetailPage() {
             transition={{ type: "spring", damping: 24, stiffness: 280 }}
             className="lg:hidden fixed top-14 left-0 right-0 z-20 bg-white/95 backdrop-blur-md border-b border-gray-200/60 px-3 py-2 flex items-center gap-2"
           >
-            <Link href="/trips" className="p-1.5 -ml-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100" aria-label="Back to trips">
+            <Link href="/trips" className="p-1.5 -ml-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Back to trips">
               <ArrowLeft size={18} />
             </Link>
             <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: trip.color }} />
-            <span className="text-sm font-semibold text-gray-900 truncate flex-1">{trip.name}</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate flex-1">{trip.name}</span>
             <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${
-              trip.status === "active" ? "bg-green-100 text-green-700" :
-              trip.status === "planning" ? "bg-blue-100 text-blue-700" :
-              trip.status === "cancelled" ? "bg-gray-200 text-gray-600" : "bg-amber-100 text-amber-700"
+              trip.status === "active" ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300" :
+              trip.status === "planning" ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300" :
+              trip.status === "cancelled" ? "bg-gray-200 text-gray-600 dark:text-gray-400" : "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300"
             }`}>{trip.status.toUpperCase()}</span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <Link href="/trips" className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 w-fit">
+      <Link href="/trips" className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1 w-fit">
         <ArrowLeft size={12} /> All trips
       </Link>
 
       {/* Hero header */}
-      <div ref={heroRef} className="relative overflow-hidden rounded-2xl border border-gray-200 shadow-sm">
+      <div ref={heroRef} className="relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
         {trip.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={trip.image_url} alt="" className="w-full h-40 object-cover" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
@@ -316,24 +316,24 @@ export default function TripDetailPage() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl font-bold text-gray-900 truncate">{trip.name}</h1>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 truncate">{trip.name}</h1>
                 <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                  trip.status === "active" ? "bg-green-100 text-green-700" :
-                  trip.status === "planning" ? "bg-blue-100 text-blue-700" :
-                  trip.status === "cancelled" ? "bg-gray-200 text-gray-600" : "bg-amber-100 text-amber-700"
+                  trip.status === "active" ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300" :
+                  trip.status === "planning" ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300" :
+                  trip.status === "cancelled" ? "bg-gray-200 text-gray-600 dark:text-gray-400" : "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300"
                 }`}>{trip.status.toUpperCase()}</span>
                 {trip.is_shared && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300">
                     <Users size={10} /> SHARED · {trip.members.length}
                   </span>
                 )}
                 {linkedGoal && (
-                  <Link href="/goals" className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 hover:bg-blue-200" title={`Linked to goal: ${linkedGoal.name}`}>
+                  <Link href="/goals" className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 hover:bg-blue-200" title={`Linked to goal: ${linkedGoal.name}`}>
                     <Target size={10} /> {linkedGoal.name}
                   </Link>
                 )}
               </div>
-              <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-gray-500">
+              <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {trip.destination && <span className="flex items-center gap-1"><MapPin size={11} /> {trip.destination}</span>}
                 {(trip.start_date || trip.end_date) && (
                   <span className="flex items-center gap-1">
@@ -344,7 +344,7 @@ export default function TripDetailPage() {
                   </span>
                 )}
               </div>
-              {trip.notes && <p className="text-xs text-gray-500 mt-2 whitespace-pre-line">{trip.notes}</p>}
+              {trip.notes && <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 whitespace-pre-line">{trip.notes}</p>}
 
               {/* Member avatars */}
               {trip.is_shared && trip.members.length > 0 && (
@@ -361,11 +361,11 @@ export default function TripDetailPage() {
                       );
                     })}
                     {trip.members.length > 6 && (
-                      <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-semibold text-gray-500 ring-2 ring-white">+{trip.members.length - 6}</div>
+                      <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[10px] font-semibold text-gray-500 dark:text-gray-400 ring-2 ring-white">+{trip.members.length - 6}</div>
                     )}
                   </div>
                   {trip.isOwner && (
-                    <button onClick={() => setShowInviteModal(true)} className="text-[11px] font-medium text-blue-600 hover:text-blue-700 flex items-center gap-0.5 ml-1">
+                    <button onClick={() => setShowInviteModal(true)} className="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-0.5 ml-1">
                       <UserPlus size={11} /> Invite
                     </button>
                   )}
@@ -376,22 +376,22 @@ export default function TripDetailPage() {
             <div className="flex items-center gap-1 shrink-0">
               {trip.isOwner && !trip.is_shared && (
                 <button onClick={() => { updateTrip(trip.id, { is_shared: true }); setShowInviteModal(true); }}
-                  className="text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 px-2.5 py-1.5 rounded-md font-medium flex items-center gap-1"><UserPlus size={12} /> Invite</button>
+                  className="text-xs bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 text-purple-700 dark:text-purple-300 px-2.5 py-1.5 rounded-md font-medium flex items-center gap-1"><UserPlus size={12} /> Invite</button>
               )}
               {trip.isOwner && trip.is_shared && (
                 <button onClick={() => setShowInviteModal(true)}
-                  className="text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 px-2.5 py-1.5 rounded-md font-medium flex items-center gap-1"><UserPlus size={12} /> Invite</button>
+                  className="text-xs bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 text-purple-700 dark:text-purple-300 px-2.5 py-1.5 rounded-md font-medium flex items-center gap-1"><UserPlus size={12} /> Invite</button>
               )}
               {trip.isOwner && trip.status !== "completed" && (
                 <button onClick={() => updateTrip(trip.id, { status: "completed" })}
-                  className="text-xs bg-green-50 hover:bg-green-100 text-green-700 px-2.5 py-1.5 rounded-md font-medium">Mark done</button>
+                  className="text-xs bg-green-50 dark:bg-green-950/40 hover:bg-green-100 text-green-700 dark:text-green-300 px-2.5 py-1.5 rounded-md font-medium">Mark done</button>
               )}
               {trip.isOwner ? (
                 <button onClick={handleDeleteTrip}
-                  className="text-gray-300 hover:text-red-500 p-1.5 rounded" title="Delete trip"><Trash2 size={14} /></button>
+                  className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1.5 rounded" title="Delete trip"><Trash2 size={14} /></button>
               ) : (
                 <button onClick={handleLeaveTrip}
-                  className="text-gray-300 hover:text-red-500 p-1.5 rounded" title="Leave trip"><LogOut size={14} /></button>
+                  className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1.5 rounded" title="Leave trip"><LogOut size={14} /></button>
               )}
             </div>
           </div>
@@ -413,12 +413,12 @@ export default function TripDetailPage() {
       </div>
 
       {/* Main progress bar */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm">
         <div className="flex items-center justify-between text-xs mb-2">
-          <span className="text-gray-500">Progress through budget</span>
-          <span className="text-gray-900 font-bold tabular-nums">${totalActual.toFixed(2)} / ${budget.toFixed(2)}</span>
+          <span className="text-gray-500 dark:text-gray-400">Progress through budget</span>
+          <span className="text-gray-900 dark:text-gray-100 font-bold tabular-nums">${totalActual.toFixed(2)} / ${budget.toFixed(2)}</span>
         </div>
-        <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
+        <div className="relative h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
           <div className="h-full absolute top-0 left-0 rounded-full transition-all" style={{ width: `${budget > 0 ? Math.min(100, (totalActual / budget) * 100) : 0}%`, background: trip.color }} />
           {plannedUpcoming > 0 && (
             <div className="h-full absolute top-0 rounded-r-full transition-all opacity-40"
@@ -434,12 +434,12 @@ export default function TripDetailPage() {
           <LegendDot color={trip.color} label={`$${totalActual.toFixed(2)} spent`} />
           <LegendDot color={overBudget ? "#ef4444" : trip.color} opacity={0.4} label={`$${plannedUpcoming.toFixed(2)} still planned`} />
           {skippedSavings > 0 && (
-            <span className="text-green-600 flex items-center gap-1.5 ml-auto">
+            <span className="text-green-600 dark:text-green-400 flex items-center gap-1.5 ml-auto">
               <TrendingDown size={12} /> +${skippedSavings.toFixed(2)} saved by skipping
             </span>
           )}
           {overBudget && (
-            <span className="text-red-600 flex items-center gap-1.5 ml-auto">
+            <span className="text-red-600 dark:text-red-400 flex items-center gap-1.5 ml-auto">
               <TrendingUp size={12} /> ${(projected - budget).toFixed(2)} over if all planned items happen
             </span>
           )}
@@ -454,21 +454,21 @@ export default function TripDetailPage() {
       {/* Itinerary header + view toggle */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h2 className="text-sm font-semibold text-gray-900">Itinerary</h2>
-          <p className="text-xs text-gray-400">Plan items, check them off as you go. Skipped items free their budget.</p>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Itinerary</h2>
+          <p className="text-xs text-gray-400 dark:text-gray-500">Plan items, check them off as you go. Skipped items free their budget.</p>
         </div>
         <div className="flex items-center gap-2">
           {/* View toggle */}
-          <div className="inline-flex items-center border border-gray-200 rounded-lg bg-white p-0.5">
-            <button onClick={() => setView("list")} className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-md ${view === "list" ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-900"}`}>
+          <div className="inline-flex items-center border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-900 p-0.5">
+            <button onClick={() => setView("list")} className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-md ${view === "list" ? "bg-gray-900 text-white" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}>
               <List size={13} /> List
             </button>
-            <button onClick={() => setView("calendar")} className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-md ${view === "calendar" ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-900"}`}>
+            <button onClick={() => setView("calendar")} className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-md ${view === "calendar" ? "bg-gray-900 text-white" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}>
               <CalendarDays size={13} /> Calendar
             </button>
           </div>
           <button onClick={() => setShowQuickLog(true)}
-            className="bg-white border border-amber-200 hover:border-amber-300 hover:bg-amber-50 text-amber-700 text-sm font-medium px-3 py-2 rounded-lg flex items-center gap-1.5 transition-all"
+            className="bg-white dark:bg-gray-900 border border-amber-200 dark:border-amber-800 hover:border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-sm font-medium px-3 py-2 rounded-lg flex items-center gap-1.5 transition-all"
             title="Quick-log a purchase you just made (adds as 'done' immediately)">
             <Zap size={14} /> Log purchase
           </button>
@@ -484,7 +484,7 @@ export default function TripDetailPage() {
         {CATEGORY_CHOICES.map(({ value, label, Icon: CIcon }) => (
           <button key={value} onClick={() => setCategoryFilter(value)}
             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-              categoryFilter === value ? "bg-gray-900 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"
+              categoryFilter === value ? "bg-gray-900 text-white" : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700"
             }`}>
             <CIcon size={11} /> {label}
             <span className={`text-[10px] ${categoryFilter === value ? "opacity-70" : "opacity-60"}`}>{categoryCounts[value] || 0}</span>
@@ -504,7 +504,7 @@ export default function TripDetailPage() {
           <div className="flex items-center gap-2 text-xs">
             {(["all", "planned", "done", "skipped"] as const).map((f) => (
               <button key={f} onClick={() => setStatusFilter(f)}
-                className={`px-2.5 py-1 rounded-full font-medium transition-colors ${statusFilter === f ? "bg-gray-900 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"}`}>
+                className={`px-2.5 py-1 rounded-full font-medium transition-colors ${statusFilter === f ? "bg-gray-900 text-white" : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700"}`}>
                 {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
                 <span className="ml-1 text-[10px] opacity-70">{statusCounts[f]}</span>
               </button>
@@ -512,16 +512,16 @@ export default function TripDetailPage() {
           </div>
 
           {trip.items.length === 0 ? (
-            <div className="bg-white border border-dashed border-gray-300 rounded-xl p-10 text-center">
-              <p className="text-sm font-semibold text-gray-700">No items yet</p>
-              <p className="text-xs text-gray-400 mt-1">Add hotels, flights, dinners, activities — anything you want to track spending on.</p>
+            <div className="bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-10 text-center">
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">No items yet</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Add hotels, flights, dinners, activities — anything you want to track spending on.</p>
               <button onClick={() => setShowItemModal(true)} className="mt-3 text-sm font-medium text-white px-3 py-1.5 rounded-lg" style={{ background: trip.color }}>
                 <Plus size={12} className="inline -ml-0.5 mr-0.5" /> Add your first item
               </button>
             </div>
           ) : items.length === 0 ? (
-            <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
-              <p className="text-xs text-gray-400">No items match these filters.</p>
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-8 text-center">
+              <p className="text-xs text-gray-400 dark:text-gray-500">No items match these filters.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -574,20 +574,20 @@ export default function TripDetailPage() {
 
 function BudgetCard({ label, value, color, Icon, subtitle }: { label: string; value: number; color: string; Icon?: typeof Wallet; subtitle?: string }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-3 shadow-sm">
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{label}</p>
+        <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{label}</p>
         {Icon && <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: `${color}15`, color }}><Icon size={11} /></div>}
       </div>
-      <p className="text-lg font-bold text-gray-900 tabular-nums mt-0.5">${value.toFixed(2)}</p>
-      {subtitle && <p className="text-[10px] text-gray-400 mt-0.5">{subtitle}</p>}
+      <p className="text-lg font-bold text-gray-900 dark:text-gray-100 tabular-nums mt-0.5">${value.toFixed(2)}</p>
+      {subtitle && <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{subtitle}</p>}
     </div>
   );
 }
 
 function LegendDot({ color, label, opacity = 1 }: { color: string; label: string; opacity?: number }) {
   return (
-    <span className="flex items-center gap-1.5 text-gray-500">
+    <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
       <span className="w-2 h-2 rounded-full" style={{ background: color, opacity }} />
       {label}
     </span>
@@ -669,10 +669,10 @@ function TripItemCard({
         dragMomentum={false}
         onDragEnd={handleDragEnd}
         style={{ x: isMobile ? x : 0 }}
-        className={`group bg-white border rounded-xl hover:shadow-sm transition-colors overflow-hidden relative ${
-          item.status === "done" ? "border-green-200" :
-          item.status === "skipped" ? "border-gray-200 opacity-60" :
-          "border-gray-200"
+        className={`group bg-white dark:bg-gray-900 border rounded-xl hover:shadow-sm transition-colors overflow-hidden relative ${
+          item.status === "done" ? "border-green-200 dark:border-green-800" :
+          item.status === "skipped" ? "border-gray-200 dark:border-gray-800 opacity-60" :
+          "border-gray-200 dark:border-gray-800"
         } ${isMobile ? "touch-pan-y cursor-grab active:cursor-grabbing" : ""}`}
       >
         <div className="p-3">
@@ -683,14 +683,14 @@ function TripItemCard({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className={`text-sm font-semibold ${item.status === "skipped" ? "line-through text-gray-400" : "text-gray-900"}`}>{item.name}</p>
-              {item.status === "done" && <span className="text-[10px] font-bold bg-green-100 text-green-700 px-1.5 py-0.5 rounded">DONE</span>}
-              {item.status === "skipped" && <span className="text-[10px] font-bold bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded">SKIPPED</span>}
+              <p className={`text-sm font-semibold ${item.status === "skipped" ? "line-through text-gray-400 dark:text-gray-500" : "text-gray-900 dark:text-gray-100"}`}>{item.name}</p>
+              {item.status === "done" && <span className="text-[10px] font-bold bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded">DONE</span>}
+              {item.status === "skipped" && <span className="text-[10px] font-bold bg-gray-200 text-gray-600 dark:text-gray-400 px-1.5 py-0.5 rounded">SKIPPED</span>}
               {item.url && (
-                <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-blue-600" title="Open link" onClick={(e) => e.stopPropagation()}><ExternalLink size={12} /></a>
+                <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-gray-300 dark:text-gray-600 hover:text-blue-600 dark:hover:text-blue-400" title="Open link" onClick={(e) => e.stopPropagation()}><ExternalLink size={12} /></a>
               )}
             </div>
-            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-gray-400 flex-wrap">
+            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-gray-400 dark:text-gray-500 flex-wrap">
               <span className="capitalize">{item.category}</span>
               {item.item_date && (
                 <><span>·</span><span className="flex items-center gap-0.5">
@@ -709,15 +709,15 @@ function TripItemCard({
           <div className="text-right shrink-0">
             {item.status === "done" ? (
               <>
-                <p className="text-sm font-bold text-gray-900 tabular-nums">${actual.toFixed(2)}</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-gray-100 tabular-nums">${actual.toFixed(2)}</p>
                 {diff !== 0 && (
-                  <p className={`text-[10px] tabular-nums ${diff > 0 ? "text-red-600" : "text-green-600"}`}>
+                  <p className={`text-[10px] tabular-nums ${diff > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
                     {diff > 0 ? `+$${diff.toFixed(2)} over` : `−$${Math.abs(diff).toFixed(2)} saved`}
                   </p>
                 )}
               </>
             ) : (
-              <p className={`text-sm font-semibold tabular-nums ${item.status === "skipped" ? "text-gray-400 line-through" : "text-gray-700"}`}>
+              <p className={`text-sm font-semibold tabular-nums ${item.status === "skipped" ? "text-gray-400 dark:text-gray-500 line-through" : "text-gray-700 dark:text-gray-300"}`}>
                 ${planned.toFixed(2)}
               </p>
             )}
@@ -725,16 +725,16 @@ function TripItemCard({
 
           <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
             {item.status !== "done" && (
-              <button onClick={onDone} className="text-gray-400 hover:text-green-600 p-1 rounded hover:bg-green-50" title="Mark done"><Check size={14} /></button>
+              <button onClick={onDone} className="text-gray-400 dark:text-gray-500 hover:text-green-600 p-1 rounded hover:bg-green-50 dark:hover:bg-green-950/40" title="Mark done"><Check size={14} /></button>
             )}
             {item.status !== "skipped" && (
-              <button onClick={onSkip} className="text-gray-400 hover:text-amber-600 p-1 rounded hover:bg-amber-50" title="Skip"><X size={14} /></button>
+              <button onClick={onSkip} className="text-gray-400 dark:text-gray-500 hover:text-amber-600 p-1 rounded hover:bg-amber-50 dark:hover:bg-amber-950/40" title="Skip"><X size={14} /></button>
             )}
             {item.status !== "planned" && (
-              <button onClick={onReset} className="text-gray-400 hover:text-blue-600 p-1 rounded hover:bg-blue-50" title="Reset to planned"><Circle size={14} /></button>
+              <button onClick={onReset} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-950/40" title="Reset to planned"><Circle size={14} /></button>
             )}
-            <button onClick={onEdit} className="text-gray-400 hover:text-blue-600 p-1 rounded hover:bg-blue-50" title="Edit"><Pencil size={13} /></button>
-            <button onClick={onDelete} className="text-gray-300 hover:text-red-500 p-1 rounded hover:bg-red-50" title="Delete"><Trash2 size={13} /></button>
+            <button onClick={onEdit} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-950/40" title="Edit"><Pencil size={13} /></button>
+            <button onClick={onDelete} className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/40" title="Delete"><Trash2 size={13} /></button>
           </div>
         </div>
 
@@ -742,16 +742,16 @@ function TripItemCard({
         {hasBookingInfo && (isLodging || isTransport || item.location || item.confirmation_code || showPayer) && (
           <div className="mt-2.5 pl-12 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
             {showPayer && (
-              <div className="flex items-center gap-1.5 text-gray-500">
+              <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
                 <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold text-white shrink-0"
                   style={{ background: `hsl(${((payerId?.charCodeAt(0) || 0) * 31) % 360}, 55%, 55%)` }}>
                   {(payerName || "?").charAt(0).toUpperCase()}
                 </div>
-                <span>Paid by <span className="font-medium text-gray-700">{payerName}</span></span>
+                <span>Paid by <span className="font-medium text-gray-700 dark:text-gray-300">{payerName}</span></span>
               </div>
             )}
             {showSplit && (
-              <div className="flex items-center gap-1.5 text-gray-500" title={splits.map((s) => {
+              <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400" title={splits.map((s) => {
                 const n = s.user_id === currentUserId ? "You" : (memberProfiles?.[s.user_id]?.display_name || memberProfiles?.[s.user_id]?.username || s.user_id.slice(0, 8));
                 return `${n}: $${Number(s.amount).toFixed(2)}`;
               }).join(" · ")}>
@@ -772,27 +772,27 @@ function TripItemCard({
               </div>
             )}
             {item.location && (
-              <div className="flex items-center gap-1.5 text-gray-500">
-                <MapPin size={11} className="text-gray-400 shrink-0" />
+              <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                <MapPin size={11} className="text-gray-400 dark:text-gray-500 shrink-0" />
                 <span className="truncate" title={item.location}>{item.location}</span>
               </div>
             )}
             {item.confirmation_code && (
-              <div className="flex items-center gap-1.5 text-gray-500">
-                <Hash size={11} className="text-gray-400 shrink-0" />
-                <span className="font-mono text-gray-700 truncate">{item.confirmation_code}</span>
+              <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                <Hash size={11} className="text-gray-400 dark:text-gray-500 shrink-0" />
+                <span className="font-mono text-gray-700 dark:text-gray-300 truncate">{item.confirmation_code}</span>
               </div>
             )}
             {item.notes && (
-              <div className="flex items-center gap-1.5 text-gray-500 sm:col-span-2">
-                <span className="text-gray-400 shrink-0">✎</span>
+              <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 sm:col-span-2">
+                <span className="text-gray-400 dark:text-gray-500 shrink-0">✎</span>
                 <span className="truncate" title={item.notes}>{item.notes}</span>
               </div>
             )}
           </div>
         )}
         {!hasBookingInfo && item.notes && (
-          <p className="mt-2 pl-12 text-[11px] text-gray-500 truncate" title={item.notes}>✎ {item.notes}</p>
+          <p className="mt-2 pl-12 text-[11px] text-gray-500 dark:text-gray-400 truncate" title={item.notes}>✎ {item.notes}</p>
         )}
         </div>
       </motion.div>

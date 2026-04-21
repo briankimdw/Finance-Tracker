@@ -118,54 +118,54 @@ export default function FriendsPage() {
   if (!user) {
     return (
       <div className="text-center py-20">
-        <Users size={32} className="text-gray-300 mx-auto mb-2" />
-        <p className="text-sm font-semibold text-gray-700">Sign in to manage friends</p>
-        <p className="text-xs text-gray-400 mt-1">Create an account or sign in to add friends and co-plan trips.</p>
+        <Users size={32} className="text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Sign in to manage friends</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Create an account or sign in to add friends and co-plan trips.</p>
       </div>
     );
   }
 
   const needsUsername = !profile?.username;
-  const input = "w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm";
+  const input = "w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 dark:focus:border-blue-500 text-sm";
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Friends</h1>
-        <p className="text-gray-400 text-sm mt-0.5">Add friends to invite them to shared trips &amp; goals without sharing email addresses.</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Friends</h1>
+        <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5">Add friends to invite them to shared trips &amp; goals without sharing email addresses.</p>
       </div>
 
       {/* Compact profile summary (full customization on /profile) */}
-      <Link href="/profile" className={`block bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition-all ${needsUsername ? "border-amber-200 bg-amber-50/30" : "border-gray-200"}`}>
+      <Link href="/profile" className={`block bg-white dark:bg-gray-900 border rounded-xl p-4 shadow-sm hover:shadow-md transition-all ${needsUsername ? "border-amber-200 dark:border-amber-800 bg-amber-50/30" : "border-gray-200 dark:border-gray-800"}`}>
         <div className="flex items-center gap-3">
           <Avatar name={profile?.display_name || profile?.username || user.email} url={profile?.avatar_url} color={profile?.color} size={44} />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-900 truncate">{profile?.display_name || user.email?.split("@")[0]}</p>
-            <p className="text-xs text-gray-400 truncate">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{profile?.display_name || user.email?.split("@")[0]}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
               {profile?.username ? <>@{profile.username} · {user.email}</> : (
-                <span className="text-amber-700 font-medium">Set a username so friends can find you ·</span>
+                <span className="text-amber-700 dark:text-amber-300 font-medium">Set a username so friends can find you ·</span>
               )} {!profile?.username && user.email}
             </p>
-            {profile?.bio && <p className="text-[11px] text-gray-400 truncate mt-0.5">&ldquo;{profile.bio}&rdquo;</p>}
+            {profile?.bio && <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate mt-0.5">&ldquo;{profile.bio}&rdquo;</p>}
           </div>
-          <div className="flex items-center gap-1 text-xs text-gray-400">
+          <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
             <UserCog size={13} /> <span className="hidden sm:inline">Edit profile</span>
             <ChevronRight size={13} />
           </div>
         </div>
         {needsUsername && (
           <div className="mt-3 flex items-start gap-2 text-xs">
-            <Sparkles size={13} className="text-amber-600 mt-0.5 shrink-0" />
-            <p className="text-amber-700">Tap to pick a username. Friends find you by username or email.</p>
+            <Sparkles size={13} className="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+            <p className="text-amber-700 dark:text-amber-300">Tap to pick a username. Friends find you by username or email.</p>
           </div>
         )}
       </Link>
 
       {/* Add a friend */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm">
         <div className="flex items-center gap-2 mb-3">
-          <Search size={14} className="text-gray-400" />
-          <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Add a friend</h2>
+          <Search size={14} className="text-gray-400 dark:text-gray-500" />
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">Add a friend</h2>
         </div>
         <form onSubmit={handleSend} className="flex gap-2">
           <input type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="Username or email (e.g. janedoe or jane@example.com)" className={input} />
@@ -176,15 +176,15 @@ export default function FriendsPage() {
         </form>
         {notice && (
           <div className={`mt-3 flex items-start gap-2 text-xs rounded-lg px-3 py-2 ${
-            notice.kind === "success" ? "bg-green-50 text-green-700 border border-green-100" :
-            notice.kind === "info" ? "bg-blue-50 text-blue-700 border border-blue-100" :
-            "bg-red-50 text-red-700 border border-red-100"
+            notice.kind === "success" ? "bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border border-green-100 dark:border-green-800" :
+            notice.kind === "info" ? "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800" :
+            "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-100 dark:border-red-800"
           }`}>
             {notice.kind === "error" ? <AlertCircle size={13} className="mt-0.5 shrink-0" /> : <CheckCircle size={13} className="mt-0.5 shrink-0" />}
             <span>{notice.text}</span>
           </div>
         )}
-        <p className="text-[11px] text-gray-400 mt-2">
+        <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-2">
           They&apos;ll see your request in their Friends tab and can accept or reject it.
           Only verified friends can be added to your trips without email invites.
         </p>
@@ -192,13 +192,13 @@ export default function FriendsPage() {
 
       {/* Pending trip/goal invites */}
       {(tripInvites.length > 0 || goalInvites.length > 0) && (
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Plane size={14} className="text-gray-400" />
-              <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">You&apos;re invited</h2>
+              <Plane size={14} className="text-gray-400 dark:text-gray-500" />
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">You&apos;re invited</h2>
             </div>
-            <span className="text-xs font-medium bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full">{tripInvites.length + goalInvites.length}</span>
+            <span className="text-xs font-medium bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 px-2 py-0.5 rounded-full">{tripInvites.length + goalInvites.length}</span>
           </div>
           <div className="space-y-2">
             {tripInvites.map(({ invite, trip, inviter }) => {
@@ -206,18 +206,18 @@ export default function FriendsPage() {
               const Icon = getTripIcon(trip.icon);
               return (
                 <motion.div key={invite.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-sky-50/50 border border-sky-100">
+                  className="flex items-center gap-3 p-3 rounded-lg bg-sky-50/50 border border-sky-100 dark:border-sky-800">
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: trip.color, color: "white" }}>
                     <Icon size={16} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-sky-700">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300">
                         <Plane size={10} /> TRIP
                       </span>
-                      <p className="text-sm font-semibold text-gray-900 truncate">{trip.name}</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{trip.name}</p>
                     </div>
-                    <p className="text-[11px] text-gray-500 truncate">
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
                       {inviter ? (inviter.display_name || inviter.username || "Someone") : "Someone"} invited you
                       {trip.destination && <> · <MapPin size={9} className="inline -mt-0.5" /> {trip.destination}</>}
                     </p>
@@ -225,7 +225,7 @@ export default function FriendsPage() {
                   <button onClick={() => handleAcceptTripInvite({ invite, trip, inviter })} className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
                     <Check size={12} /> Accept
                   </button>
-                  <button onClick={() => declineTripInvite(invite)} className="border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
+                  <button onClick={() => declineTripInvite(invite)} className="border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
                     <X size={12} /> Decline
                   </button>
                 </motion.div>
@@ -236,25 +236,25 @@ export default function FriendsPage() {
               const Icon = getGoalIcon(goal.icon);
               return (
                 <motion.div key={invite.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-blue-50/50 border border-blue-100">
+                  className="flex items-center gap-3 p-3 rounded-lg bg-blue-50/50 border border-blue-100 dark:border-blue-800">
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${goal.color}`, color: "white" }}>
                     <Icon size={16} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">
                         <Target size={10} /> GOAL
                       </span>
-                      <p className="text-sm font-semibold text-gray-900 truncate">{goal.name}</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{goal.name}</p>
                     </div>
-                    <p className="text-[11px] text-gray-500 truncate">
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
                       {inviter ? (inviter.display_name || inviter.username || "Someone") : "Someone"} invited you to save together · ${Number(goal.target_amount).toFixed(0)} target
                     </p>
                   </div>
                   <button onClick={() => handleAcceptGoalInvite({ invite, goal, inviter })} className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
                     <Check size={12} /> Accept
                   </button>
-                  <button onClick={() => declineGoalInvite(invite)} className="border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
+                  <button onClick={() => declineGoalInvite(invite)} className="border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
                     <X size={12} /> Decline
                   </button>
                 </motion.div>
@@ -266,28 +266,28 @@ export default function FriendsPage() {
 
       {/* Incoming requests */}
       {incoming.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <UserPlus size={14} className="text-gray-400" />
-              <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Friend requests</h2>
+              <UserPlus size={14} className="text-gray-400 dark:text-gray-500" />
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">Friend requests</h2>
             </div>
-            <span className="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{incoming.length}</span>
+            <span className="text-xs font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">{incoming.length}</span>
           </div>
           <div className="space-y-2">
             {incoming.map((r) => {
               const p = r.from_profile;
               return (
-                <motion.div key={r.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 p-3 rounded-lg bg-blue-50/50 border border-blue-100">
+                <motion.div key={r.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 p-3 rounded-lg bg-blue-50/50 border border-blue-100 dark:border-blue-800">
                   <Avatar name={p?.display_name || p?.username || p?.email} url={p?.avatar_url} color={p?.color} size={36} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{p?.display_name || p?.username || "Someone"}</p>
-                    <p className="text-[11px] text-gray-500 truncate">{p?.username ? <>@{p.username}</> : p?.email}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{p?.display_name || p?.username || "Someone"}</p>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{p?.username ? <>@{p.username}</> : p?.email}</p>
                   </div>
                   <button onClick={() => handleAcceptFriend(r)} className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
                     <Check size={12} /> Accept
                   </button>
-                  <button onClick={() => rejectRequest(r.id)} className="border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
+                  <button onClick={() => rejectRequest(r.id)} className="border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1">
                     <X size={12} /> Reject
                   </button>
                 </motion.div>
@@ -299,22 +299,22 @@ export default function FriendsPage() {
 
       {/* Outgoing requests */}
       {outgoing.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
-            <Clock size={14} className="text-gray-400" />
-            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Pending (sent)</h2>
+            <Clock size={14} className="text-gray-400 dark:text-gray-500" />
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">Pending (sent)</h2>
           </div>
           <div className="space-y-2">
             {outgoing.map((r) => {
               const p = r.to_profile;
               return (
-                <div key={r.id} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100">
+                <div key={r.id} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-800">
                   <Avatar name={p?.display_name || p?.username || p?.email} url={p?.avatar_url} color={p?.color} size={36} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-700 truncate">{p?.display_name || p?.username || "Someone"}</p>
-                    <p className="text-[11px] text-gray-400 truncate">{p?.username ? <>@{p.username}</> : p?.email} · waiting for them to accept</p>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{p?.display_name || p?.username || "Someone"}</p>
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">{p?.username ? <>@{p.username}</> : p?.email} · waiting for them to accept</p>
                   </div>
-                  <button onClick={() => cancelRequest(r.id)} className="text-gray-400 hover:text-red-600 text-xs font-medium px-2.5 py-1.5 rounded-md hover:bg-red-50">
+                  <button onClick={() => cancelRequest(r.id)} className="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 text-xs font-medium px-2.5 py-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950/40">
                     Cancel
                   </button>
                 </div>
@@ -325,38 +325,38 @@ export default function FriendsPage() {
       )}
 
       {/* Friends list */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Users size={14} className="text-gray-400" />
-            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Your friends</h2>
+            <Users size={14} className="text-gray-400 dark:text-gray-500" />
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">Your friends</h2>
           </div>
-          <span className="text-xs text-gray-400">{friends.length}</span>
+          <span className="text-xs text-gray-400 dark:text-gray-500">{friends.length}</span>
         </div>
 
         {loading ? (
-          <p className="text-center text-xs text-gray-400 py-6">Loading...</p>
+          <p className="text-center text-xs text-gray-400 dark:text-gray-500 py-6">Loading...</p>
         ) : friends.length === 0 ? (
           <div className="text-center py-8">
             <Users size={28} className="text-gray-200 mx-auto mb-2" />
-            <p className="text-sm font-semibold text-gray-700">No friends yet</p>
-            <p className="text-xs text-gray-400 mt-1">Send a request above to get started.</p>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">No friends yet</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Send a request above to get started.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {friends.map((f) => (
               <motion.div key={f.requestId} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="group flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100 hover:border-gray-200">
+                className="group flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-800 hover:border-gray-200">
                 <Avatar name={f.profile?.display_name || f.profile?.username || f.profile?.email} url={f.profile?.avatar_url} color={f.profile?.color} size={36} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{f.profile?.display_name || f.profile?.username || "Friend"}</p>
-                  <p className="text-[11px] text-gray-400 truncate">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{f.profile?.display_name || f.profile?.username || "Friend"}</p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">
                     {f.profile?.username ? <>@{f.profile.username}</> : f.profile?.email}
                   </p>
                 </div>
                 <button
                   onClick={() => handleRemoveFriend(f)}
-                  className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 p-1.5 rounded hover:bg-red-50 transition-opacity"
+                  className="opacity-0 group-hover:opacity-100 text-gray-300 dark:text-gray-600 hover:text-red-500 p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-950/40 transition-opacity"
                   title="Remove friend">
                   <Trash2 size={13} />
                 </button>

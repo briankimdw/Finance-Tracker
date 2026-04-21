@@ -64,25 +64,25 @@ export default function AddIncomeModal({ isOpen, onClose, onAdded, onSavePin }: 
   };
 
   const update = (field: string, value: string | boolean) => setForm((prev) => ({ ...prev, [field]: value }));
-  const inputClass = "w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400";
-  const labelClass = "block text-sm font-medium text-gray-700 mb-1.5";
+  const inputClass = "w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 dark:focus:border-blue-500";
+  const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl shadow-gray-900/10 border border-gray-100">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Add Income</h2>
-          <button onClick={onClose} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"><X size={20} /></button>
+      <div className="relative bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl shadow-gray-900/10 border border-gray-100 dark:border-gray-800">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Add Income</h2>
+          <button onClick={onClose} className="p-1 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"><X size={20} /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-5">
           <div>
             <label className={labelClass}>Income Type *</label>
             <div className="flex gap-2">
               <button type="button" onClick={() => update("type", "main")}
-                className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${form.type === "main" ? "bg-blue-600 text-white shadow-sm" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>Main Income</button>
+                className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${form.type === "main" ? "bg-blue-600 text-white shadow-sm" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}>Main Income</button>
               <button type="button" onClick={() => update("type", "side")}
-                className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${form.type === "side" ? "bg-purple-600 text-white shadow-sm" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>Side Income</button>
+                className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${form.type === "side" ? "bg-purple-600 text-white shadow-sm" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}>Side Income</button>
             </div>
           </div>
           <div>
@@ -100,7 +100,7 @@ export default function AddIncomeModal({ isOpen, onClose, onAdded, onSavePin }: 
             <div>
               <label className={labelClass}>Amount *</label>
               <div className="relative">
-                <span className="absolute left-3 top-2.5 text-gray-400">$</span>
+                <span className="absolute left-3 top-2.5 text-gray-400 dark:text-gray-500">$</span>
                 <input type="number" step="0.01" min="0" value={form.amount} onChange={(e) => update("amount", e.target.value)} required className={`${inputClass} pl-7`} placeholder="0.00" />
               </div>
             </div>
@@ -114,7 +114,7 @@ export default function AddIncomeModal({ isOpen, onClose, onAdded, onSavePin }: 
           <div>
             <label className={labelClass}>Deposit to *</label>
             {accounts.length === 0 ? (
-              <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2.5">No accounts yet — add one in the Cards page first. Income will still be recorded.</p>
+              <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg p-2.5">No accounts yet — add one in the Cards page first. Income will still be recorded.</p>
             ) : (
               <div className="space-y-1.5">
                 {accounts.map((acc) => {
@@ -127,15 +127,15 @@ export default function AddIncomeModal({ isOpen, onClose, onAdded, onSavePin }: 
                       type="button"
                       onClick={() => setDepositTo(acc.id)}
                       className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
-                        isSelected ? "border-blue-400 bg-blue-50/50" : "border-gray-200 hover:border-gray-300 bg-white"
+                        isSelected ? "border-blue-400 bg-blue-50/50" : "border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 bg-white dark:bg-gray-900"
                       }`}
                     >
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${acc.color}20`, color: acc.color }}>
                         {isCash ? <Banknote size={16} /> : <Wallet size={16} />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">{acc.name}</p>
-                        <p className="text-xs text-gray-400 capitalize">{acc.type} &middot; ${Number(acc.balance).toFixed(2)}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{acc.name}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 capitalize">{acc.type} &middot; ${Number(acc.balance).toFixed(2)}</p>
                       </div>
                       {isSelected && (
                         <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
@@ -143,7 +143,7 @@ export default function AddIncomeModal({ isOpen, onClose, onAdded, onSavePin }: 
                         </div>
                       )}
                       {!isSelected && isChecking && (
-                        <span className="text-[10px] text-gray-400 uppercase tracking-wider">Default</span>
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">Default</span>
                       )}
                     </button>
                   );
@@ -157,7 +157,7 @@ export default function AddIncomeModal({ isOpen, onClose, onAdded, onSavePin }: 
               <input type="checkbox" checked={form.recurring} onChange={(e) => update("recurring", e.target.checked)} className="sr-only peer" />
               <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-gray-300 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
-            <span className="text-sm text-gray-700">Recurring income</span>
+            <span className="text-sm text-gray-700 dark:text-gray-300">Recurring income</span>
           </div>
           {form.recurring && (
             <div>
@@ -174,11 +174,11 @@ export default function AddIncomeModal({ isOpen, onClose, onAdded, onSavePin }: 
           <div className="flex gap-3 pt-1">
             {onSavePin && form.source && form.amount && (
               <button type="button" onClick={handlePin}
-                className="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-medium py-2.5 px-3 rounded-xl text-sm" title="Save as quick-add">
+                className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-medium py-2.5 px-3 rounded-xl text-sm" title="Save as quick-add">
                 <Pin size={14} /> Pin
               </button>
             )}
-            <button type="button" onClick={onClose} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 px-4 rounded-xl transition-colors">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium py-2.5 px-4 rounded-xl transition-colors">Cancel</button>
             <button type="submit" disabled={loading}
               className={`flex-1 font-medium py-2.5 px-4 rounded-xl transition-all disabled:opacity-50 text-white hover:shadow-lg ${form.type === "main" ? "bg-blue-600 hover:bg-blue-700 hover:shadow-blue-600/20" : "bg-purple-600 hover:bg-purple-700 hover:shadow-purple-600/20"}`}>
               {loading ? "Adding..." : "Add Income"}

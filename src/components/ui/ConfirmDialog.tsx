@@ -68,7 +68,9 @@ export function ConfirmDialogProvider({ children }: ProviderProps) {
     ? "bg-red-600 hover:bg-red-700 focus:ring-red-500/30 hover:shadow-red-600/20"
     : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500/30 hover:shadow-blue-600/20";
 
-  const iconWrapperClass = destructive ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600";
+  const iconWrapperClass = destructive
+    ? "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400"
+    : "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400";
 
   const value = useMemo(() => confirm, [confirm]);
 
@@ -88,16 +90,16 @@ export function ConfirmDialogProvider({ children }: ProviderProps) {
             <AlertTriangle size={20} />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">{opts.title}</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{opts.title}</h3>
             {opts.message && (
-              <p className="mt-1.5 text-sm text-gray-500">{opts.message}</p>
+              <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">{opts.message}</p>
             )}
           </div>
           <div className="flex w-full gap-3 pt-2">
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-sm py-2.5 px-4 transition-colors"
+              className="flex-1 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium text-sm py-2.5 px-4 transition-colors"
             >
               {cancelLabel}
             </button>

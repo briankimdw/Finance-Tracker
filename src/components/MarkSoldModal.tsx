@@ -43,21 +43,21 @@ export default function MarkSoldModal({ isOpen, item, onClose, onSold }: MarkSol
   const fees = parseFloat(form.fees) || 0;
   const shipping = parseFloat(form.shipping_costs) || 0;
   const profit = salePrice - item.purchase_price - fees - shipping;
-  const inputClass = "w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400";
-  const labelClass = "block text-sm font-medium text-gray-700 mb-1.5";
+  const inputClass = "w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 dark:focus:border-blue-500";
+  const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl w-full max-w-lg shadow-2xl shadow-gray-900/10 border border-gray-100">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Mark as Sold</h2>
-          <button onClick={onClose} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"><X size={20} /></button>
+      <div className="relative bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg shadow-2xl shadow-gray-900/10 border border-gray-100 dark:border-gray-800">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Mark as Sold</h2>
+          <button onClick={onClose} className="p-1 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"><X size={20} /></button>
         </div>
         <div className="px-5 pt-4">
-          <div className="bg-gray-50 rounded-xl p-3.5">
-            <p className="text-gray-900 font-medium">{item.name}</p>
-            <p className="text-sm text-gray-500 mt-0.5">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3.5">
+            <p className="text-gray-900 dark:text-gray-100 font-medium">{item.name}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
               {Number(item.purchase_price) === 0 ? "Free / Already Owned" : `Purchased for $${item.purchase_price.toFixed(2)}`} &middot; {new Date(item.purchase_date).toLocaleDateString()}
             </p>
           </div>
@@ -67,7 +67,7 @@ export default function MarkSoldModal({ isOpen, item, onClose, onSold }: MarkSol
             <div>
               <label className={labelClass}>Sale Price *</label>
               <div className="relative">
-                <span className="absolute left-3 top-2.5 text-gray-400">$</span>
+                <span className="absolute left-3 top-2.5 text-gray-400 dark:text-gray-500">$</span>
                 <input type="number" step="0.01" min="0" value={form.sale_price} onChange={(e) => update("sale_price", e.target.value)} required className={`${inputClass} pl-7`} placeholder="0.00" />
               </div>
             </div>
@@ -86,25 +86,25 @@ export default function MarkSoldModal({ isOpen, item, onClose, onSold }: MarkSol
             <div>
               <label className={labelClass}>Fees</label>
               <div className="relative">
-                <span className="absolute left-3 top-2.5 text-gray-400">$</span>
+                <span className="absolute left-3 top-2.5 text-gray-400 dark:text-gray-500">$</span>
                 <input type="number" step="0.01" min="0" value={form.fees} onChange={(e) => update("fees", e.target.value)} className={`${inputClass} pl-7`} placeholder="0.00" />
               </div>
             </div>
             <div>
               <label className={labelClass}>Shipping Costs</label>
               <div className="relative">
-                <span className="absolute left-3 top-2.5 text-gray-400">$</span>
+                <span className="absolute left-3 top-2.5 text-gray-400 dark:text-gray-500">$</span>
                 <input type="number" step="0.01" min="0" value={form.shipping_costs} onChange={(e) => update("shipping_costs", e.target.value)} className={`${inputClass} pl-7`} placeholder="0.00" />
               </div>
             </div>
           </div>
           {form.sale_price && (
-            <div className={`rounded-xl p-3.5 text-center font-semibold ${profit >= 0 ? "bg-green-50 text-green-600 border border-green-200" : "bg-red-50 text-red-600 border border-red-200"}`}>
+            <div className={`rounded-xl p-3.5 text-center font-semibold ${profit >= 0 ? "bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800" : "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800"}`}>
               Estimated Profit: {profit >= 0 ? "+" : ""}${profit.toFixed(2)}
             </div>
           )}
           <div className="flex gap-3 pt-1">
-            <button type="button" onClick={onClose} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 px-4 rounded-xl transition-colors">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium py-2.5 px-4 rounded-xl transition-colors">Cancel</button>
             <button type="submit" disabled={loading} className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium py-2.5 px-4 rounded-xl transition-all hover:shadow-lg hover:shadow-green-600/20">{loading ? "Saving..." : "Mark as Sold"}</button>
           </div>
         </form>

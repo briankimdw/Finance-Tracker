@@ -152,20 +152,20 @@ export default function SplitEditor({ total, members, currentUserId, initialSpli
   if (members.length < 2) return null;
 
   return (
-    <div className="border border-gray-200 rounded-xl bg-gray-50/60 p-3 space-y-3">
+    <div className="border border-gray-200 dark:border-gray-800 rounded-xl bg-gray-50/60 p-3 space-y-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-1.5">
-          <Users size={12} className="text-gray-400" />
-          <p className="text-xs font-semibold text-gray-700">Split this</p>
-          <span className="text-xs text-gray-400 tabular-nums">${total.toFixed(2)}</span>
+          <Users size={12} className="text-gray-400 dark:text-gray-500" />
+          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Split this</p>
+          <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">${total.toFixed(2)}</span>
         </div>
-        <div className="inline-flex items-center border border-gray-200 rounded-lg bg-white p-0.5">
+        <div className="inline-flex items-center border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-900 p-0.5">
           <button type="button" onClick={() => setMode("equal")}
-            className={`flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md transition-colors ${mode === "equal" ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-900"}`}>
+            className={`flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md transition-colors ${mode === "equal" ? "bg-gray-900 text-white" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}>
             <Equal size={10} /> Equal
           </button>
           <button type="button" onClick={setCustomFromEqual}
-            className={`flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md transition-colors ${mode === "custom" ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-900"}`}>
+            className={`flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md transition-colors ${mode === "custom" ? "bg-gray-900 text-white" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}>
             <Sliders size={10} /> Custom
           </button>
         </div>
@@ -175,12 +175,12 @@ export default function SplitEditor({ total, members, currentUserId, initialSpli
       {mode === "equal" && (
         <div className="flex items-center gap-1.5 text-[10px]">
           <button type="button" onClick={setEveryone}
-            className="px-2 py-1 rounded-full font-medium bg-white border border-gray-200 text-gray-600 hover:border-gray-300">Everyone</button>
+            className="px-2 py-1 rounded-full font-medium bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700">Everyone</button>
           <button type="button" onClick={setJustMe}
-            className="px-2 py-1 rounded-full font-medium bg-white border border-gray-200 text-gray-600 hover:border-gray-300 flex items-center gap-1">
+            className="px-2 py-1 rounded-full font-medium bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700 flex items-center gap-1">
             <User size={10} /> Just me
           </button>
-          <span className="text-gray-400 ml-1">or tap people to include</span>
+          <span className="text-gray-400 dark:text-gray-500 ml-1">or tap people to include</span>
         </div>
       )}
 
@@ -197,18 +197,18 @@ export default function SplitEditor({ total, members, currentUserId, initialSpli
             return (
               <button key={m.user_id} type="button"
                 onClick={() => toggleIncluded(m.user_id)}
-                className={`w-full flex items-center gap-2 p-2 rounded-lg transition-all ${isIncluded ? "bg-white border border-blue-200 ring-1 ring-blue-100" : "bg-white border border-gray-200 opacity-50 hover:opacity-80"}`}>
+                className={`w-full flex items-center gap-2 p-2 rounded-lg transition-all ${isIncluded ? "bg-white dark:bg-gray-900 border border-blue-200 dark:border-blue-800 ring-1 ring-blue-100" : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 opacity-50 hover:opacity-80"}`}>
                 <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white font-semibold text-[11px]"
                   style={{ background: color }}>{initial}</div>
                 <div className="flex-1 min-w-0 text-left">
-                  <p className="text-sm font-medium text-gray-900 truncate">{label}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{label}</p>
                   {isIncluded ? (
-                    <p className="text-[10px] text-gray-400 tabular-nums">Owes ${amount.toFixed(2)}</p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums">Owes ${amount.toFixed(2)}</p>
                   ) : (
-                    <p className="text-[10px] text-gray-400">Excluded</p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500">Excluded</p>
                   )}
                 </div>
-                <div className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors shrink-0 ${isIncluded ? "bg-blue-600 text-white" : "border border-gray-300"}`}>
+                <div className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors shrink-0 ${isIncluded ? "bg-blue-600 text-white" : "border border-gray-300 dark:border-gray-700"}`}>
                   {isIncluded && <CheckCircle size={10} />}
                 </div>
               </button>
@@ -216,17 +216,17 @@ export default function SplitEditor({ total, members, currentUserId, initialSpli
           }
           // custom mode
           return (
-            <div key={m.user_id} className="flex items-center gap-2 p-2 rounded-lg bg-white border border-gray-200">
+            <div key={m.user_id} className="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
               <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white font-semibold text-[11px]"
                 style={{ background: color }}>{initial}</div>
-              <p className="text-sm font-medium text-gray-900 flex-1 min-w-0 truncate">{label}</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1 min-w-0 truncate">{label}</p>
               <div className="relative">
-                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">$</span>
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-gray-500">$</span>
                 <input
                   type="number" min="0" step="0.01"
                   value={customAmounts[m.user_id] ?? "0.00"}
                   onChange={(e) => setCustomAmounts((p) => ({ ...p, [m.user_id]: e.target.value }))}
-                  className="w-24 bg-white border border-gray-200 rounded-md pl-5 pr-2 py-1 text-right text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 tabular-nums"
+                  className="w-24 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-md pl-5 pr-2 py-1 text-right text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 dark:focus:border-blue-500 tabular-nums"
                 />
               </div>
             </div>
@@ -236,7 +236,7 @@ export default function SplitEditor({ total, members, currentUserId, initialSpli
 
       {/* Total line */}
       <div className={`flex items-center justify-between text-[11px] px-2 py-1.5 rounded-md ${
-        valid ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
+        valid ? "bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300" : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300"
       }`}>
         <span className="flex items-center gap-1">
           {valid ? <CheckCircle size={11} /> : <AlertCircle size={11} />}

@@ -10,7 +10,7 @@ export interface SkeletonProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const BASE_CLASS =
-  "relative overflow-hidden bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse";
+  "relative overflow-hidden bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse";
 
 /**
  * Low-level shimmer block. Compose with Tailwind classes to size/shape it.
@@ -72,7 +72,7 @@ export function SkeletonRow({
 }: SkeletonRowProps) {
   return (
     <div
-      className={`flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm ${className}`}
+      className={`flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 shadow-sm ${className}`}
       aria-hidden="true"
     >
       {showAvatar && <SkeletonAvatar size={40} />}
@@ -104,7 +104,7 @@ export interface SkeletonCardProps {
 export function SkeletonCard({ className = "", lines = 3 }: SkeletonCardProps) {
   return (
     <div
-      className={`rounded-xl border border-gray-200 bg-white p-5 shadow-sm ${className}`}
+      className={`rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-sm ${className}`}
       aria-hidden="true"
     >
       <div className="flex items-center gap-3 mb-4">

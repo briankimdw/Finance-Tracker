@@ -33,8 +33,8 @@ export default function AddContributionModal({ isOpen, goal, onClose, onSave }: 
     onClose();
   };
 
-  const inputClass = "w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400";
-  const labelClass = "block text-sm font-medium text-gray-700 mb-1.5";
+  const inputClass = "w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 dark:focus:border-blue-500";
+  const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5";
 
   const value = parseFloat(amount) || 0;
   const newSaved = type === "withdraw" ? Math.max(0, goal.saved - value) : goal.saved + value;
@@ -45,10 +45,10 @@ export default function AddContributionModal({ isOpen, goal, onClose, onSave }: 
       <div className="space-y-4">
         {/* Goal preview */}
         <div>
-          <div className="bg-gray-50 rounded-xl p-3.5">
-            <p className="text-sm font-semibold text-gray-900">{goal.name}</p>
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3.5">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{goal.name}</p>
             <div className="flex items-baseline justify-between mt-1">
-              <p className="text-xs text-gray-500">${goal.saved.toFixed(2)} of ${goal.target_amount.toFixed(2)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">${goal.saved.toFixed(2)} of ${goal.target_amount.toFixed(2)}</p>
               <p className="text-xs font-medium" style={{ color: goal.color }}>{goal.progress.toFixed(0)}%</p>
             </div>
             <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
@@ -62,11 +62,11 @@ export default function AddContributionModal({ isOpen, goal, onClose, onSave }: 
             <label className={labelClass}>Type</label>
             <div className="grid grid-cols-2 gap-2">
               <button type="button" onClick={() => setType("deposit")}
-                className={`flex items-center gap-2 p-2.5 rounded-lg text-sm font-medium transition-all ${type === "deposit" ? "bg-green-600 text-white shadow-sm" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+                className={`flex items-center gap-2 p-2.5 rounded-lg text-sm font-medium transition-all ${type === "deposit" ? "bg-green-600 text-white shadow-sm" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}>
                 <ArrowDown size={16} /> Deposit
               </button>
               <button type="button" onClick={() => setType("withdraw")}
-                className={`flex items-center gap-2 p-2.5 rounded-lg text-sm font-medium transition-all ${type === "withdraw" ? "bg-red-600 text-white shadow-sm" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+                className={`flex items-center gap-2 p-2.5 rounded-lg text-sm font-medium transition-all ${type === "withdraw" ? "bg-red-600 text-white shadow-sm" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}>
                 <ArrowUp size={16} /> Withdraw
               </button>
             </div>
@@ -75,7 +75,7 @@ export default function AddContributionModal({ isOpen, goal, onClose, onSave }: 
           <div>
             <label className={labelClass}>Amount *</label>
             <div className="relative">
-              <span className="absolute left-3 top-2.5 text-gray-400">$</span>
+              <span className="absolute left-3 top-2.5 text-gray-400 dark:text-gray-500">$</span>
               <input type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} required className={`${inputClass} pl-7`} placeholder="0.00" autoFocus />
             </div>
           </div>
@@ -92,14 +92,14 @@ export default function AddContributionModal({ isOpen, goal, onClose, onSave }: 
 
           {/* Preview after */}
           {amount && (
-            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-sm">
-              <p className="text-blue-700 font-medium">After this contribution:</p>
-              <p className="text-blue-900 mt-1 font-semibold">${newSaved.toFixed(2)} saved · {newProgress.toFixed(1)}%</p>
+            <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 rounded-xl p-3 text-sm">
+              <p className="text-blue-700 dark:text-blue-300 font-medium">After this contribution:</p>
+              <p className="text-blue-900 dark:text-blue-200 mt-1 font-semibold">${newSaved.toFixed(2)} saved · {newProgress.toFixed(1)}%</p>
             </div>
           )}
 
           <div className="flex gap-3 pt-1">
-            <button type="button" onClick={onClose} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 px-4 rounded-xl transition-colors">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium py-2.5 px-4 rounded-xl transition-colors">Cancel</button>
             <button type="submit" disabled={loading} className={`flex-1 disabled:opacity-50 text-white font-medium py-2.5 px-4 rounded-xl transition-all hover:shadow-lg ${type === "deposit" ? "bg-green-600 hover:bg-green-700 hover:shadow-green-600/20" : "bg-red-600 hover:bg-red-700 hover:shadow-red-600/20"}`}>
               {loading ? "Saving..." : type === "deposit" ? "Add Deposit" : "Withdraw"}
             </button>

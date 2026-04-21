@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorker";
 import { ToastProvider } from "@/components/ui/Toast";
 import { ConfirmDialogProvider } from "@/components/ui/ConfirmDialog";
@@ -39,6 +40,17 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+// Inline script — runs synchronously before React hydrates to prevent FOUC.
+const themeInitScript = `
+try {
+  var t = localStorage.getItem("theme");
+  var system = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  if (t === "dark" || (!t && system) || (t === "system" && system)) {
+    document.documentElement.classList.add("dark");
+  }
+} catch (e) {}
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -52,15 +64,18 @@ export default function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className="min-h-full bg-[#FAFAFA] text-gray-900">
-        <AuthProvider>
-          <ToastProvider>
-            <ConfirmDialogProvider>
-              {children}
-            </ConfirmDialogProvider>
-          </ToastProvider>
-        </AuthProvider>
+      <body className="min-h-full bg-[#FAFAFA] text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+        <ThemeProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <ConfirmDialogProvider>
+                {children}
+              </ConfirmDialogProvider>
+            </ToastProvider>
+          </AuthProvider>
+        </ThemeProvider>
         <ServiceWorkerRegistrar />
       </body>
     </html>

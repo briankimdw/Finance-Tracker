@@ -28,10 +28,10 @@ function formatDueDate(isoDate: string | null, daysUntil: number | null): string
 }
 
 function getDueColor(daysUntil: number | null): string {
-  if (daysUntil === null) return "text-gray-500";
-  if (daysUntil <= 3) return "text-red-600";
-  if (daysUntil <= 7) return "text-amber-600";
-  return "text-gray-500";
+  if (daysUntil === null) return "text-gray-500 dark:text-gray-400";
+  if (daysUntil <= 3) return "text-red-600 dark:text-red-400";
+  if (daysUntil <= 7) return "text-amber-600 dark:text-amber-400";
+  return "text-gray-500 dark:text-gray-400";
 }
 
 export default function CardsPage() {
@@ -114,24 +114,24 @@ export default function CardsPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Accounts & Cards</h1>
-          <p className="text-gray-400 text-sm mt-0.5">Track your cash, checking, and credit cards</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Accounts & Cards</h1>
+          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5">Track your cash, checking, and credit cards</p>
         </div>
       </div>
 
       {/* Net summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-          <span className="text-xs text-gray-400 uppercase tracking-wider">Cash & Checking</span>
-          <p className="text-xl font-bold text-green-600 mt-1">${totalCash.toFixed(2)}</p>
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm">
+          <span className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider">Cash & Checking</span>
+          <p className="text-xl font-bold text-green-600 dark:text-green-400 mt-1">${totalCash.toFixed(2)}</p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-          <span className="text-xs text-gray-400 uppercase tracking-wider">Credit Card Debt</span>
-          <p className="text-xl font-bold text-red-600 mt-1">${totalDebt.toFixed(2)}</p>
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm">
+          <span className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider">Credit Card Debt</span>
+          <p className="text-xl font-bold text-red-600 dark:text-red-400 mt-1">${totalDebt.toFixed(2)}</p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-          <span className="text-xs text-gray-400 uppercase tracking-wider">Liquid Net Worth</span>
-          <p className={`text-xl font-bold mt-1 ${netWorth >= 0 ? "text-gray-900" : "text-red-600"}`}>
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm">
+          <span className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider">Liquid Net Worth</span>
+          <p className={`text-xl font-bold mt-1 ${netWorth >= 0 ? "text-gray-900 dark:text-gray-100" : "text-red-600 dark:text-red-400"}`}>
             {netWorth < 0 ? "-" : ""}${Math.abs(netWorth).toFixed(2)}
           </p>
         </div>
@@ -139,23 +139,23 @@ export default function CardsPage() {
 
       {/* Upcoming payments alert */}
       {upcomingPayments.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
-            <Calendar size={16} className="text-gray-400" />
-            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Upcoming Payments</h2>
+            <Calendar size={16} className="text-gray-400 dark:text-gray-500" />
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">Upcoming Payments</h2>
           </div>
           <div className="space-y-2">
             {upcomingPayments.map((c) => (
-              <div key={c.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100/80 transition-colors">
+              <div key={c.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100/80 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full" style={{ background: c.color }} />
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{c.name}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{c.name}</p>
                     <p className={`text-xs ${getDueColor(c.daysUntilDue)}`}>{formatDueDate(c.nextDueDate, c.daysUntilDue)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-red-600 tabular-nums">${c.balance.toFixed(2)}</span>
+                  <span className="text-sm font-bold text-red-600 dark:text-red-400 tabular-nums">${c.balance.toFixed(2)}</span>
                   <button onClick={() => setPayCard(c)} className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md transition-colors">Pay Now</button>
                 </div>
               </div>
@@ -167,29 +167,29 @@ export default function CardsPage() {
       {/* Cash Accounts */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Cash & Bank Accounts</h2>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">Cash & Bank Accounts</h2>
           <div className="flex items-center gap-2">
             {accounts.length >= 2 && (
-              <button onClick={() => setShowTransfer(true)} className="text-sm text-gray-600 hover:text-blue-600 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-1">
+              <button onClick={() => setShowTransfer(true)} className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors flex items-center gap-1">
                 <ArrowLeftRight size={14} /> Transfer
               </button>
             )}
-            <button onClick={() => { setEditAccount(null); setShowAddAccountModal(true); }} className="text-sm text-blue-600 hover:text-blue-700 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-1">
+            <button onClick={() => { setEditAccount(null); setShowAddAccountModal(true); }} className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors flex items-center gap-1">
               <Plus size={14} /> Add Account
             </button>
           </div>
         </div>
 
         {loadingAccounts ? (
-          <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-400 shadow-sm">Loading...</div>
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-8 text-center text-gray-400 dark:text-gray-500 shadow-sm">Loading...</div>
         ) : accounts.length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm">
             <div className="flex flex-col items-center justify-center py-10">
-              <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                <Wallet size={18} className="text-gray-300" />
+              <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
+                <Wallet size={18} className="text-gray-300 dark:text-gray-600" />
               </div>
-              <p className="text-sm font-medium text-gray-500">No accounts yet</p>
-              <p className="text-xs text-gray-400 mt-1">Add your checking, savings, or cash on hand</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">No accounts yet</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Add your checking, savings, or cash on hand</p>
             </div>
           </div>
         ) : (
@@ -201,11 +201,11 @@ export default function CardsPage() {
                   setEditAccount(null);
                   setShowAddAccountModal(true);
                 }}
-                className="group border-2 border-dashed border-gray-200 hover:border-blue-300 rounded-xl p-4 flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-blue-600 transition-all min-h-[100px]"
+                className="group border-2 border-dashed border-gray-200 dark:border-gray-800 hover:border-blue-300 rounded-xl p-4 flex flex-col items-center justify-center gap-2 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all min-h-[100px]"
               >
                 <Banknote size={20} />
                 <span className="text-xs font-medium">Add Cash on Hand</span>
-                <span className="text-[10px] text-gray-300 group-hover:text-blue-400">Track physical cash</span>
+                <span className="text-[10px] text-gray-300 dark:text-gray-600 group-hover:text-blue-400">Track physical cash</span>
               </button>
             )}
             {accounts.map((acc, i) => {
@@ -218,25 +218,25 @@ export default function CardsPage() {
                   onDragOver={(e) => onAccountDragOver(e, i)}
                   onDragEnd={onAccountDragEnd}
                   onDrop={(e) => onAccountDrop(e, i)}
-                  className={`group bg-white border rounded-xl shadow-sm transition-all cursor-move ${isOver ? "border-blue-400 ring-2 ring-blue-200 -translate-y-0.5" : "border-gray-200 hover:shadow-md"}`}>
+                  className={`group bg-white dark:bg-gray-900 border rounded-xl shadow-sm transition-all cursor-move ${isOver ? "border-blue-400 ring-2 ring-blue-200 -translate-y-0.5" : "border-gray-200 dark:border-gray-800 hover:shadow-md"}`}>
                   <div className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <GripVertical size={14} className="text-gray-300 group-hover:text-gray-400" />
+                        <GripVertical size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-400" />
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${acc.color}20`, color: acc.color }}>
                           <Icon size={16} />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900 leading-tight">{acc.name}</p>
-                          <p className="text-[10px] text-gray-400 uppercase tracking-wider">{acc.type}</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 leading-tight">{acc.name}</p>
+                          <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{acc.type}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => { setEditAccount(acc); setShowAddAccountModal(true); }} className="text-gray-400 hover:text-blue-600 p-1" title="Edit"><Pencil size={12} /></button>
-                        <button onClick={() => { if (confirm(`Delete ${acc.name}?`)) deleteAccount(acc.id); }} className="text-gray-300 hover:text-red-500 p-1" title="Delete"><Trash2 size={12} /></button>
+                        <button onClick={() => { setEditAccount(acc); setShowAddAccountModal(true); }} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-1" title="Edit"><Pencil size={12} /></button>
+                        <button onClick={() => { if (confirm(`Delete ${acc.name}?`)) deleteAccount(acc.id); }} className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1" title="Delete"><Trash2 size={12} /></button>
                       </div>
                     </div>
-                    <p className="text-2xl font-bold text-gray-900 tabular-nums">${Number(acc.balance).toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">${Number(acc.balance).toFixed(2)}</p>
                   </div>
                 </div>
               );
@@ -248,35 +248,35 @@ export default function CardsPage() {
       {/* Credit Cards */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Credit Cards</h2>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">Credit Cards</h2>
           <div className="flex items-center gap-3">
             {totalLimit > 0 && (
-              <span className={`text-xs ${totalUtilization > 30 ? "text-red-600" : totalUtilization > 10 ? "text-amber-600" : "text-green-600"}`}>
+              <span className={`text-xs ${totalUtilization > 30 ? "text-red-600 dark:text-red-400" : totalUtilization > 10 ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400"}`}>
                 {totalUtilization.toFixed(1)}% utilization
               </span>
             )}
-            <button onClick={() => { setEditCard(null); setShowAddCardModal(true); }} className="text-sm text-blue-600 hover:text-blue-700 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-1">
+            <button onClick={() => { setEditCard(null); setShowAddCardModal(true); }} className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors flex items-center gap-1">
               <Plus size={14} /> Add Card
             </button>
           </div>
         </div>
 
         {loadingCards ? (
-          <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-400 shadow-sm">Loading...</div>
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-8 text-center text-gray-400 dark:text-gray-500 shadow-sm">Loading...</div>
         ) : cards.length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm">
             <div className="flex flex-col items-center justify-center py-10">
-              <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                <CardIcon size={18} className="text-gray-300" />
+              <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
+                <CardIcon size={18} className="text-gray-300 dark:text-gray-600" />
               </div>
-              <p className="text-sm font-medium text-gray-500">No cards yet</p>
-              <p className="text-xs text-gray-400 mt-1">Add a credit card to start tracking</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">No cards yet</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Add a credit card to start tracking</p>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {cards.map((card, i) => {
-              const utilColor = card.utilization > 30 ? "text-red-600" : card.utilization > 10 ? "text-amber-600" : "text-green-600";
+              const utilColor = card.utilization > 30 ? "text-red-600 dark:text-red-400" : card.utilization > 10 ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400";
               const barColor = card.utilization > 30 ? "bg-red-500" : card.utilization > 10 ? "bg-amber-500" : "bg-green-500";
               const isOver = dragOverCard === i;
               return (
@@ -286,7 +286,7 @@ export default function CardsPage() {
                   onDragOver={(e) => onCardDragOver(e, i)}
                   onDragEnd={onCardDragEnd}
                   onDrop={(e) => onCardDrop(e, i)}
-                  className={`bg-white border rounded-xl shadow-sm overflow-hidden transition-all cursor-move ${isOver ? "border-blue-400 ring-2 ring-blue-200 -translate-y-0.5" : "border-gray-200 hover:shadow-md"}`}>
+                  className={`bg-white dark:bg-gray-900 border rounded-xl shadow-sm overflow-hidden transition-all cursor-move ${isOver ? "border-blue-400 ring-2 ring-blue-200 -translate-y-0.5" : "border-gray-200 dark:border-gray-800 hover:shadow-md"}`}>
                   {/* Card visual */}
                   <div className="p-5 text-white relative" style={{ background: `linear-gradient(135deg, ${card.color}, ${card.color}cc)` }}>
                     <GripVertical size={14} className="absolute top-2 right-2 opacity-50" />
@@ -303,15 +303,15 @@ export default function CardsPage() {
                   {/* Stats */}
                   <div className="p-4 space-y-3">
                     <div className="flex items-baseline justify-between">
-                      <span className="text-xs text-gray-400 uppercase tracking-wider">Balance</span>
-                      <span className={`text-xl font-bold tabular-nums ${card.balance > 0 ? "text-red-600" : "text-green-600"}`}>
+                      <span className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider">Balance</span>
+                      <span className={`text-xl font-bold tabular-nums ${card.balance > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
                         ${card.balance.toFixed(2)}
                       </span>
                     </div>
 
                     {card.due_day && card.balance > 0 && (
                       <div className="flex items-center gap-1.5 text-xs">
-                        <Calendar size={12} className="text-gray-400" />
+                        <Calendar size={12} className="text-gray-400 dark:text-gray-500" />
                         <span className={getDueColor(card.daysUntilDue)}>{formatDueDate(card.nextDueDate, card.daysUntilDue)}</span>
                       </div>
                     )}
@@ -319,35 +319,35 @@ export default function CardsPage() {
                     {card.credit_limit && Number(card.credit_limit) > 0 && (
                       <div>
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-xs text-gray-400">Utilization</span>
+                          <span className="text-xs text-gray-400 dark:text-gray-500">Utilization</span>
                           <span className={`text-xs font-medium ${utilColor}`}>{card.utilization.toFixed(1)}% of ${Number(card.credit_limit).toFixed(0)}</span>
                         </div>
-                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                           <div className={`h-full transition-all ${barColor}`} style={{ width: `${Math.max(0, Math.min(100, card.utilization))}%` }} />
                         </div>
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 pt-2 border-t border-gray-100">
+                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800">
                       <div>
-                        <p className="text-gray-400">Charges</p>
-                        <p className="font-medium text-gray-700 tabular-nums">${card.totalCharges.toFixed(2)}</p>
+                        <p className="text-gray-400 dark:text-gray-500">Charges</p>
+                        <p className="font-medium text-gray-700 dark:text-gray-300 tabular-nums">${card.totalCharges.toFixed(2)}</p>
                       </div>
                       <div>
-                        <p className="text-gray-400">Payments</p>
-                        <p className="font-medium text-gray-700 tabular-nums">${card.totalPayments.toFixed(2)}</p>
+                        <p className="text-gray-400 dark:text-gray-500">Payments</p>
+                        <p className="font-medium text-gray-700 dark:text-gray-300 tabular-nums">${card.totalPayments.toFixed(2)}</p>
                       </div>
                     </div>
 
-                    <div className="flex gap-2 pt-3 border-t border-gray-100">
-                      <button onClick={() => setChargeCard(card)} className="flex-1 flex items-center justify-center gap-1 text-xs bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-2.5 py-1.5 rounded-md transition-colors">
+                    <div className="flex gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
+                      <button onClick={() => setChargeCard(card)} className="flex-1 flex items-center justify-center gap-1 text-xs bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 border border-red-200 dark:border-red-800 px-2.5 py-1.5 rounded-md transition-colors">
                         <ArrowUpRight size={12} /> Charge
                       </button>
-                      <button onClick={() => setPayCard(card)} className="flex-1 flex items-center justify-center gap-1 text-xs bg-green-50 text-green-600 hover:bg-green-100 border border-green-200 px-2.5 py-1.5 rounded-md transition-colors">
+                      <button onClick={() => setPayCard(card)} className="flex-1 flex items-center justify-center gap-1 text-xs bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-100 border border-green-200 dark:border-green-800 px-2.5 py-1.5 rounded-md transition-colors">
                         <ArrowDownRight size={12} /> Pay
                       </button>
-                      <button onClick={() => { setEditCard(card); setShowAddCardModal(true); }} className="text-gray-400 hover:text-blue-600 transition-colors p-1.5" title="Edit"><Pencil size={14} /></button>
-                      <button onClick={() => { if (confirm(`Delete ${card.name}?`)) deleteCard(card.id); }} className="text-gray-300 hover:text-red-500 transition-colors p-1.5" title="Delete"><Trash2 size={14} /></button>
+                      <button onClick={() => { setEditCard(card); setShowAddCardModal(true); }} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-1.5" title="Edit"><Pencil size={14} /></button>
+                      <button onClick={() => { if (confirm(`Delete ${card.name}?`)) deleteCard(card.id); }} className="text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors p-1.5" title="Delete"><Trash2 size={14} /></button>
                     </div>
                   </div>
                 </div>

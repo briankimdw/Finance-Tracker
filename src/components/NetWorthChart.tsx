@@ -21,9 +21,9 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   const value = payload[0].value;
   const dateStr = new Date((label || payload[0].payload.date) + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm">
-      <p className="text-xs text-gray-400 mb-0.5">{dateStr}</p>
-      <p className="font-bold text-gray-900 tabular-nums">${value.toFixed(2)}</p>
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg p-3 text-sm">
+      <p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">{dateStr}</p>
+      <p className="font-bold text-gray-900 dark:text-gray-100 tabular-nums">${value.toFixed(2)}</p>
     </div>
   );
 }
@@ -60,28 +60,28 @@ export default function NetWorthChart({ currentNetWorth }: NetWorthChartProps) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-      className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm"
+      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm"
     >
       <div className="flex items-start justify-between mb-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Net Worth Over Time</span>
+            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Net Worth Over Time</span>
           </div>
-          <p className="text-3xl font-bold text-gray-900 tabular-nums">${currentNetWorth.toFixed(2)}</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">${currentNetWorth.toFixed(2)}</p>
           {chartData.length >= 2 && (
-            <div className={`flex items-center gap-1.5 mt-1 text-sm font-medium ${isPositive ? "text-green-600" : "text-red-600"}`}>
+            <div className={`flex items-center gap-1.5 mt-1 text-sm font-medium ${isPositive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
               {isPositive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
               <span className="tabular-nums">{isPositive ? "+" : ""}${change.toFixed(2)} ({pct.toFixed(2)}%)</span>
-              <span className="text-gray-400 font-normal">· {rangeInfo.label}</span>
+              <span className="text-gray-400 dark:text-gray-500 font-normal">· {rangeInfo.label}</span>
             </div>
           )}
         </div>
-        <div className="flex gap-0.5 bg-gray-100 rounded-lg p-0.5">
+        <div className="flex gap-0.5 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
           {RANGES.map((r) => (
             <button
               key={r.key}
               onClick={() => setRange(r.key)}
-              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${range === r.key ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"}`}
+              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${range === r.key ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
             >
               {r.label}
             </button>
@@ -90,11 +90,11 @@ export default function NetWorthChart({ currentNetWorth }: NetWorthChartProps) {
       </div>
 
       {loading ? (
-        <div className="h-[240px] flex items-center justify-center text-gray-300 text-sm">Loading...</div>
+        <div className="h-[240px] flex items-center justify-center text-gray-300 dark:text-gray-600 text-sm">Loading...</div>
       ) : chartData.length < 2 ? (
-        <div className="h-[240px] flex items-center justify-center text-gray-300 text-sm flex-col gap-1">
-          <p className="text-sm font-medium text-gray-400">Not enough data yet</p>
-          <p className="text-xs text-gray-300">Snapshots are recorded as you use the app</p>
+        <div className="h-[240px] flex items-center justify-center text-gray-300 dark:text-gray-600 text-sm flex-col gap-1">
+          <p className="text-sm font-medium text-gray-400 dark:text-gray-500">Not enough data yet</p>
+          <p className="text-xs text-gray-300 dark:text-gray-600">Snapshots are recorded as you use the app</p>
         </div>
       ) : (
         <ResponsiveContainer width="100%" height={240}>

@@ -89,7 +89,7 @@ const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(function Nu
         {prefix && (
           <span
             aria-hidden
-            className={`text-3xl font-light tabular-nums ${isEmpty ? "text-gray-300" : "text-gray-400"}`}
+            className={`text-3xl font-light tabular-nums ${isEmpty ? "text-gray-300 dark:text-gray-600" : "text-gray-400 dark:text-gray-500"}`}
           >
             {prefix}
           </span>
@@ -108,7 +108,7 @@ const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(function Nu
           autoFocus={autoFocus}
           aria-label={ariaLabel ?? "Amount"}
           placeholder={placeholder ?? "0.00"}
-          className="bg-transparent border-0 outline-none text-5xl font-semibold tabular-nums text-gray-900 placeholder-gray-300 text-center w-full max-w-[14ch] p-0 focus:ring-0"
+          className="bg-transparent border-0 outline-none text-5xl font-semibold tabular-nums text-gray-900 dark:text-gray-100 placeholder-gray-300 dark:placeholder-gray-600 text-center w-full max-w-[14ch] p-0 focus:ring-0"
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
@@ -123,7 +123,7 @@ const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(function Nu
       {prefix && (
         <span
           aria-hidden
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400"
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 dark:text-gray-500"
         >
           {prefix}
         </span>
@@ -142,7 +142,7 @@ const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(function Nu
         autoFocus={autoFocus}
         aria-label={ariaLabel}
         placeholder={placeholder ?? "0.00"}
-        className={`w-full bg-white border border-gray-200 rounded-lg ${prefix ? "pl-6" : "pl-3"} pr-3 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm tabular-nums`}
+        className={`w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg ${prefix ? "pl-6" : "pl-3"} pr-3 py-2.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 dark:focus:border-blue-500 text-sm tabular-nums`}
         autoComplete="off"
         autoCorrect="off"
         spellCheck={false}

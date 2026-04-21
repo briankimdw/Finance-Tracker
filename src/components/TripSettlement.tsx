@@ -88,7 +88,7 @@ export default function TripSettlement({ trip, currentUserId }: TripSettlementPr
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-white"
+      className="overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900"
     >
       {/* HERO — Splitwise-style. Color + copy changes based on user's net position. */}
       <div className={`relative px-5 py-5 ${
@@ -99,43 +99,43 @@ export default function TripSettlement({ trip, currentUserId }: TripSettlementPr
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <p className={`text-[10px] font-semibold uppercase tracking-wider ${
-              heroStatus === "owed" ? "text-green-700" :
-              heroStatus === "owes" ? "text-red-700" :
-              "text-gray-500"
+              heroStatus === "owed" ? "text-green-700 dark:text-green-300" :
+              heroStatus === "owes" ? "text-red-700 dark:text-red-300" :
+              "text-gray-500 dark:text-gray-400"
             }`}>
               {heroStatus === "empty" ? "Your balance" : "Overall"}
             </p>
             {heroStatus === "empty" ? (
               <>
-                <p className="text-xl font-bold text-gray-400 mt-1">No purchases yet</p>
-                <p className="text-xs text-gray-500 mt-0.5">Tap <span className="font-medium">Log purchase</span> above to start tracking who owes what.</p>
+                <p className="text-xl font-bold text-gray-400 dark:text-gray-500 mt-1">No purchases yet</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Tap <span className="font-medium">Log purchase</span> above to start tracking who owes what.</p>
               </>
             ) : heroStatus === "even" ? (
               <>
-                <p className="text-2xl font-bold text-gray-700 mt-1">You&apos;re even</p>
-                <p className="text-xs text-gray-500 mt-0.5">All squared up — no one owes anyone.</p>
+                <p className="text-2xl font-bold text-gray-700 dark:text-gray-300 mt-1">You&apos;re even</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">All squared up — no one owes anyone.</p>
               </>
             ) : heroStatus === "owed" ? (
               <>
-                <p className="text-[11px] text-green-700 mt-1">You&apos;re owed</p>
-                <p className="text-3xl font-bold text-green-700 tabular-nums">+${myNet.toFixed(2)}</p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-[11px] text-green-700 dark:text-green-300 mt-1">You&apos;re owed</p>
+                <p className="text-3xl font-bold text-green-700 dark:text-green-300 tabular-nums">+${myNet.toFixed(2)}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   You paid more than your share. {mySettlements.length > 0 ? `See settlements below.` : ""}
                 </p>
               </>
             ) : (
               <>
-                <p className="text-[11px] text-red-700 mt-1">You owe</p>
-                <p className="text-3xl font-bold text-red-700 tabular-nums">${Math.abs(myNet).toFixed(2)}</p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-[11px] text-red-700 dark:text-red-300 mt-1">You owe</p>
+                <p className="text-3xl font-bold text-red-700 dark:text-red-300 tabular-nums">${Math.abs(myNet).toFixed(2)}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   You spent less than your share. {mySettlements.length > 0 ? `See settlements below.` : ""}
                 </p>
               </>
             )}
           </div>
           <div className="text-right shrink-0">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Trip total</p>
-            <p className="text-base font-bold text-gray-900 tabular-nums mt-0.5">${totalPool.toFixed(2)}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Trip total</p>
+            <p className="text-base font-bold text-gray-900 dark:text-gray-100 tabular-nums mt-0.5">${totalPool.toFixed(2)}</p>
           </div>
         </div>
 
@@ -150,12 +150,12 @@ export default function TripSettlement({ trip, currentUserId }: TripSettlementPr
                   <Avatar name={nameFor(other)} color={colorFor(other)} url={avatarUrlFor(other)} size={24} />
                   <div className="flex-1 min-w-0 text-sm">
                     {iAmPaying ? (
-                      <>You pay <span className="font-semibold text-gray-900">{nameFor(other)}</span></>
+                      <>You pay <span className="font-semibold text-gray-900 dark:text-gray-100">{nameFor(other)}</span></>
                     ) : (
-                      <><span className="font-semibold text-gray-900">{nameFor(other)}</span> pays you</>
+                      <><span className="font-semibold text-gray-900 dark:text-gray-100">{nameFor(other)}</span> pays you</>
                     )}
                   </div>
-                  <span className={`text-sm font-bold tabular-nums ${iAmPaying ? "text-red-600" : "text-green-700"}`}>
+                  <span className={`text-sm font-bold tabular-nums ${iAmPaying ? "text-red-600 dark:text-red-400" : "text-green-700 dark:text-green-300"}`}>
                     {iAmPaying ? "−" : "+"}${s.amount.toFixed(2)}
                   </span>
                 </div>
@@ -169,7 +169,7 @@ export default function TripSettlement({ trip, currentUserId }: TripSettlementPr
       {totalPool > 0 && (
         <>
           <button onClick={() => setExpanded((e) => !e)}
-            className="w-full flex items-center justify-between px-5 py-2.5 text-xs font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors border-t border-gray-100">
+            className="w-full flex items-center justify-between px-5 py-2.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-t border-gray-100 dark:border-gray-800">
             <span>{expanded ? "Hide breakdown" : "Show everyone's balance"}</span>
             {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </button>
@@ -186,24 +186,24 @@ export default function TripSettlement({ trip, currentUserId }: TripSettlementPr
                     <div key={b.userId} className={`flex items-center gap-3 px-5 py-2.5 ${isMe ? "bg-blue-50/30" : ""}`}>
                       <Avatar name={name} color={colorFor(b.userId)} url={avatarUrlFor(b.userId)} />
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm truncate ${isMe ? "font-semibold text-gray-900" : "font-medium text-gray-900"}`}>{name}</p>
-                        <p className="text-[11px] text-gray-400 tabular-nums">Paid ${b.paid.toFixed(2)} · owes ${b.share.toFixed(2)}</p>
+                        <p className={`text-sm truncate ${isMe ? "font-semibold text-gray-900 dark:text-gray-100" : "font-medium text-gray-900 dark:text-gray-100"}`}>{name}</p>
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500 tabular-nums">Paid ${b.paid.toFixed(2)} · owes ${b.share.toFixed(2)}</p>
                       </div>
                       <div className="text-right">
                         {positive ? (
-                          <span className="text-sm font-bold text-green-600 flex items-center justify-end gap-0.5 tabular-nums">
+                          <span className="text-sm font-bold text-green-600 dark:text-green-400 flex items-center justify-end gap-0.5 tabular-nums">
                             <TrendingUp size={12} /> +${b.balance.toFixed(2)}
                           </span>
                         ) : negative ? (
-                          <span className="text-sm font-bold text-red-600 flex items-center justify-end gap-0.5 tabular-nums">
+                          <span className="text-sm font-bold text-red-600 dark:text-red-400 flex items-center justify-end gap-0.5 tabular-nums">
                             <TrendingDown size={12} /> −${Math.abs(b.balance).toFixed(2)}
                           </span>
                         ) : (
-                          <span className="text-sm font-semibold text-gray-400 flex items-center justify-end gap-0.5">
+                          <span className="text-sm font-semibold text-gray-400 dark:text-gray-500 flex items-center justify-end gap-0.5">
                             <Minus size={12} /> Even
                           </span>
                         )}
-                        <p className="text-[10px] text-gray-400">{positive ? "is owed" : negative ? "owes" : ""}</p>
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500">{positive ? "is owed" : negative ? "owes" : ""}</p>
                       </div>
                     </div>
                   );
@@ -212,19 +212,19 @@ export default function TripSettlement({ trip, currentUserId }: TripSettlementPr
 
               {/* Other-party settlement suggestions (ones not involving me) */}
               {otherSettlements.length > 0 && (
-                <div className="border-t border-gray-100 bg-gray-50/50 px-5 py-3 space-y-2">
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Other people settle</p>
+                <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 px-5 py-3 space-y-2">
+                  <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Other people settle</p>
                   {otherSettlements.map((s, i) => {
                     const from = nameFor(s.fromUserId);
                     const to = nameFor(s.toUserId);
                     return (
-                      <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white border border-gray-100">
+                      <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
                         <Avatar name={from} color={colorFor(s.fromUserId)} url={avatarUrlFor(s.fromUserId)} size={22} />
-                        <span className="text-sm text-gray-700">{from}</span>
-                        <ArrowRight size={12} className="text-gray-400 shrink-0" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">{from}</span>
+                        <ArrowRight size={12} className="text-gray-400 dark:text-gray-500 shrink-0" />
                         <Avatar name={to} color={colorFor(s.toUserId)} url={avatarUrlFor(s.toUserId)} size={22} />
-                        <span className="text-sm text-gray-700 flex-1">{to}</span>
-                        <span className="text-sm font-bold text-gray-900 tabular-nums">${s.amount.toFixed(2)}</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{to}</span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-gray-100 tabular-nums">${s.amount.toFixed(2)}</span>
                       </div>
                     );
                   })}
@@ -236,7 +236,7 @@ export default function TripSettlement({ trip, currentUserId }: TripSettlementPr
       )}
 
       {totalPool === 0 && (
-        <div className="px-5 py-3 border-t border-gray-100 flex items-center gap-2 text-[11px] text-gray-400">
+        <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center gap-2 text-[11px] text-gray-400 dark:text-gray-500">
           <Receipt size={12} />
           <span>Balances will show up once anyone logs a purchase as &quot;done&quot;.</span>
         </div>

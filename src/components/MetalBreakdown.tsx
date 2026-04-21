@@ -12,12 +12,12 @@ function PieTooltip({ active, payload }: { active?: boolean; payload?: Array<{ n
   if (!active || !payload || !payload[0]) return null;
   const d = payload[0];
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm">
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg p-3 text-sm">
       <div className="flex items-center gap-2">
         <div className="w-2 h-2 rounded-full" style={{ background: d.payload.color }} />
-        <span className="text-gray-500">{d.name}:</span>
-        <span className="font-medium text-gray-900">${d.value.toFixed(2)}</span>
-        <span className="text-gray-400 text-xs">({d.payload.pct.toFixed(1)}%)</span>
+        <span className="text-gray-500 dark:text-gray-400">{d.name}:</span>
+        <span className="font-medium text-gray-900 dark:text-gray-100">${d.value.toFixed(2)}</span>
+        <span className="text-gray-400 dark:text-gray-500 text-xs">({d.payload.pct.toFixed(1)}%)</span>
       </div>
     </div>
   );
@@ -38,10 +38,10 @@ export default function MetalBreakdown({ stats }: MetalBreakdownProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Pie chart */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm overflow-hidden min-w-0">
-        <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-4">Allocation</h3>
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm overflow-hidden min-w-0">
+        <h3 className="text-sm font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">Allocation</h3>
         {!hasData ? (
-          <div className="h-[220px] flex items-center justify-center text-gray-300 text-sm">No holdings</div>
+          <div className="h-[220px] flex items-center justify-center text-gray-300 dark:text-gray-600 text-sm">No holdings</div>
         ) : (
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
@@ -60,28 +60,28 @@ export default function MetalBreakdown({ stats }: MetalBreakdownProps) {
           const data = stats.metalBreakdown[m];
           const meta = METALS[m];
           return (
-            <div key={m} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+            <div key={m} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-3">
                 <div className={`w-7 h-7 rounded-full ${meta.iconBg} flex items-center justify-center`}>
                   <span className="text-[10px] font-bold">{meta.symbol}</span>
                 </div>
-                <span className="text-sm font-semibold text-gray-900">{meta.name}</span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{meta.name}</span>
               </div>
               {data.count === 0 ? (
-                <p className="text-xs text-gray-400">No holdings</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">No holdings</p>
               ) : (
                 <div className="space-y-1">
                   <div className="flex items-baseline justify-between">
-                    <span className="text-xs text-gray-500">Quantity</span>
-                    <span className="text-sm font-medium text-gray-900 tabular-nums">{data.totalOz.toFixed(4)} oz</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Quantity</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 tabular-nums">{data.totalOz.toFixed(4)} oz</span>
                   </div>
                   <div className="flex items-baseline justify-between">
-                    <span className="text-xs text-gray-500">Value</span>
-                    <span className="text-sm font-medium text-gray-900 tabular-nums">${data.currentValue.toFixed(2)}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Value</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 tabular-nums">${data.currentValue.toFixed(2)}</span>
                   </div>
                   <div className="flex items-baseline justify-between">
-                    <span className="text-xs text-gray-500">P/L</span>
-                    <span className={`text-sm font-semibold tabular-nums ${data.pnl >= 0 ? "text-green-600" : "text-red-600"}`}>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">P/L</span>
+                    <span className={`text-sm font-semibold tabular-nums ${data.pnl >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
                       {data.pnl >= 0 ? "+" : ""}${data.pnl.toFixed(2)}
                     </span>
                   </div>

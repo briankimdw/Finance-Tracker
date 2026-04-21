@@ -85,32 +85,32 @@ export default function TransferModal({ isOpen, onClose, onTransferred, defaultF
     setLoading(false);
   };
 
-  const inputClass = "w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400";
-  const labelClass = "block text-sm font-medium text-gray-700 mb-1.5";
+  const inputClass = "w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 dark:focus:border-blue-500";
+  const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl shadow-gray-900/10 border border-gray-100">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Transfer Money</h2>
-          <button onClick={onClose} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"><X size={20} /></button>
+      <div className="relative bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl shadow-gray-900/10 border border-gray-100 dark:border-gray-800">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Transfer Money</h2>
+          <button onClick={onClose} className="p-1 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"><X size={20} /></button>
         </div>
 
         {accounts.length < 2 ? (
           <div className="p-8 text-center">
-            <p className="text-sm text-gray-500">You need at least 2 accounts to transfer.</p>
-            <p className="text-xs text-gray-400 mt-1">Add another account first.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">You need at least 2 accounts to transfer.</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Add another account first.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-5 space-y-5">
             {/* From account */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm font-medium text-gray-700">From</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">From</label>
                 {fromId && toId && fromId !== toId && (
                   <button type="button" onClick={() => { const f = fromId; setFromId(toId); setToId(f); }}
-                    className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium flex items-center gap-1">
                     <ArrowLeftRight size={11} /> Swap
                   </button>
                 )}
@@ -127,17 +127,17 @@ export default function TransferModal({ isOpen, onClose, onTransferred, defaultF
                         else setFromId(acc.id);
                       }}
                       className={`w-full flex items-center gap-3 p-2.5 rounded-xl border-2 transition-all text-left ${
-                        isSelected ? "border-red-400 bg-red-50/50" : isDest ? "border-green-200 bg-green-50/30" : "border-gray-200 hover:border-gray-300 bg-white"
+                        isSelected ? "border-red-400 bg-red-50/50" : isDest ? "border-green-200 dark:border-green-800 bg-green-50/30" : "border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 bg-white dark:bg-gray-900"
                       }`}>
                       <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${acc.color}20`, color: acc.color }}>
                         <Icon size={14} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">{acc.name}</p>
-                        <p className="text-xs text-gray-400 capitalize">{acc.type} · ${Number(acc.balance).toFixed(2)}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{acc.name}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 capitalize">{acc.type} · ${Number(acc.balance).toFixed(2)}</p>
                       </div>
-                      {isSelected && <span className="text-xs font-semibold text-red-600">FROM</span>}
-                      {isDest && !isSelected && <span className="text-[10px] text-green-600 font-medium">currently TO</span>}
+                      {isSelected && <span className="text-xs font-semibold text-red-600 dark:text-red-400">FROM</span>}
+                      {isDest && !isSelected && <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">currently TO</span>}
                     </button>
                   );
                 })}
@@ -146,8 +146,8 @@ export default function TransferModal({ isOpen, onClose, onTransferred, defaultF
 
             {/* Arrow divider */}
             <div className="flex justify-center">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                <ArrowRight size={14} className="text-blue-600 rotate-90" />
+              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                <ArrowRight size={14} className="text-blue-600 dark:text-blue-400 rotate-90" />
               </div>
             </div>
 
@@ -166,17 +166,17 @@ export default function TransferModal({ isOpen, onClose, onTransferred, defaultF
                         else setToId(acc.id);
                       }}
                       className={`w-full flex items-center gap-3 p-2.5 rounded-xl border-2 transition-all text-left ${
-                        isSelected ? "border-green-400 bg-green-50/50" : isSource ? "border-red-200 bg-red-50/30" : "border-gray-200 hover:border-gray-300 bg-white"
+                        isSelected ? "border-green-400 bg-green-50/50" : isSource ? "border-red-200 dark:border-red-800 bg-red-50/30" : "border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 bg-white dark:bg-gray-900"
                       }`}>
                       <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${acc.color}20`, color: acc.color }}>
                         <Icon size={14} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">{acc.name}</p>
-                        <p className="text-xs text-gray-400 capitalize">{acc.type} · ${Number(acc.balance).toFixed(2)}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{acc.name}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 capitalize">{acc.type} · ${Number(acc.balance).toFixed(2)}</p>
                       </div>
-                      {isSelected && <span className="text-xs font-semibold text-green-600">TO</span>}
-                      {isSource && !isSelected && <span className="text-[10px] text-red-600 font-medium">currently FROM</span>}
+                      {isSelected && <span className="text-xs font-semibold text-green-600 dark:text-green-400">TO</span>}
+                      {isSource && !isSelected && <span className="text-[10px] text-red-600 dark:text-red-400 font-medium">currently FROM</span>}
                     </button>
                   );
                 })}
@@ -187,7 +187,7 @@ export default function TransferModal({ isOpen, onClose, onTransferred, defaultF
               <div>
                 <label className={labelClass}>Amount *</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-gray-400">$</span>
+                  <span className="absolute left-3 top-2.5 text-gray-400 dark:text-gray-500">$</span>
                   <input type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} required className={`${inputClass} pl-7`} placeholder="0.00" autoFocus />
                 </div>
               </div>
@@ -204,24 +204,24 @@ export default function TransferModal({ isOpen, onClose, onTransferred, defaultF
 
             {/* Preview */}
             {val > 0 && fromAccount && toAccount && (
-              <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-sm">
-                <p className="text-blue-700 font-medium mb-1.5">After transfer:</p>
-                <div className="flex items-center justify-between text-blue-900">
+              <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 rounded-xl p-3 text-sm">
+                <p className="text-blue-700 dark:text-blue-300 font-medium mb-1.5">After transfer:</p>
+                <div className="flex items-center justify-between text-blue-900 dark:text-blue-200">
                   <span className="text-xs">{fromAccount.name}</span>
                   <span className="font-semibold tabular-nums">${(fromBalance - val).toFixed(2)}</span>
                 </div>
-                <div className="flex items-center justify-between text-blue-900 mt-1">
+                <div className="flex items-center justify-between text-blue-900 dark:text-blue-200 mt-1">
                   <span className="text-xs">{toAccount.name}</span>
                   <span className="font-semibold tabular-nums">${(toBalance + val).toFixed(2)}</span>
                 </div>
                 {val > fromBalance && (
-                  <p className="text-red-600 text-xs mt-2 font-medium">⚠ This will overdraw {fromAccount.name}</p>
+                  <p className="text-red-600 dark:text-red-400 text-xs mt-2 font-medium">⚠ This will overdraw {fromAccount.name}</p>
                 )}
               </div>
             )}
 
             <div className="flex gap-3 pt-1">
-              <button type="button" onClick={onClose} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 px-4 rounded-xl transition-colors">Cancel</button>
+              <button type="button" onClick={onClose} className="flex-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium py-2.5 px-4 rounded-xl transition-colors">Cancel</button>
               <button type="submit" disabled={loading || !canSubmit} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 px-4 rounded-xl transition-all hover:shadow-lg hover:shadow-blue-600/20">
                 {loading ? "Transferring..." : "Transfer"}
               </button>

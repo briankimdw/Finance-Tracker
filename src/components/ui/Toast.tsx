@@ -223,7 +223,7 @@ function ToastCard({ toast, onDismiss }: CardProps) {
       onDragEnd={handleDragEnd}
       role="status"
       aria-live={toast.variant === "error" ? "assertive" : "polite"}
-      className="pointer-events-auto w-full max-w-sm cursor-grab active:cursor-grabbing rounded-xl border border-gray-200 bg-white/95 backdrop-blur-md shadow-lg shadow-gray-900/10 px-4 py-3"
+      className="pointer-events-auto w-full max-w-sm cursor-grab active:cursor-grabbing rounded-xl border border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-lg shadow-gray-900/10 dark:shadow-black/30 px-4 py-3"
     >
       <div className="flex items-start gap-3">
         <div
@@ -232,7 +232,7 @@ function ToastCard({ toast, onDismiss }: CardProps) {
           {icon}
         </div>
         <div className="flex-1 min-w-0 pt-0.5">
-          <p className="text-sm text-gray-900 break-words">{toast.message}</p>
+          <p className="text-sm text-gray-900 dark:text-gray-100 break-words">{toast.message}</p>
           {toast.action && (
             <button
               type="button"
@@ -240,7 +240,7 @@ function ToastCard({ toast, onDismiss }: CardProps) {
                 toast.action?.onClick();
                 onDismiss(toast.id);
               }}
-              className="mt-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700"
+              className="mt-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
             >
               {toast.action.label}
             </button>
@@ -250,7 +250,7 @@ function ToastCard({ toast, onDismiss }: CardProps) {
           type="button"
           onClick={() => onDismiss(toast.id)}
           aria-label="Dismiss notification"
-          className="shrink-0 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          className="shrink-0 rounded-md p-1 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300"
         >
           <X size={14} />
         </button>
@@ -268,27 +268,27 @@ function getVariantStyles(variant: ToastVariant): {
     case "success":
       return {
         icon: <CheckCircle size={16} />,
-        iconColor: "text-green-600",
-        iconBg: "bg-green-50",
+        iconColor: "text-green-600 dark:text-green-400",
+        iconBg: "bg-green-50 dark:bg-green-950/40",
       };
     case "error":
       return {
         icon: <AlertCircle size={16} />,
-        iconColor: "text-red-600",
-        iconBg: "bg-red-50",
+        iconColor: "text-red-600 dark:text-red-400",
+        iconBg: "bg-red-50 dark:bg-red-950/40",
       };
     case "loading":
       return {
         icon: <Loader2 size={16} className="animate-spin" />,
-        iconColor: "text-blue-600",
-        iconBg: "bg-blue-50",
+        iconColor: "text-blue-600 dark:text-blue-400",
+        iconBg: "bg-blue-50 dark:bg-blue-950/40",
       };
     case "info":
     default:
       return {
         icon: <Info size={16} />,
-        iconColor: "text-blue-600",
-        iconBg: "bg-blue-50",
+        iconColor: "text-blue-600 dark:text-blue-400",
+        iconBg: "bg-blue-50 dark:bg-blue-950/40",
       };
   }
 }

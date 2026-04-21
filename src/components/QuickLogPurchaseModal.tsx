@@ -104,7 +104,7 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
     onClose();
   };
 
-  const input = "w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm";
+  const input = "w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 dark:focus:border-blue-500 text-sm";
 
   const sheetTitle = tripName ? `${tripName} · Log a purchase` : "Log a purchase";
 
@@ -134,7 +134,7 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
               <button
                 type="button"
                 onClick={() => setShowSplit(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1 -mt-1 rounded-full bg-blue-50 text-blue-700 text-[11px] font-medium border border-blue-100 hover:bg-blue-100 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1 -mt-1 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-[11px] font-medium border border-blue-100 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
               >
                 <Users size={11} />
                 <span className="tabular-nums">
@@ -146,7 +146,7 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
 
           {/* 3. Description / name */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">What did you buy?</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">What did you buy?</label>
             <input
               type="text"
               required
@@ -160,11 +160,11 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
 
           {/* 4. Category */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">Category</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Category</label>
             <div className="grid grid-cols-3 gap-1.5">
               {CATEGORIES.map(({ value, label, Icon }) => (
                 <button key={value} type="button" onClick={() => update("category", value)}
-                  className={`flex items-center justify-center gap-1.5 py-2 rounded-lg border text-xs font-medium transition-all ${form.category === value ? "bg-blue-50 border-blue-300 text-blue-700" : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"}`}>
+                  className={`flex items-center justify-center gap-1.5 py-2 rounded-lg border text-xs font-medium transition-all ${form.category === value ? "bg-blue-50 dark:bg-blue-950/40 border-blue-300 text-blue-700 dark:text-blue-300" : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700"}`}>
                   <Icon size={13} /> {label}
                 </button>
               ))}
@@ -174,7 +174,7 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
           {/* 5. Paid by */}
           {hasMembers && (
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5 flex items-center gap-1"><User size={11} /> Who paid</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 flex items-center gap-1"><User size={11} /> Who paid</label>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {members.map((m) => {
                   const p = profiles[m.user_id];
@@ -186,11 +186,11 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
                   return (
                     <button key={m.user_id} type="button" onClick={() => update("paid_by", m.user_id)}
                       className={`flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                        isSelected ? "bg-white ring-2 ring-blue-400 shadow-sm" : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"
+                        isSelected ? "bg-white dark:bg-gray-900 ring-2 ring-blue-400 shadow-sm" : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700"
                       }`}>
                       <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
                         style={{ background: color }}>{initial}</div>
-                      <span className={isSelected ? "text-gray-900" : ""}>{isCurrentUser ? "You" : name}</span>
+                      <span className={isSelected ? "text-gray-900 dark:text-gray-100" : ""}>{isCurrentUser ? "You" : name}</span>
                       {isCurrentUser && <span className="text-[9px] text-blue-500 font-semibold">(default)</span>}
                     </button>
                   );
@@ -201,14 +201,14 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
 
           {/* 6. Notes */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Notes <span className="text-gray-400 font-normal">(optional)</span></label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Notes <span className="text-gray-400 dark:text-gray-500 font-normal">(optional)</span></label>
             <input type="text" value={form.notes} onChange={(e) => update("notes", e.target.value)} className={input} placeholder="Quick note..." />
           </div>
 
           {/* Expanded split editor (when user taps the preview chip) */}
           {hasMembers && showSplit && (
             amountNum <= 0 ? (
-              <p className="text-[11px] text-gray-400 text-center py-2">Enter an amount to customize the split</p>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 text-center py-2">Enter an amount to customize the split</p>
             ) : (
               <SplitEditor
                 key="quicklog"
@@ -225,7 +225,7 @@ export default function QuickLogPurchaseModal({ isOpen, tripColor = "#3b82f6", t
 
           {/* 7. Submit */}
           <div className="flex gap-2 pt-1">
-            <button type="button" onClick={onClose} className="flex-1 py-2.5 px-4 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-medium">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 px-4 rounded-lg border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium">Cancel</button>
             <button
               type="submit"
               disabled={!canSubmit}

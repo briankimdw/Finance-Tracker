@@ -140,48 +140,48 @@ export default function AddTripModal({ isOpen, trip, defaultGoalId, onClose, onS
     onClose();
   };
 
-  const input = "w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm";
+  const input = "w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 dark:focus:border-blue-500 text-sm";
 
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} title={trip ? "Edit Trip" : "New Trip"} size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Trip name</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Trip name</label>
             <input type="text" required value={form.name} onChange={(e) => update("name", e.target.value)} className={input} placeholder="Japan 2026, Summer road trip..." />
           </div>
 
           {/* Destination */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><MapPin size={11} /> Destination</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1"><MapPin size={11} /> Destination</label>
             <input type="text" value={form.destination} onChange={(e) => update("destination", e.target.value)} className={input} placeholder="Tokyo, Kyoto, Osaka" />
           </div>
 
           {/* Budget */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><DollarSign size={11} /> Total budget</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1"><DollarSign size={11} /> Total budget</label>
             <input type="number" min="0" step="0.01" required value={form.total_budget} onChange={(e) => update("total_budget", e.target.value)} className={input} placeholder="3000.00" />
           </div>
 
           {/* Dates */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Calendar size={11} /> Start date</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1"><Calendar size={11} /> Start date</label>
               <input type="date" value={form.start_date} onChange={(e) => update("start_date", e.target.value)} className={input} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Calendar size={11} /> End date</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1"><Calendar size={11} /> End date</label>
               <input type="date" value={form.end_date} onChange={(e) => update("end_date", e.target.value)} className={input} />
             </div>
           </div>
 
           {/* Status */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Status</label>
             <div className="grid grid-cols-4 gap-2">
               {STATUSES.map((s) => (
                 <button key={s.value} type="button" onClick={() => update("status", s.value)}
-                  className={`py-2 px-2 rounded-lg text-xs font-medium border transition-all ${form.status === s.value ? "bg-blue-50 border-blue-300 text-blue-700" : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"}`}>
+                  className={`py-2 px-2 rounded-lg text-xs font-medium border transition-all ${form.status === s.value ? "bg-blue-50 dark:bg-blue-950/40 border-blue-300 text-blue-700 dark:text-blue-300" : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700"}`}>
                   {s.label}
                 </button>
               ))}
@@ -190,7 +190,7 @@ export default function AddTripModal({ isOpen, trip, defaultGoalId, onClose, onS
 
           {/* Color */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">Color</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Color</label>
             <div className="flex items-center gap-1.5 flex-wrap">
               {COLORS.map((c) => (
                 <button key={c} type="button" onClick={() => update("color", c)}
@@ -202,11 +202,11 @@ export default function AddTripModal({ isOpen, trip, defaultGoalId, onClose, onS
 
           {/* Icon */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">Icon</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Icon</label>
             <div className="grid grid-cols-6 gap-1.5">
               {ICONS.map(({ name, Icon }) => (
                 <button key={name} type="button" onClick={() => update("icon", name)}
-                  className={`aspect-square rounded-lg border flex items-center justify-center transition-all ${form.icon === name ? "border-blue-400 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:bg-gray-50"}`}>
+                  className={`aspect-square rounded-lg border flex items-center justify-center transition-all ${form.icon === name ? "border-blue-400 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300" : "border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"}`}>
                   <Icon size={15} />
                 </button>
               ))}
@@ -215,24 +215,24 @@ export default function AddTripModal({ isOpen, trip, defaultGoalId, onClose, onS
 
           {/* Image URL */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><ImageIcon size={11} /> Cover image URL <span className="text-gray-400 font-normal">(optional)</span></label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1"><ImageIcon size={11} /> Cover image URL <span className="text-gray-400 dark:text-gray-500 font-normal">(optional)</span></label>
             <input type="url" value={form.image_url} onChange={(e) => update("image_url", e.target.value)} className={input} placeholder="https://..." />
             {form.image_url && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={form.image_url} alt="" className="mt-2 w-full h-32 object-cover rounded-lg border border-gray-100" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
+              <img src={form.image_url} alt="" className="mt-2 w-full h-32 object-cover rounded-lg border border-gray-100 dark:border-gray-800" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
             )}
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Notes <span className="text-gray-400 font-normal">(optional)</span></label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Notes <span className="text-gray-400 dark:text-gray-500 font-normal">(optional)</span></label>
             <textarea value={form.notes} onChange={(e) => update("notes", e.target.value)} rows={2} className={input + " resize-none"} placeholder="Travel companions, booking refs..." />
           </div>
 
           {/* Link to Goal */}
           {user && goals.length > 0 && (
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Target size={11} /> Link to a savings goal <span className="text-gray-400 font-normal">(optional)</span></label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1"><Target size={11} /> Link to a savings goal <span className="text-gray-400 dark:text-gray-500 font-normal">(optional)</span></label>
               <select value={form.goal_id} onChange={(e) => update("goal_id", e.target.value)} className={input}>
                 <option value="">— None —</option>
                 {goals.map((g) => (
@@ -241,32 +241,32 @@ export default function AddTripModal({ isOpen, trip, defaultGoalId, onClose, onS
                   </option>
                 ))}
               </select>
-              <p className="text-[11px] text-gray-400 mt-1">Track this trip against a savings goal — progress shown on both pages.</p>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Track this trip against a savings goal — progress shown on both pages.</p>
             </div>
           )}
 
           {/* Share toggle */}
           {user && (
             <button type="button" onClick={() => update("is_shared", !form.is_shared)}
-              className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${form.is_shared ? "border-purple-300 bg-purple-50" : "border-gray-200 bg-white hover:bg-gray-50"}`}>
+              className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${form.is_shared ? "border-purple-300 bg-purple-50 dark:bg-purple-950/40" : "border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800"}`}>
               <div className="flex items-center gap-2">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${form.is_shared ? "bg-purple-100 text-purple-600" : "bg-gray-100 text-gray-400"}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${form.is_shared ? "bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400" : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500"}`}>
                   <Users size={14} />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-medium text-gray-900">Share with travel companions</p>
-                  <p className="text-[11px] text-gray-500">Invite people to co-plan and track</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Share with travel companions</p>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">Invite people to co-plan and track</p>
                 </div>
               </div>
               <div className={`w-9 h-5 rounded-full p-0.5 transition-colors ${form.is_shared ? "bg-purple-600" : "bg-gray-200"}`}>
-                <div className={`w-4 h-4 bg-white rounded-full transition-transform ${form.is_shared ? "translate-x-4" : ""}`} />
+                <div className={`w-4 h-4 bg-white dark:bg-gray-900 rounded-full transition-transform ${form.is_shared ? "translate-x-4" : ""}`} />
               </div>
             </button>
           )}
 
           {/* Submit */}
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2.5 px-4 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-medium">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 px-4 rounded-lg border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium">Cancel</button>
             <button type="submit" disabled={loading} className="flex-1 py-2.5 px-4 rounded-lg text-white text-sm font-medium disabled:opacity-50 transition-all hover:shadow-lg"
               style={{ background: form.color, boxShadow: loading ? undefined : `0 4px 12px ${form.color}33` }}>
               {loading ? "Saving..." : trip ? "Save changes" : form.is_shared ? "Create shared trip" : "Create trip"}

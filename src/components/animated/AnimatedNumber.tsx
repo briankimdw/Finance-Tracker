@@ -22,7 +22,7 @@ export default function AnimatedNumber({
   suffix = "",
   decimals = 2,
   duration = 0.8,
-  className = "",
+  className="",
 }: AnimatedNumberProps) {
   const motionValue = useMotionValue(value);
   const display = useTransform(motionValue, (latest) =>

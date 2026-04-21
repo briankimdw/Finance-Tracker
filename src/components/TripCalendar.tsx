@@ -83,24 +83,24 @@ export default function TripCalendar({ trip, onSelectItem }: TripCalendarProps) 
   const today = ymd(new Date());
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
         <div className="flex items-center gap-2">
-          <ChevronLeft size={16} className="text-gray-300" />
-          <h3 className="text-sm font-semibold text-gray-900">{monthLabel}</h3>
-          <ChevronRight size={16} className="text-gray-300" />
+          <ChevronLeft size={16} className="text-gray-300 dark:text-gray-600" />
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{monthLabel}</h3>
+          <ChevronRight size={16} className="text-gray-300 dark:text-gray-600" />
         </div>
-        <div className="flex items-center gap-3 text-[10px] text-gray-500">
+        <div className="flex items-center gap-3 text-[10px] text-gray-500 dark:text-gray-400">
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: trip.color }} /> trip dates</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-400" /> today</span>
         </div>
       </div>
 
       {/* Day-of-week header */}
-      <div className="grid grid-cols-7 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+      <div className="grid grid-cols-7 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-          <div key={d} className="px-2 py-1 text-center border-b border-gray-100">{d}</div>
+          <div key={d} className="px-2 py-1 text-center border-b border-gray-100 dark:border-gray-800">{d}</div>
         ))}
       </div>
 
@@ -115,7 +115,7 @@ export default function TripCalendar({ trip, onSelectItem }: TripCalendarProps) 
           return (
             <div
               key={i}
-              className={`min-h-[84px] p-1.5 border-b border-r border-gray-100 ${i % 7 === 6 ? "border-r-0" : ""} ${
+              className={`min-h-[84px] p-1.5 border-b border-r border-gray-100 dark:border-gray-800 ${i % 7 === 6 ? "border-r-0" : ""} ${
                 inMonth ? "" : "bg-gray-50/40"
               } ${inRange ? "relative" : ""}`}
             >
@@ -126,12 +126,12 @@ export default function TripCalendar({ trip, onSelectItem }: TripCalendarProps) 
               <div className="flex items-center justify-between relative z-10">
                 <span className={`text-[11px] font-medium ${
                   isToday ? "bg-gray-900 text-white rounded-full w-5 h-5 flex items-center justify-center" :
-                  inMonth ? "text-gray-700" : "text-gray-300"
+                  inMonth ? "text-gray-700 dark:text-gray-300" : "text-gray-300 dark:text-gray-600"
                 }`}>
                   {d.getDate()}
                 </span>
                 {items.length > 2 && (
-                  <span className="text-[9px] text-gray-400">{items.length}</span>
+                  <span className="text-[9px] text-gray-400 dark:text-gray-500">{items.length}</span>
                 )}
               </div>
               <div className="mt-1 space-y-0.5 relative z-10">

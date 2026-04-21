@@ -20,13 +20,13 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
   const update = (field: keyof Filters, value: string) => onChange({ ...filters, [field]: value });
   const hasFilters = filters.search || filters.category || filters.platform || filters.dateFrom || filters.dateTo;
   const clearFilters = () => onChange({ search: "", category: "", platform: "", dateFrom: "", dateTo: "" });
-  const inputClass = "bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400";
+  const inputClass = "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 dark:focus:border-blue-500";
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm">
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={16} className="absolute left-3 top-3 text-gray-400" />
+          <Search size={16} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
           <input type="text" value={filters.search} onChange={(e) => update("search", e.target.value)} placeholder="Search items..." className={`${inputClass} w-full pl-9`} />
         </div>
         <select value={filters.category} onChange={(e) => update("category", e.target.value)} className={inputClass}>
@@ -40,7 +40,7 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
         <input type="date" value={filters.dateFrom} onChange={(e) => update("dateFrom", e.target.value)} className={inputClass} />
         <input type="date" value={filters.dateTo} onChange={(e) => update("dateTo", e.target.value)} className={inputClass} />
         {hasFilters && (
-          <button onClick={clearFilters} className="flex items-center gap-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-500 hover:text-gray-900">
+          <button onClick={clearFilters} className="flex items-center gap-1 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
             <X size={14} /> Clear
           </button>
         )}

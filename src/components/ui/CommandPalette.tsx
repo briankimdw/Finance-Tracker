@@ -329,11 +329,11 @@ export function CommandPalette({ isOpen: isOpenProp, onClose }: CommandPalettePr
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.98, transition: { duration: 0.12 } }}
               transition={{ type: "spring", damping: 28, stiffness: 260 }}
-              className="pointer-events-auto relative w-full h-full lg:h-auto lg:max-w-xl lg:max-h-[70vh] bg-white lg:rounded-2xl shadow-2xl shadow-gray-900/10 border border-gray-100 flex flex-col overflow-hidden"
+              className="pointer-events-auto relative w-full h-full lg:h-auto lg:max-w-xl lg:max-h-[70vh] bg-white dark:bg-gray-900 lg:rounded-2xl shadow-2xl shadow-gray-900/10 dark:shadow-black/40 border border-gray-100 dark:border-gray-800 flex flex-col overflow-hidden"
             >
               {/* Header: search input */}
-              <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 shrink-0">
-                <Search size={18} className="text-gray-400 shrink-0" />
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800 shrink-0">
+                <Search size={18} className="text-gray-400 dark:text-gray-500 shrink-0" />
                 <input
                   ref={inputRef}
                   type="text"
@@ -343,11 +343,11 @@ export function CommandPalette({ isOpen: isOpenProp, onClose }: CommandPalettePr
                     setActiveIndex(0);
                   }}
                   placeholder="Type a command or search…"
-                  className="flex-1 bg-transparent outline-none text-gray-900 placeholder:text-gray-400 text-[15px]"
+                  className="flex-1 bg-transparent outline-none text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 text-[15px]"
                   autoComplete="off"
                   spellCheck={false}
                 />
-                <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded border border-gray-200 bg-gray-50 text-[10px] font-semibold text-gray-500 shrink-0">
+                <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-[10px] font-semibold text-gray-500 dark:text-gray-400 shrink-0">
                   ESC
                 </kbd>
               </div>
@@ -355,13 +355,13 @@ export function CommandPalette({ isOpen: isOpenProp, onClose }: CommandPalettePr
               {/* Body: groups */}
               <div ref={listRef} className="flex-1 overflow-y-auto">
                 {filteredGroups.length === 0 ? (
-                  <div className="px-4 py-10 text-center text-sm text-gray-400">
+                  <div className="px-4 py-10 text-center text-sm text-gray-400 dark:text-gray-500">
                     No results for &ldquo;{query}&rdquo;
                   </div>
                 ) : (
                   filteredGroups.map((g) => (
                     <div key={g.key} className="py-1">
-                      <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                      <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                         {g.label}
                       </div>
                       <div>
@@ -378,12 +378,14 @@ export function CommandPalette({ isOpen: isOpenProp, onClose }: CommandPalettePr
                               onMouseEnter={() => setActiveIndex(idx)}
                               onClick={it.onSelect}
                               className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                                isActive ? "bg-blue-50" : "hover:bg-gray-50"
+                                isActive ? "bg-blue-50 dark:bg-blue-950/40" : "hover:bg-gray-50 dark:hover:bg-gray-800"
                               }`}
                             >
                               <div
                                 className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
-                                  isActive ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-500"
+                                  isActive
+                                    ? "bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400"
+                                    : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
                                 }`}
                               >
                                 <Icon size={15} />
@@ -391,19 +393,19 @@ export function CommandPalette({ isOpen: isOpenProp, onClose }: CommandPalettePr
                               <div className="flex-1 min-w-0">
                                 <div
                                   className={`text-sm font-medium truncate ${
-                                    isActive ? "text-blue-900" : "text-gray-900"
+                                    isActive ? "text-blue-900 dark:text-blue-200" : "text-gray-900 dark:text-gray-100"
                                   }`}
                                 >
                                   {it.label}
                                 </div>
                                 {it.subtitle && (
-                                  <div className="text-[11px] text-gray-400 truncate">
+                                  <div className="text-[11px] text-gray-400 dark:text-gray-500 truncate">
                                     {it.subtitle}
                                   </div>
                                 )}
                               </div>
                               {isActive && (
-                                <ArrowRight size={14} className="text-blue-500 shrink-0" />
+                                <ArrowRight size={14} className="text-blue-500 dark:text-blue-400 shrink-0" />
                               )}
                             </button>
                           );
@@ -415,23 +417,23 @@ export function CommandPalette({ isOpen: isOpenProp, onClose }: CommandPalettePr
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-between gap-3 px-4 py-2 border-t border-gray-100 bg-gray-50/50 text-[11px] text-gray-500 shrink-0">
+              <div className="flex items-center justify-between gap-3 px-4 py-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 text-[11px] text-gray-500 dark:text-gray-400 shrink-0">
                 <div className="flex items-center gap-3">
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1 py-0.5 rounded border border-gray-200 bg-white text-[10px] font-semibold text-gray-600">
+                    <kbd className="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-[10px] font-semibold text-gray-600 dark:text-gray-300">
                       &#9166;
                     </kbd>
                     Select
                   </span>
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1 py-0.5 rounded border border-gray-200 bg-white text-[10px] font-semibold text-gray-600">
+                    <kbd className="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-[10px] font-semibold text-gray-600 dark:text-gray-300">
                       &uarr;&darr;
                     </kbd>
                     Navigate
                   </span>
                 </div>
                 <span className="flex items-center gap-1">
-                  <kbd className="px-1 py-0.5 rounded border border-gray-200 bg-white text-[10px] font-semibold text-gray-600">
+                  <kbd className="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-[10px] font-semibold text-gray-600 dark:text-gray-300">
                     ESC
                   </kbd>
                   Close
