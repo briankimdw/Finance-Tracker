@@ -18,6 +18,7 @@ import AddContributionModal from "@/components/AddContributionModal";
 import QuickAdd from "@/components/QuickAdd";
 import Charts from "@/components/Charts";
 import NetWorthChart from "@/components/NetWorthChart";
+import FinancialTrajectory from "@/components/FinancialTrajectory";
 import AnimatedNumber from "@/components/animated/AnimatedNumber";
 import { Stagger, StaggerItem } from "@/components/animated/FadeInUp";
 import { saveNetWorthSnapshot } from "@/hooks/useNetWorthHistory";
@@ -330,6 +331,9 @@ export default function DashboardPage() {
 
       {/* Net Worth chart */}
       <NetWorthChart currentNetWorth={netWorth} />
+
+      {/* Smart insights: savings rate, runway, goal ETAs */}
+      <FinancialTrajectory />
 
       {/* Net worth breakdown */}
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm">

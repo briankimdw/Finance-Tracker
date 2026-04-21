@@ -10,6 +10,12 @@ export interface MonthlyData {
   reselling: number;
   main: number;
   side: number;
+  /** Total inflow for the month: main + side + reselling profit */
+  income: number;
+  /** Total outflow for the month (excludes card payments, which are debt transfers). */
+  expenses: number;
+  /** income - expenses */
+  profit: number;
 }
 
 export interface CategoryBreakdown {
@@ -61,17 +67,27 @@ export function useChartData() {
         .select("*")
         .gte("date", startDate);
 
+      // Exclude card payments — transfers of debt, not real spending.
+      let expensesQ = supabase
+        .from("expenses")
+        .select("date, amount")
+        .eq("is_card_payment", false)
+        .gte("date", startDate);
+
       if (user) {
         itemsQ = itemsQ.eq("user_id", user.id);
         incomeQ = incomeQ.eq("user_id", user.id);
+        expensesQ = expensesQ.eq("user_id", user.id);
       } else {
         itemsQ = itemsQ.is("user_id", null);
         incomeQ = incomeQ.is("user_id", null);
+        expensesQ = expensesQ.is("user_id", null);
       }
 
-      const [itemsRes, incomeRes] = await Promise.all([itemsQ, incomeQ]);
+      const [itemsRes, incomeRes, expensesRes] = await Promise.all([itemsQ, incomeQ, expensesQ]);
       const items = (itemsRes.data as Item[]) || [];
       const incomes = (incomeRes.data as Income[]) || [];
+      const expenses = (expensesRes.data as { date: string; amount: number }[]) || [];
 
       // Monthly aggregation
       const monthly: MonthlyData[] = months.map((m) => {
@@ -80,6 +96,9 @@ export function useChartData() {
         );
         const monthIncomes = incomes.filter(
           (i) => i.date >= m.start && i.date < m.end
+        );
+        const monthExpenses = expenses.filter(
+          (e) => e.date >= m.start && e.date < m.end
         );
 
         const reselling = monthItems.reduce(
@@ -97,8 +116,21 @@ export function useChartData() {
         const side = monthIncomes
           .filter((i) => i.type === "side")
           .reduce((sum, i) => sum + Number(i.amount), 0);
+        const expenseTotal = monthExpenses.reduce(
+          (sum, e) => sum + Number(e.amount),
+          0
+        );
+        const income = main + side + reselling;
 
-        return { month: m.label, reselling, main, side };
+        return {
+          month: m.label,
+          reselling,
+          main,
+          side,
+          income,
+          expenses: expenseTotal,
+          profit: income - expenseTotal,
+        };
       });
 
       setMonthlyData(monthly);

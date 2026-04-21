@@ -198,6 +198,12 @@ export default function GoalsPage() {
                 const isExpanded = expanded.has(g.id);
                 const isOver = dragOver === i;
                 const isComplete = g.progress >= 100;
+                // Linked-trip sync — if a trip points at this goal, the trip's
+                // actual spending consumes the goal's saved balance.
+                const linkedTripForSync = trips.find((t) => t.goal_id === g.id);
+                const tripSpent = linkedTripForSync ? linkedTripForSync.totalActual : 0;
+                const availableAfterTrip = Math.max(0, g.saved - tripSpent);
+                const spentPctOfSaved = g.saved > 0 ? Math.min(100, (tripSpent / g.saved) * 100) : 0;
 
                 return (
                   <div key={g.id}
@@ -356,19 +362,43 @@ export default function GoalsPage() {
                             <span className="text-sm font-bold tabular-nums" style={{ color: g.color }}>{g.progress.toFixed(1)}%</span>
                           </div>
 
-                          {/* Progress bar */}
+                          {/* Progress bar — when a trip is linked, show saved (solid) + spent-on-trip (darker overlay) */}
                           <div className="h-2.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden relative">
                             <div className="h-full transition-all rounded-full relative overflow-hidden" style={{ width: `${Math.min(100, g.progress)}%`, background: `linear-gradient(90deg, ${g.color}, ${g.color}dd)` }}>
+                              {linkedTripForSync && tripSpent > 0 && (
+                                <div className="absolute inset-y-0 left-0 bg-gray-900/40 dark:bg-black/50" title={`$${tripSpent.toFixed(2)} spent on the trip`} style={{ width: `${spentPctOfSaved}%` }} />
+                              )}
                               {isComplete && (
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
                               )}
                             </div>
                           </div>
 
+                          {/* Trip sync summary — shown only when a linked trip has spending */}
+                          {linkedTripForSync && tripSpent > 0 && (
+                            <div className="mt-2 flex items-center gap-2 flex-wrap text-[11px]">
+                              <Link href={`/trips/${linkedTripForSync.id}`}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-950/60 font-medium">
+                                <Plane size={10} /> Spent ${tripSpent.toFixed(2)} on trip
+                              </Link>
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium ${
+                                availableAfterTrip > 0
+                                  ? "bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300"
+                                  : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300"
+                              }`}>
+                                ${availableAfterTrip.toFixed(2)} left of savings
+                              </span>
+                            </div>
+                          )}
+
                           {/* Bottom row: remaining + actions */}
                           <div className="flex items-center justify-between mt-3">
                             <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {isComplete ? "🎉 Goal reached!" : `$${g.remaining.toFixed(2)} to go`}
+                              {isComplete
+                                ? "🎉 Goal reached!"
+                                : linkedTripForSync && tripSpent > 0
+                                  ? `$${g.remaining.toFixed(2)} still to save`
+                                  : `$${g.remaining.toFixed(2)} to go`}
                             </span>
                             <div className="flex items-center gap-2">
                               <button onClick={() => setContribGoal(g)} className="text-xs font-medium text-white px-3 py-1.5 rounded-md transition-all hover:shadow-md" style={{ background: g.color }}>
