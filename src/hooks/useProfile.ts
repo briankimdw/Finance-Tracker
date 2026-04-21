@@ -58,5 +58,49 @@ export function useProfile() {
     await fetchProfile();
   };
 
-  return { profile, loading, refetch: fetchProfile, setUsername, updateDisplayName };
+  const updateProfile = async (
+    data: Partial<Pick<Profile, "display_name" | "bio" | "avatar_url" | "color">>
+  ): Promise<{ ok: boolean; error?: string }> => {
+    if (!user) return { ok: false, error: "Not signed in" };
+    const { error } = await supabase
+      .from("profiles")
+      .update({ ...data, updated_at: new Date().toISOString() })
+      .eq("id", user.id);
+    if (error) return { ok: false, error: error.message };
+    await fetchProfile();
+    return { ok: true };
+  };
+
+  /**
+   * Upload an avatar image to Supabase Storage (bucket: avatars) under the
+   * user's own folder, make it public, and write the URL back to profile.
+   */
+  const uploadAvatar = async (file: File): Promise<{ ok: boolean; error?: string; url?: string }> => {
+    if (!user) return { ok: false, error: "Not signed in" };
+    const ext = (file.name.split(".").pop() || "png").toLowerCase();
+    const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
+      cacheControl: "3600",
+      upsert: true,
+      contentType: file.type || undefined,
+    });
+    if (upErr) return { ok: false, error: upErr.message };
+    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+    const publicUrl = urlData?.publicUrl;
+    if (!publicUrl) return { ok: false, error: "Couldn't get public URL" };
+    // Add cache-buster so the UI picks up immediately
+    const busted = `${publicUrl}?t=${Date.now()}`;
+    const { error: updErr } = await supabase.from("profiles").update({ avatar_url: busted, updated_at: new Date().toISOString() }).eq("id", user.id);
+    if (updErr) return { ok: false, error: updErr.message };
+    await fetchProfile();
+    return { ok: true, url: busted };
+  };
+
+  const removeAvatar = async () => {
+    if (!user) return;
+    await supabase.from("profiles").update({ avatar_url: null, updated_at: new Date().toISOString() }).eq("id", user.id);
+    await fetchProfile();
+  };
+
+  return { profile, loading, refetch: fetchProfile, setUsername, updateDisplayName, updateProfile, uploadAvatar, removeAvatar };
 }

@@ -7,11 +7,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, CreditCard, WalletCards, Wallet, MoreHorizontal,
   Package, History, Coins, CalendarDays, Target, HandCoins, PieChart, Plane, Users, X,
-  LogOut, LogIn, User, TrendingUp,
+  LogOut, LogIn, TrendingUp, UserCog,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useFriends } from "@/hooks/useFriends";
 import { usePendingInvites } from "@/hooks/usePendingInvites";
+import { useProfile } from "@/hooks/useProfile";
 
 const primaryTabs = [
   { href: "/", label: "Home", icon: LayoutDashboard },
@@ -30,6 +31,7 @@ const moreItems = [
   { href: "/sales", label: "Sales", icon: History, color: "text-purple-600 bg-purple-50" },
   { href: "/metals", label: "Metals", icon: Coins, color: "text-yellow-600 bg-yellow-50" },
   { href: "/calendar", label: "Calendar", icon: CalendarDays, color: "text-cyan-600 bg-cyan-50" },
+  { href: "/profile", label: "Profile", icon: UserCog, color: "text-pink-600 bg-pink-50" },
 ];
 
 export default function MobileBottomNav() {
@@ -37,6 +39,7 @@ export default function MobileBottomNav() {
   const { user, signOut } = useAuth();
   const { incoming } = useFriends();
   const { trips: tripInvites, goals: goalInvites } = usePendingInvites();
+  const { profile } = useProfile();
   const pendingCount = incoming.length + tripInvites.length + goalInvites.length;
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -103,15 +106,23 @@ export default function MobileBottomNav() {
               <div className="border-t border-gray-100 px-5 py-4">
                 {user ? (
                   <>
-                    <div className="flex items-center gap-3 mb-3 px-2">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                        <User size={18} className="text-blue-600" />
+                    <Link href="/profile" onClick={() => setMoreOpen(false)}
+                      className="flex items-center gap-3 mb-3 px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                      {profile?.avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={profile.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover border border-gray-200 shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white font-semibold text-sm"
+                          style={{ background: profile?.color || "#3b82f6" }}>
+                          {(profile?.display_name || profile?.username || user.email || "?").charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{profile?.display_name || user.email?.split("@")[0]}</p>
+                        <p className="text-xs text-gray-400 truncate">{profile?.username ? `@${profile.username}` : user.email}</p>
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-xs text-gray-400 uppercase tracking-wider">Signed in as</p>
-                        <p className="text-sm text-gray-900 truncate">{user.email}</p>
-                      </div>
-                    </div>
+                      <UserCog size={14} className="text-gray-300 shrink-0" />
+                    </Link>
                     <button
                       onClick={() => { signOut(); setMoreOpen(false); }}
                       className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-medium text-sm transition-colors"

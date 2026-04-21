@@ -7,8 +7,9 @@ import { useFriends } from "@/hooks/useFriends";
 import { usePendingInvites } from "@/hooks/usePendingInvites";
 import {
   LayoutDashboard, Package, History, CalendarDays, Wallet, CreditCard, Coins, WalletCards, Target, HandCoins, PieChart, Plane, Users,
-  LogOut, LogIn, TrendingUp, User,
+  LogOut, LogIn, TrendingUp, UserCog,
 } from "lucide-react";
+import { useProfile } from "@/hooks/useProfile";
 
 interface NavItem {
   href: string;
@@ -31,6 +32,7 @@ const navItems: NavItem[] = [
   { href: "/trips", label: "Trips", icon: Plane },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/friends", label: "Friends", icon: Users, divider: true },
+  { href: "/profile", label: "Profile", icon: UserCog },
 ];
 
 export default function Sidebar() {
@@ -38,7 +40,11 @@ export default function Sidebar() {
   const { user, signOut } = useAuth();
   const { incoming } = useFriends();
   const { trips: tripInvites, goals: goalInvites } = usePendingInvites();
+  const { profile } = useProfile();
   const pendingCount = incoming.length + tripInvites.length + goalInvites.length;
+  const avatarUrl = profile?.avatar_url || null;
+  const avatarInitial = (profile?.display_name || profile?.username || user?.email || "?").charAt(0).toUpperCase();
+  const avatarColor = profile?.color || "#3b82f6";
 
   return (
     <>
@@ -90,12 +96,19 @@ export default function Sidebar() {
         <div className="p-3 border-t border-gray-200/60">
           {user ? (
             <>
-              <div className="flex items-center gap-2.5 px-3 py-2 mb-1">
-                <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                  <User size={14} className="text-blue-600" />
+              <Link href="/profile" className="flex items-center gap-2.5 px-2 py-2 mb-1 rounded-lg hover:bg-white/60 transition-colors">
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover border border-gray-200 shrink-0" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white font-semibold text-xs"
+                    style={{ background: avatarColor }}>{avatarInitial}</div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-700 truncate">{profile?.display_name || user.email?.split("@")[0]}</p>
+                  {profile?.username && <p className="text-[10px] text-gray-400 truncate">@{profile.username}</p>}
                 </div>
-                <span className="text-xs text-gray-500 truncate">{user.email}</span>
-              </div>
+              </Link>
               <button onClick={signOut}
                 className="flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium text-gray-400 hover:text-red-600 hover:bg-red-50 w-full transition-all">
                 <LogOut size={18} /> Sign Out

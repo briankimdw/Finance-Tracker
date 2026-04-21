@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   UserPlus, Check, X, Clock, Users, AlertCircle, CheckCircle,
-  AtSign, Search, Trash2, User as UserIcon, Sparkles, Plane, Target, MapPin,
+  Search, Trash2, Sparkles, Plane, Target, MapPin, UserCog, ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useFriends } from "@/hooks/useFriends";
@@ -14,13 +14,22 @@ import { usePendingInvites } from "@/hooks/usePendingInvites";
 import { getTripIcon } from "@/lib/tripIcons";
 import { getGoalIcon } from "@/lib/goalIcons";
 
-function Avatar({ name, size = 40 }: { name: string | null | undefined; size?: number }) {
+function Avatar({ name, url, size = 40, color }: { name: string | null | undefined; url?: string | null; size?: number; color?: string | null }) {
   const initial = (name || "?").charAt(0).toUpperCase();
   const palette = ["#3b82f6", "#8b5cf6", "#10b981", "#f59e0b", "#ef4444", "#ec4899", "#06b6d4", "#84cc16"];
-  const color = palette[(initial.charCodeAt(0) || 0) % palette.length];
+  const bg = color || palette[(initial.charCodeAt(0) || 0) % palette.length];
+  if (url) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={url} alt="" className="rounded-full object-cover shrink-0"
+        style={{ width: size, height: size }}
+        onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+      />
+    );
+  }
   return (
     <div className="rounded-full flex items-center justify-center text-white font-semibold shrink-0"
-      style={{ width: size, height: size, background: color, fontSize: size * 0.4 }}>
+      style={{ width: size, height: size, background: bg, fontSize: size * 0.4 }}>
       {initial}
     </div>
   );
@@ -28,44 +37,13 @@ function Avatar({ name, size = 40 }: { name: string | null | undefined; size?: n
 
 export default function FriendsPage() {
   const { user } = useAuth();
-  const { profile, setUsername, updateDisplayName } = useProfile();
+  const { profile } = useProfile();
   const { friends, incoming, outgoing, loading, sendRequest, acceptRequest, rejectRequest, cancelRequest, removeFriend } = useFriends();
   const { trips: tripInvites, goals: goalInvites, acceptTripInvite, declineTripInvite, acceptGoalInvite, declineGoalInvite } = usePendingInvites();
-
-  const [usernameInput, setUsernameInput] = useState("");
-  const [usernameSaving, setUsernameSaving] = useState(false);
-  const [usernameError, setUsernameError] = useState<string | null>(null);
-  const [usernameSuccess, setUsernameSuccess] = useState(false);
-
-  const [displayNameInput, setDisplayNameInput] = useState("");
-  const [displayNameSaving, setDisplayNameSaving] = useState(false);
 
   const [identifier, setIdentifier] = useState("");
   const [searching, setSearching] = useState(false);
   const [notice, setNotice] = useState<{ kind: "success" | "error" | "info"; text: string } | null>(null);
-
-  const handleSaveUsername = async () => {
-    setUsernameError(null);
-    setUsernameSaving(true);
-    setUsernameSuccess(false);
-    const res = await setUsername(usernameInput);
-    setUsernameSaving(false);
-    if (res.ok) {
-      setUsernameSuccess(true);
-      setUsernameInput("");
-      setTimeout(() => setUsernameSuccess(false), 2500);
-    } else {
-      setUsernameError(res.error || "Couldn't save username");
-    }
-  };
-
-  const handleSaveDisplayName = async () => {
-    if (!displayNameInput.trim()) return;
-    setDisplayNameSaving(true);
-    await updateDisplayName(displayNameInput.trim());
-    setDisplayNameSaving(false);
-    setDisplayNameInput("");
-  };
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,60 +79,34 @@ export default function FriendsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Friends</h1>
-        <p className="text-gray-400 text-sm mt-0.5">Add friends to invite them to shared trips & goals without sharing email addresses.</p>
+        <p className="text-gray-400 text-sm mt-0.5">Add friends to invite them to shared trips &amp; goals without sharing email addresses.</p>
       </div>
 
-      {/* Profile setup */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-        <div className="flex items-center gap-3 mb-4">
-          <Avatar name={profile?.display_name || profile?.username || user.email} />
+      {/* Compact profile summary (full customization on /profile) */}
+      <Link href="/profile" className={`block bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition-all ${needsUsername ? "border-amber-200 bg-amber-50/30" : "border-gray-200"}`}>
+        <div className="flex items-center gap-3">
+          <Avatar name={profile?.display_name || profile?.username || user.email} url={profile?.avatar_url} color={profile?.color} size={44} />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-900">{profile?.display_name || user.email?.split("@")[0]}</p>
+            <p className="text-sm font-semibold text-gray-900 truncate">{profile?.display_name || user.email?.split("@")[0]}</p>
             <p className="text-xs text-gray-400 truncate">
-              {profile?.username ? <>@{profile.username}</> : <span className="text-amber-600">Set a username so friends can find you</span>}
-              {" · "}{user.email}
+              {profile?.username ? <>@{profile.username} · {user.email}</> : (
+                <span className="text-amber-700 font-medium">Set a username so friends can find you ·</span>
+              )} {!profile?.username && user.email}
             </p>
+            {profile?.bio && <p className="text-[11px] text-gray-400 truncate mt-0.5">&ldquo;{profile.bio}&rdquo;</p>}
+          </div>
+          <div className="flex items-center gap-1 text-xs text-gray-400">
+            <UserCog size={13} /> <span className="hidden sm:inline">Edit profile</span>
+            <ChevronRight size={13} />
           </div>
         </div>
-
         {needsUsername && (
-          <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 mb-3">
-            <div className="flex items-start gap-2">
-              <Sparkles size={14} className="text-amber-600 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs font-semibold text-amber-900">Pick a username</p>
-                <p className="text-[11px] text-amber-700 mt-0.5">Letters, numbers, underscores · 3–20 chars. This is how friends will find and invite you.</p>
-              </div>
-            </div>
+          <div className="mt-3 flex items-start gap-2 text-xs">
+            <Sparkles size={13} className="text-amber-600 mt-0.5 shrink-0" />
+            <p className="text-amber-700">Tap to pick a username. Friends find you by username or email.</p>
           </div>
         )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><AtSign size={11} /> Username</label>
-            <div className="flex gap-2">
-              <input type="text" value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} placeholder={profile?.username || "yourname"} className={input} />
-              <button onClick={handleSaveUsername} disabled={usernameSaving || !usernameInput.trim()}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium text-xs px-3 rounded-lg shrink-0">
-                {usernameSaving ? "..." : "Save"}
-              </button>
-            </div>
-            {usernameError && <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1"><AlertCircle size={10} />{usernameError}</p>}
-            {usernameSuccess && <p className="text-[11px] text-green-600 mt-1 flex items-center gap-1"><CheckCircle size={10} /> Username saved.</p>}
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><UserIcon size={11} /> Display name</label>
-            <div className="flex gap-2">
-              <input type="text" value={displayNameInput} onChange={(e) => setDisplayNameInput(e.target.value)} placeholder={profile?.display_name || "Your name"} className={input} />
-              <button onClick={handleSaveDisplayName} disabled={displayNameSaving || !displayNameInput.trim()}
-                className="bg-gray-900 hover:bg-gray-800 disabled:opacity-50 text-white font-medium text-xs px-3 rounded-lg shrink-0">
-                {displayNameSaving ? "..." : "Save"}
-              </button>
-            </div>
-            <p className="text-[11px] text-gray-400 mt-1">Shown in trips and on invites.</p>
-          </div>
-        </div>
-      </div>
+      </Link>
 
       {/* Add a friend */}
       <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
@@ -274,7 +226,7 @@ export default function FriendsPage() {
               const p = r.from_profile;
               return (
                 <motion.div key={r.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 p-3 rounded-lg bg-blue-50/50 border border-blue-100">
-                  <Avatar name={p?.display_name || p?.username || p?.email} size={36} />
+                  <Avatar name={p?.display_name || p?.username || p?.email} url={p?.avatar_url} color={p?.color} size={36} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">{p?.display_name || p?.username || "Someone"}</p>
                     <p className="text-[11px] text-gray-500 truncate">{p?.username ? <>@{p.username}</> : p?.email}</p>
@@ -304,7 +256,7 @@ export default function FriendsPage() {
               const p = r.to_profile;
               return (
                 <div key={r.id} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100">
-                  <Avatar name={p?.display_name || p?.username || p?.email} size={36} />
+                  <Avatar name={p?.display_name || p?.username || p?.email} url={p?.avatar_url} color={p?.color} size={36} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-700 truncate">{p?.display_name || p?.username || "Someone"}</p>
                     <p className="text-[11px] text-gray-400 truncate">{p?.username ? <>@{p.username}</> : p?.email} · waiting for them to accept</p>
@@ -342,7 +294,7 @@ export default function FriendsPage() {
             {friends.map((f) => (
               <motion.div key={f.requestId} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                 className="group flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100 hover:border-gray-200">
-                <Avatar name={f.profile?.display_name || f.profile?.username || f.profile?.email} size={36} />
+                <Avatar name={f.profile?.display_name || f.profile?.username || f.profile?.email} url={f.profile?.avatar_url} color={f.profile?.color} size={36} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900 truncate">{f.profile?.display_name || f.profile?.username || "Friend"}</p>
                   <p className="text-[11px] text-gray-400 truncate">
