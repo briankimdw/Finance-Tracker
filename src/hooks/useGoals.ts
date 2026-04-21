@@ -42,6 +42,8 @@ export function useGoals() {
       }
 
       const [goalsRes, contribRes] = await Promise.all([goalsQ, contribQ]);
+      if (goalsRes.error) console.error("[useGoals] goals query error:", goalsRes.error);
+      if (contribRes.error) console.error("[useGoals] contributions query error:", contribRes.error);
       const rawGoals = (goalsRes.data || []) as (Goal & { goal_members: GoalMember[] })[];
       const allContribs = (contribRes.data as GoalContribution[]) || [];
 
@@ -68,7 +70,8 @@ export function useGoals() {
       });
 
       setGoals(enriched);
-    } catch {
+    } catch (err) {
+      console.error("[useGoals] fetchGoals threw:", err);
       setGoals([]);
     }
     setLoading(false);
