@@ -143,8 +143,9 @@ export default function TripsPage() {
                 return (
                   <motion.div key={t.id}
                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: i * 0.04 }}>
-                    <Link href={`/trips/${t.id}`} className="group relative overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-md rounded-2xl transition-all block">
+                    transition={{ duration: 0.3, delay: i * 0.04 }}
+                    className="group relative">
+                    <Link href={`/trips/${t.id}`} className="relative overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-md rounded-2xl transition-all block cursor-pointer">
                       {t.image_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={t.image_url} alt="" className="w-full h-28 object-cover" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
@@ -245,26 +246,28 @@ export default function TripsPage() {
                           </div>
                         </div>
 
-                        {/* Action buttons (positioned on top-right of cover image) */}
-                        <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {t.is_shared && t.isOwner && (
-                            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setInviteTrip(t); }}
-                              className="text-white/80 hover:text-white bg-black/20 hover:bg-black/40 p-1.5 rounded backdrop-blur-sm" title="Invite members"><UserPlus size={12} /></button>
-                          )}
-                          {t.isOwner && (
-                            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditTrip(t); setShowAddModal(true); }}
-                              className="text-white/80 hover:text-white bg-black/20 hover:bg-black/40 p-1.5 rounded backdrop-blur-sm" title="Edit"><Pencil size={12} /></button>
-                          )}
-                          {t.isOwner ? (
-                            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteTrip(t); }}
-                              className="text-white/80 hover:text-white bg-black/20 hover:bg-black/40 p-1.5 rounded backdrop-blur-sm" title="Delete"><Trash2 size={12} /></button>
-                          ) : (
-                            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleLeaveTrip(t); }}
-                              className="text-white/80 hover:text-white bg-black/20 hover:bg-black/40 p-1.5 rounded backdrop-blur-sm" title="Leave trip"><LogOut size={12} /></button>
-                          )}
-                        </div>
                       </div>
                     </Link>
+
+                    {/* Action buttons overlay — sibling of Link, not inside it.
+                        Pointer-events let through card clicks when row is hidden. */}
+                    <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none group-hover:pointer-events-auto">
+                      {t.is_shared && t.isOwner && (
+                        <button type="button" onClick={() => setInviteTrip(t)}
+                          className="text-white/90 hover:text-white bg-black/30 hover:bg-black/50 p-1.5 rounded backdrop-blur-sm" title="Invite members"><UserPlus size={12} /></button>
+                      )}
+                      {t.isOwner && (
+                        <button type="button" onClick={() => { setEditTrip(t); setShowAddModal(true); }}
+                          className="text-white/90 hover:text-white bg-black/30 hover:bg-black/50 p-1.5 rounded backdrop-blur-sm" title="Edit"><Pencil size={12} /></button>
+                      )}
+                      {t.isOwner ? (
+                        <button type="button" onClick={() => handleDeleteTrip(t)}
+                          className="text-white/90 hover:text-white bg-black/30 hover:bg-black/50 p-1.5 rounded backdrop-blur-sm" title="Delete"><Trash2 size={12} /></button>
+                      ) : (
+                        <button type="button" onClick={() => handleLeaveTrip(t)}
+                          className="text-white/90 hover:text-white bg-black/30 hover:bg-black/50 p-1.5 rounded backdrop-blur-sm" title="Leave trip"><LogOut size={12} /></button>
+                      )}
+                    </div>
                   </motion.div>
                 );
               })}
