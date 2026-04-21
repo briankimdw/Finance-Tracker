@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import FilterBar, { type Filters } from "@/components/FilterBar";
+import EditItemModal from "@/components/EditItemModal";
 import { useItems, filterItems } from "@/hooks/useItems";
+import type { Item } from "@/lib/types";
 
 export default function SalesPage() {
-  const { items, loading } = useItems("sold");
+  const { items, loading, refetch } = useItems("sold");
   const [filters, setFilters] = useState<Filters>({ search: "", category: "", platform: "", dateFrom: "", dateTo: "" });
+  const [editItem, setEditItem] = useState<Item | null>(null);
 
   const filtered = filterItems(items, filters);
   const totalRevenue = filtered.reduce((sum, i) => sum + Number(i.sale_price || 0), 0);
@@ -55,7 +58,11 @@ export default function SalesPage() {
                   const profit = sale - cost - fees;
                   const roi = cost > 0 ? (profit / cost) * 100 : 0;
                   return (
-                    <tr key={item.id} className="hover:bg-gray-50/80 even:bg-gray-50/40">
+                    <tr
+                      key={item.id}
+                      onClick={() => setEditItem(item)}
+                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 even:bg-gray-50/40 dark:even:bg-gray-800/20 transition-colors"
+                    >
                       <td className="px-4 py-3.5 text-sm text-gray-900 dark:text-gray-100 font-medium">{item.name}</td>
                       <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">{item.category}</td>
                       <td className="px-4 py-3.5 text-sm text-gray-700 dark:text-gray-300">${cost.toFixed(2)}</td>
@@ -73,6 +80,8 @@ export default function SalesPage() {
           </table>
         </div>
       </div>
+
+      <EditItemModal isOpen={!!editItem} item={editItem} onClose={() => setEditItem(null)} onUpdated={refetch} />
     </div>
   );
 }

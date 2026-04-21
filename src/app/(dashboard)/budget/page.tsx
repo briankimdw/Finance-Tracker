@@ -4,14 +4,18 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Pencil, Trash2, PieChart, AlertCircle, CheckCircle, TrendingUp } from "lucide-react";
 import AddBudgetModal from "@/components/AddBudgetModal";
+import BudgetCategoryDetailsSheet from "@/components/BudgetCategoryDetailsSheet";
 import { useBudgets } from "@/hooks/useBudgets";
 import AnimatedNumber from "@/components/animated/AnimatedNumber";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import type { Budget } from "@/lib/types";
 
 export default function BudgetPage() {
   const { budgets, loading, createBudget, updateBudget, deleteBudget, totalBudget, totalSpent } = useBudgets();
   const [showModal, setShowModal] = useState(false);
   const [editBudget, setEditBudget] = useState<Budget | null>(null);
+  const [detailsBudgetId, setDetailsBudgetId] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   const handleSave = async (data: { category: string; monthly_amount: number; color?: string }) => {
     if (editBudget) {
@@ -20,6 +24,25 @@ export default function BudgetPage() {
     } else {
       await createBudget(data);
     }
+  };
+
+  const handleQuickDelete = async (b: Budget) => {
+    const ok = await confirm({
+      title: `Delete ${b.category} budget?`,
+      message: "This only removes the budget target — expenses won't be affected.",
+      destructive: true,
+      confirmLabel: "Delete",
+    });
+    if (ok) await deleteBudget(b.id);
+  };
+
+  const openDetails = (id: string) => setDetailsBudgetId(id);
+  const openEditFromDetails = (id: string) => {
+    const b = budgets.find((x) => x.id === id);
+    if (!b) return;
+    setDetailsBudgetId(null);
+    setEditBudget(b);
+    setShowModal(true);
   };
 
   const overallPct = totalBudget > 0 ? Math.min(200, (totalSpent / totalBudget) * 100) : 0;
@@ -112,7 +135,16 @@ export default function BudgetPage() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.4, delay: 0.05 + i * 0.04 }}
                 layout
-                className="group bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow"
+                onClick={() => openDetails(b.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    openDetails(b.id);
+                  }
+                }}
+                className="group cursor-pointer bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-700 transition-all"
               >
                 <div className="flex items-center gap-4">
                   <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: `${b.color}15`, color: b.color }}>
@@ -129,8 +161,20 @@ export default function BudgetPage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                        <button onClick={() => { setEditBudget(b); setShowModal(true); }} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 rounded" title="Edit"><Pencil size={14} /></button>
-                        <button onClick={() => { if (confirm(`Delete ${b.category} budget?`)) deleteBudget(b.id); }} className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1.5 rounded" title="Delete"><Trash2 size={14} /></button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setEditBudget(b); setShowModal(true); }}
+                          className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 rounded"
+                          title="Edit"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleQuickDelete(b); }}
+                          className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1.5 rounded"
+                          title="Delete"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </div>
 
@@ -173,6 +217,14 @@ export default function BudgetPage() {
         existingCategories={budgets.map((b) => b.category)}
         onClose={() => { setShowModal(false); setEditBudget(null); }}
         onSave={handleSave}
+      />
+
+      <BudgetCategoryDetailsSheet
+        isOpen={!!detailsBudgetId}
+        budgetId={detailsBudgetId}
+        onClose={() => setDetailsBudgetId(null)}
+        onEdit={openEditFromDetails}
+        onDelete={deleteBudget}
       />
     </div>
   );

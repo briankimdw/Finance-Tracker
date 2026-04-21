@@ -9,6 +9,8 @@ import { useDebts } from "@/hooks/useDebts";
 import { useCashAccounts } from "@/hooks/useCashAccounts";
 import { todayEST } from "@/lib/dates";
 import { Wallet, Banknote } from "lucide-react";
+import DebtDetailsSheet from "@/components/DebtDetailsSheet";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import type { Debt, DebtWithStats } from "@/lib/types";
 
 const COLORS = ["#f59e0b", "#3b82f6", "#ef4444", "#10b981", "#8b5cf6", "#ec4899", "#06b6d4", "#1f2937"];
@@ -199,10 +201,12 @@ function PayDebtModal({ isOpen, debt, onClose, onPay }: {
 
 export default function DebtsPage() {
   const { debts, loading, createDebt, updateDebt, deleteDebt, addPayment, deletePayment, totalIOwe, totalTheyOwe } = useDebts();
+  const confirm = useConfirm();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editDebt, setEditDebt] = useState<Debt | null>(null);
   const [payDebt, setPayDebt] = useState<DebtWithStats | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [detailsDebtId, setDetailsDebtId] = useState<string | null>(null);
 
   const toggleExpand = (id: string) => {
     setExpanded((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
@@ -217,10 +221,32 @@ export default function DebtsPage() {
     }
   };
 
+  const handleDeleteDebt = async (debt: DebtWithStats | { id: string; person: string; direction: "i_owe" | "they_owe" }) => {
+    const iOweThem = debt.direction === "i_owe";
+    const ok = await confirm({
+      title: iOweThem ? `Delete debt to ${debt.person}?` : `Delete debt from ${debt.person}?`,
+      message: "This removes the debt and all its payment history. This cannot be undone.",
+      destructive: true,
+      confirmLabel: "Delete",
+    });
+    if (ok) await deleteDebt(debt.id);
+  };
+
+  const handleDeleteSettled = async (debt: DebtWithStats) => {
+    const ok = await confirm({
+      title: `Delete ${debt.person}'s settled debt?`,
+      message: "This removes the debt and all its payment history.",
+      destructive: true,
+      confirmLabel: "Delete",
+    });
+    if (ok) await deleteDebt(debt.id);
+  };
+
   const activeDebts = debts.filter((d) => !d.settled);
   const settledDebts = debts.filter((d) => d.settled);
   const iOwe = activeDebts.filter((d) => d.direction === "i_owe");
   const theyOwe = activeDebts.filter((d) => d.direction === "they_owe");
+  const detailsDebt = detailsDebtId ? debts.find((d) => d.id === detailsDebtId) ?? null : null;
 
   return (
     <div className="space-y-6">
@@ -270,7 +296,7 @@ export default function DebtsPage() {
               <h2 className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wider mb-3 flex items-center gap-1.5"><ArrowUpRight size={14} /> I Owe</h2>
               <div className="space-y-3">
                 {iOwe.map((d) => (
-                  <DebtCard key={d.id} debt={d} expanded={expanded.has(d.id)} onToggle={() => toggleExpand(d.id)} onPay={() => setPayDebt(d)} onEdit={() => { setEditDebt(d); setShowAddModal(true); }} onDelete={() => { if (confirm(`Delete debt to ${d.person}?`)) deleteDebt(d.id); }} onSettle={() => updateDebt(d.id, { settled: true, settled_date: todayEST() })} onDeletePayment={deletePayment} />
+                  <DebtCard key={d.id} debt={d} expanded={expanded.has(d.id)} onClick={() => setDetailsDebtId(d.id)} onToggle={() => toggleExpand(d.id)} onPay={() => setPayDebt(d)} onEdit={() => { setEditDebt(d); setShowAddModal(true); }} onDelete={() => handleDeleteDebt(d)} onSettle={() => updateDebt(d.id, { settled: true, settled_date: todayEST() })} onDeletePayment={deletePayment} />
                 ))}
               </div>
             </div>
@@ -282,7 +308,7 @@ export default function DebtsPage() {
               <h2 className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider mb-3 flex items-center gap-1.5"><ArrowDownLeft size={14} /> They Owe Me</h2>
               <div className="space-y-3">
                 {theyOwe.map((d) => (
-                  <DebtCard key={d.id} debt={d} expanded={expanded.has(d.id)} onToggle={() => toggleExpand(d.id)} onPay={() => setPayDebt(d)} onEdit={() => { setEditDebt(d); setShowAddModal(true); }} onDelete={() => { if (confirm(`Delete debt from ${d.person}?`)) deleteDebt(d.id); }} onSettle={() => updateDebt(d.id, { settled: true, settled_date: todayEST() })} onDeletePayment={deletePayment} />
+                  <DebtCard key={d.id} debt={d} expanded={expanded.has(d.id)} onClick={() => setDetailsDebtId(d.id)} onToggle={() => toggleExpand(d.id)} onPay={() => setPayDebt(d)} onEdit={() => { setEditDebt(d); setShowAddModal(true); }} onDelete={() => handleDeleteDebt(d)} onSettle={() => updateDebt(d.id, { settled: true, settled_date: todayEST() })} onDeletePayment={deletePayment} />
                 ))}
               </div>
             </div>
@@ -294,14 +320,21 @@ export default function DebtsPage() {
               <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><Check size={14} /> Settled</h2>
               <div className="space-y-2">
                 {settledDebts.map((d) => (
-                  <div key={d.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm flex items-center gap-3 opacity-60 hover:opacity-100 transition-opacity">
+                  <div
+                    key={d.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setDetailsDebtId(d.id)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDetailsDebtId(d.id); } }}
+                    className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm flex items-center gap-3 opacity-60 hover:opacity-100 hover:shadow-md transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  >
                     <div className="w-2 h-8 rounded-sm" style={{ background: d.color }} />
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{d.person}</p>
                       <p className="text-xs text-gray-400 dark:text-gray-500">{d.direction === "i_owe" ? "I owed" : "They owed"} ${Number(d.original_amount).toFixed(2)} &middot; Settled {d.settled_date ? new Date(d.settled_date).toLocaleDateString() : ""}</p>
                     </div>
-                    <button onClick={() => updateDebt(d.id, { settled: false, settled_date: null })} className="text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 px-2 py-1 rounded-md font-medium">Reopen</button>
-                    <button onClick={() => { if (confirm(`Delete?`)) deleteDebt(d.id); }} className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1.5"><Trash2 size={14} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); updateDebt(d.id, { settled: false, settled_date: null }); }} className="text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 px-2 py-1 rounded-md font-medium">Reopen</button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDeleteSettled(d); }} className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1.5"><Trash2 size={14} /></button>
                   </div>
                 ))}
               </div>
@@ -312,16 +345,41 @@ export default function DebtsPage() {
 
       <AddDebtModal isOpen={showAddModal} debt={editDebt} onClose={() => { setShowAddModal(false); setEditDebt(null); }} onSave={handleSave} />
       <PayDebtModal isOpen={!!payDebt} debt={payDebt} onClose={() => setPayDebt(null)} onPay={addPayment} />
+      <DebtDetailsSheet
+        isOpen={!!detailsDebtId}
+        debt={detailsDebt}
+        onClose={() => setDetailsDebtId(null)}
+        onEdit={(debt) => {
+          setEditDebt(debt);
+          setShowAddModal(true);
+          setDetailsDebtId(null);
+        }}
+        onPay={(debt) => {
+          setPayDebt(debt);
+          setDetailsDebtId(null);
+        }}
+        onDelete={(id) => {
+          deleteDebt(id);
+          setDetailsDebtId(null);
+        }}
+      />
     </div>
   );
 }
 
-function DebtCard({ debt: d, expanded, onToggle, onPay, onEdit, onDelete, onSettle, onDeletePayment }: {
-  debt: DebtWithStats; expanded: boolean; onToggle: () => void; onPay: () => void;
+function DebtCard({ debt: d, expanded, onClick, onToggle, onPay, onEdit, onDelete, onSettle, onDeletePayment }: {
+  debt: DebtWithStats; expanded: boolean; onClick: () => void; onToggle: () => void; onPay: () => void;
   onEdit: () => void; onDelete: () => void; onSettle: () => void; onDeletePayment: (id: string) => void;
 }) {
+  const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
   return (
-    <div className="group bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
+      className="group bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+    >
       <div className="p-5">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white text-sm font-bold" style={{ background: d.color }}>
@@ -334,9 +392,9 @@ function DebtCard({ debt: d, expanded, onToggle, onPay, onEdit, onDelete, onSett
                 {d.description && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{d.description}</p>}
               </div>
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                {d.progress >= 100 && <button onClick={onSettle} className="text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/40 p-1.5 rounded" title="Mark settled"><Check size={14} /></button>}
-                <button onClick={onEdit} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 rounded"><Pencil size={14} /></button>
-                <button onClick={onDelete} className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1.5 rounded"><Trash2 size={14} /></button>
+                {d.progress >= 100 && <button onClick={stop(onSettle)} className="text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/40 p-1.5 rounded" title="Mark settled"><Check size={14} /></button>}
+                <button onClick={stop(onEdit)} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 rounded" aria-label="Edit debt"><Pencil size={14} /></button>
+                <button onClick={stop(onDelete)} className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1.5 rounded" aria-label="Delete debt"><Trash2 size={14} /></button>
               </div>
             </div>
 
@@ -355,10 +413,10 @@ function DebtCard({ debt: d, expanded, onToggle, onPay, onEdit, onDelete, onSett
             <div className="flex items-center justify-between mt-3">
               <span className="text-xs text-gray-500 dark:text-gray-400">{d.progress >= 100 ? "Fully paid!" : `$${d.remaining.toFixed(2)} left`}</span>
               <div className="flex items-center gap-2">
-                <button onClick={onPay} className="text-xs font-medium text-white px-3 py-1.5 rounded-md transition-all" style={{ background: d.color }}>
+                <button onClick={stop(onPay)} className="text-xs font-medium text-white px-3 py-1.5 rounded-md transition-all" style={{ background: d.color }}>
                   {d.direction === "i_owe" ? "Pay Back" : "Received"}
                 </button>
-                <button onClick={onToggle} className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 p-1.5 rounded hover:bg-gray-50 dark:hover:bg-gray-800">
+                <button onClick={stop(onToggle)} className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 p-1.5 rounded hover:bg-gray-50 dark:hover:bg-gray-800" aria-label={expanded ? "Collapse payment history" : "Expand payment history"}>
                   {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </button>
               </div>
@@ -368,7 +426,10 @@ function DebtCard({ debt: d, expanded, onToggle, onPay, onEdit, onDelete, onSett
       </div>
 
       {expanded && (
-        <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 p-4">
+        <div
+          className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 p-4"
+          onClick={(e) => e.stopPropagation()}
+        >
           <h4 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Payment History</h4>
           {d.payments.length === 0 ? (
             <p className="text-xs text-gray-400 dark:text-gray-500 py-3 text-center">No payments yet</p>
@@ -382,7 +443,7 @@ function DebtCard({ debt: d, expanded, onToggle, onPay, onEdit, onDelete, onSett
                     {p.notes && <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{p.notes}</p>}
                   </div>
                   <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">{new Date(p.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
-                  <button onClick={() => onDeletePayment(p.id)} className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1 transition-colors"><Trash size={12} /></button>
+                  <button onClick={(e) => { e.stopPropagation(); onDeletePayment(p.id); }} className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1 transition-colors" aria-label="Delete payment"><Trash size={12} /></button>
                 </div>
               ))}
             </div>

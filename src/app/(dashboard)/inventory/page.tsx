@@ -55,7 +55,11 @@ export default function InventoryPage() {
                 <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">{items.length === 0 ? "No items in inventory. Add your first item!" : "No items match your filters."}</td></tr>
               ) : (
                 filtered.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50/80 even:bg-gray-50/40">
+                  <tr
+                    key={item.id}
+                    onClick={() => setEditItem(item)}
+                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 even:bg-gray-50/40 dark:even:bg-gray-800/20 transition-colors"
+                  >
                     <td className="px-4 py-3.5 text-sm text-gray-900 dark:text-gray-100 font-medium">{item.name}</td>
                     <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">{item.category}</td>
                     <td className="px-4 py-3.5 text-sm text-gray-700 dark:text-gray-300">${Number(item.purchase_price).toFixed(2)}</td>
@@ -65,9 +69,25 @@ export default function InventoryPage() {
                     <td className="px-4 py-3.5 text-sm text-gray-400 dark:text-gray-500 max-w-[150px] truncate">{item.notes || "--"}</td>
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-2">
-                        <button onClick={() => setEditItem(item)} className="text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-blue-200 dark:border-blue-800 px-2.5 py-1 rounded-md transition-colors">Edit</button>
-                        <button onClick={() => setSoldItem(item)} className="text-xs bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-100 border border-green-200 dark:border-green-800 px-2.5 py-1 rounded-md transition-colors">Mark Sold</button>
-                        <button onClick={() => deleteItem(item.id)} className="text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors" title="Delete item"><Trash2 size={14} /></button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setEditItem(item); }}
+                          className="text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-blue-200 dark:border-blue-800 px-2.5 py-1 rounded-md transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setSoldItem(item); }}
+                          className="text-xs bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-100 border border-green-200 dark:border-green-800 px-2.5 py-1 rounded-md transition-colors"
+                        >
+                          Mark Sold
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteItem(item.id); }}
+                          className="text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors"
+                          title="Delete item"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </td>
                   </tr>

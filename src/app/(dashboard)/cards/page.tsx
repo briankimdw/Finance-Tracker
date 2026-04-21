@@ -6,6 +6,8 @@ import AddCreditCardModal from "@/components/AddCreditCardModal";
 import AddCashAccountModal from "@/components/AddCashAccountModal";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import TransferModal from "@/components/TransferModal";
+import CashAccountDetailsSheet from "@/components/CashAccountDetailsSheet";
+import CreditCardDetailsSheet from "@/components/CreditCardDetailsSheet";
 import { useCreditCards } from "@/hooks/useCreditCards";
 import { useCashAccounts } from "@/hooks/useCashAccounts";
 import type { CreditCard, CreditCardWithStats, CashAccount, CashAccountType } from "@/lib/types";
@@ -45,6 +47,10 @@ export default function CardsPage() {
   const [payCard, setPayCard] = useState<CreditCardWithStats | null>(null);
   const [chargeCard, setChargeCard] = useState<CreditCardWithStats | null>(null);
   const [showTransfer, setShowTransfer] = useState(false);
+  const [transferFromId, setTransferFromId] = useState<string | undefined>(undefined);
+  const [detailsAccountId, setDetailsAccountId] = useState<string | null>(null);
+  const [detailsCardId, setDetailsCardId] = useState<string | null>(null);
+  const detailsCard = detailsCardId ? cards.find((c) => c.id === detailsCardId) ?? null : null;
 
   // Drag & drop state
   const dragCardIdx = useRef<number | null>(null);
@@ -218,11 +224,16 @@ export default function CardsPage() {
                   onDragOver={(e) => onAccountDragOver(e, i)}
                   onDragEnd={onAccountDragEnd}
                   onDrop={(e) => onAccountDrop(e, i)}
-                  className={`group bg-white dark:bg-gray-900 border rounded-xl shadow-sm transition-all cursor-move ${isOver ? "border-blue-400 ring-2 ring-blue-200 -translate-y-0.5" : "border-gray-200 dark:border-gray-800 hover:shadow-md"}`}>
+                  onClick={() => setDetailsAccountId(acc.id)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDetailsAccountId(acc.id); } }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`View ${acc.name} details`}
+                  className={`group bg-white dark:bg-gray-900 border rounded-xl shadow-sm transition-all cursor-pointer ${isOver ? "border-blue-400 ring-2 ring-blue-200 -translate-y-0.5" : "border-gray-200 dark:border-gray-800 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-700"}`}>
                   <div className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <GripVertical size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-400" />
+                        <GripVertical size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-400 cursor-move" />
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${acc.color}20`, color: acc.color }}>
                           <Icon size={16} />
                         </div>
@@ -232,8 +243,8 @@ export default function CardsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => { setEditAccount(acc); setShowAddAccountModal(true); }} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-1" title="Edit"><Pencil size={12} /></button>
-                        <button onClick={() => { if (confirm(`Delete ${acc.name}?`)) deleteAccount(acc.id); }} className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1" title="Delete"><Trash2 size={12} /></button>
+                        <button onClick={(e) => { e.stopPropagation(); setEditAccount(acc); setShowAddAccountModal(true); }} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-1" title="Edit"><Pencil size={12} /></button>
+                        <button onClick={(e) => { e.stopPropagation(); if (confirm(`Delete ${acc.name}?`)) deleteAccount(acc.id); }} className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1" title="Delete"><Trash2 size={12} /></button>
                       </div>
                     </div>
                     <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">${Number(acc.balance).toFixed(2)}</p>
@@ -303,7 +314,12 @@ export default function CardsPage() {
                   onDragOver={(e) => onCardDragOver(e, i)}
                   onDragEnd={onCardDragEnd}
                   onDrop={(e) => onCardDrop(e, i)}
-                  className={`bg-white dark:bg-gray-900 border rounded-xl shadow-sm overflow-hidden transition-all cursor-move ${isOver ? "border-blue-400 ring-2 ring-blue-200 -translate-y-0.5" : "border-gray-200 dark:border-gray-800 hover:shadow-md"}`}>
+                  onClick={() => setDetailsCardId(card.id)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDetailsCardId(card.id); } }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`View ${card.name} details`}
+                  className={`bg-white dark:bg-gray-900 border rounded-xl shadow-sm overflow-hidden transition-all cursor-pointer ${isOver ? "border-blue-400 ring-2 ring-blue-200 -translate-y-0.5" : "border-gray-200 dark:border-gray-800 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-700"}`}>
                   {/* Card visual */}
                   <div className="p-5 text-white relative" style={{ background: `linear-gradient(135deg, ${card.color}, ${card.color}cc)` }}>
                     <GripVertical size={14} className="absolute top-2 right-2 opacity-50" />
@@ -357,14 +373,14 @@ export default function CardsPage() {
                     </div>
 
                     <div className="flex gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
-                      <button onClick={() => setChargeCard(card)} className="flex-1 flex items-center justify-center gap-1 text-xs bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 border border-red-200 dark:border-red-800 px-2.5 py-1.5 rounded-md transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); setChargeCard(card); }} className="flex-1 flex items-center justify-center gap-1 text-xs bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 border border-red-200 dark:border-red-800 px-2.5 py-1.5 rounded-md transition-colors">
                         <ArrowUpRight size={12} /> Charge
                       </button>
-                      <button onClick={() => setPayCard(card)} className="flex-1 flex items-center justify-center gap-1 text-xs bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-100 border border-green-200 dark:border-green-800 px-2.5 py-1.5 rounded-md transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); setPayCard(card); }} className="flex-1 flex items-center justify-center gap-1 text-xs bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-100 border border-green-200 dark:border-green-800 px-2.5 py-1.5 rounded-md transition-colors">
                         <ArrowDownRight size={12} /> Pay
                       </button>
-                      <button onClick={() => { setEditCard(card); setShowAddCardModal(true); }} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-1.5" title="Edit"><Pencil size={14} /></button>
-                      <button onClick={() => { if (confirm(`Delete ${card.name}?`)) deleteCard(card.id); }} className="text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors p-1.5" title="Delete"><Trash2 size={14} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); setEditCard(card); setShowAddCardModal(true); }} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-1.5" title="Edit"><Pencil size={14} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); if (confirm(`Delete ${card.name}?`)) deleteCard(card.id); }} className="text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors p-1.5" title="Delete"><Trash2 size={14} /></button>
                     </div>
                   </div>
                 </div>
@@ -378,7 +394,52 @@ export default function CardsPage() {
       <AddCashAccountModal isOpen={showAddAccountModal} account={editAccount} onClose={() => { setShowAddAccountModal(false); setEditAccount(null); }} onSave={handleSaveAccount} />
       <AddExpenseModal isOpen={!!chargeCard} onClose={() => setChargeCard(null)} onAdded={refetchCards} defaultCardId={chargeCard?.id} />
       <AddExpenseModal isOpen={!!payCard} onClose={() => setPayCard(null)} onAdded={refetchCards} defaultCardId={payCard?.id} defaultIsCardPayment={true} />
-      <TransferModal isOpen={showTransfer} onClose={() => setShowTransfer(false)} onTransferred={refetchCards} />
+      <TransferModal isOpen={showTransfer} onClose={() => { setShowTransfer(false); setTransferFromId(undefined); }} onTransferred={refetchCards} defaultFromId={transferFromId} />
+
+      <CashAccountDetailsSheet
+        isOpen={detailsAccountId !== null}
+        accountId={detailsAccountId}
+        onClose={() => setDetailsAccountId(null)}
+        onEdit={(acc) => {
+          setDetailsAccountId(null);
+          setEditAccount(acc);
+          setShowAddAccountModal(true);
+        }}
+        onTransfer={(fromId) => {
+          setDetailsAccountId(null);
+          setTransferFromId(fromId);
+          setShowTransfer(true);
+        }}
+        onDelete={async (id) => {
+          await deleteAccount(id);
+        }}
+      />
+
+      <CreditCardDetailsSheet
+        isOpen={detailsCardId !== null}
+        card={detailsCard}
+        onClose={() => setDetailsCardId(null)}
+        onEdit={(c) => {
+          setDetailsCardId(null);
+          setEditCard(c);
+          setShowAddCardModal(true);
+        }}
+        onAddCharge={(cardId) => {
+          const c = cards.find((cc) => cc.id === cardId);
+          if (!c) return;
+          setDetailsCardId(null);
+          setChargeCard(c);
+        }}
+        onMakePayment={(cardId) => {
+          const c = cards.find((cc) => cc.id === cardId);
+          if (!c) return;
+          setDetailsCardId(null);
+          setPayCard(c);
+        }}
+        onDelete={async (id) => {
+          await deleteCard(id);
+        }}
+      />
     </div>
   );
 }

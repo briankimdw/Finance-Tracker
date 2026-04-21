@@ -117,7 +117,11 @@ export default function IncomePage() {
                 <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">{incomes.length === 0 ? "No income entries yet. Add your first one!" : "No entries match your filters."}</td></tr>
               ) : (
                 filtered.map((inc) => (
-                  <tr key={inc.id} className="hover:bg-gray-50/80 even:bg-gray-50/40">
+                  <tr
+                    key={inc.id}
+                    onClick={() => setEditIncome(inc)}
+                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 even:bg-gray-50/40 dark:even:bg-gray-800/20 transition-colors"
+                  >
                     <td className="px-4 py-3.5 text-sm text-gray-900 dark:text-gray-100 font-medium">{inc.source}</td>
                     <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">{inc.category}</td>
                     <td className="px-4 py-3.5">
@@ -128,8 +132,20 @@ export default function IncomePage() {
                     <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">{inc.recurring ? inc.frequency : "One-time"}</td>
                     <td className="px-4 py-3.5 text-sm text-gray-400 dark:text-gray-500 max-w-[150px] truncate">{inc.notes || "--"}</td>
                     <td className="px-4 py-3.5">
-                      <button onClick={() => setEditIncome(inc)} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mr-1" title="Edit"><Pencil size={14} /></button>
-                      <button onClick={() => deleteIncome(inc.id)} className="text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors" title="Delete"><Trash2 size={14} /></button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setEditIncome(inc); }}
+                        className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mr-1"
+                        title="Edit"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteIncome(inc.id); }}
+                        className="text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </td>
                   </tr>
                 ))

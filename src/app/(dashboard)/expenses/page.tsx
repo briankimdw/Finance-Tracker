@@ -128,7 +128,11 @@ export default function ExpensesPage() {
                 filtered.map((exp) => {
                   const card = exp.credit_card_id ? cardMap.get(exp.credit_card_id) : null;
                   return (
-                    <tr key={exp.id} className="hover:bg-gray-50/80 even:bg-gray-50/40">
+                    <tr
+                      key={exp.id}
+                      onClick={() => setEditExpense(exp)}
+                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 even:bg-gray-50/40 dark:even:bg-gray-800/20 transition-colors"
+                    >
                       <td className="px-4 py-3.5 text-sm">
                         <div className="flex items-center gap-2">
                           {exp.is_card_payment && (
@@ -158,8 +162,20 @@ export default function ExpensesPage() {
                       <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">{new Date(exp.date).toLocaleDateString()}</td>
                       <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">{exp.recurring ? exp.frequency : "One-time"}</td>
                       <td className="px-4 py-3.5">
-                        <button onClick={() => setEditExpense(exp)} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mr-1" title="Edit"><Pencil size={14} /></button>
-                        <button onClick={() => deleteExpense(exp.id)} className="text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors" title="Delete"><Trash2 size={14} /></button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setEditExpense(exp); }}
+                          className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mr-1"
+                          title="Edit"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteExpense(exp.id); }}
+                          className="text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </td>
                     </tr>
                   );

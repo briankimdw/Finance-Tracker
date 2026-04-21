@@ -15,6 +15,8 @@ import MarkSoldModal from "@/components/MarkSoldModal";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import TransferModal from "@/components/TransferModal";
 import AddContributionModal from "@/components/AddContributionModal";
+import AddCashAccountModal from "@/components/AddCashAccountModal";
+import CashAccountDetailsSheet from "@/components/CashAccountDetailsSheet";
 import QuickAdd from "@/components/QuickAdd";
 import Charts from "@/components/Charts";
 import NetWorthChart from "@/components/NetWorthChart";
@@ -36,7 +38,7 @@ import { getTripIcon } from "@/lib/tripIcons";
 import { useChartData } from "@/hooks/useChartData";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
-import type { Item, Income, CashAccountType, CreditCardWithStats } from "@/lib/types";
+import type { Item, Income, CashAccountType, CreditCardWithStats, CashAccount } from "@/lib/types";
 import { Crown } from "lucide-react";
 
 const ACCOUNT_ICONS: Record<CashAccountType, typeof Wallet> = {
@@ -121,7 +123,7 @@ export default function DashboardPage() {
   const { mainTotal: monthlyMain, sideTotal: monthlySide, refetch: refetchMonthlyIncome } = useMonthlyIncomeStats();
   const { stats: metalStats, refetch: refetchMetals } = usePortfolioStats();
   const { monthlyProfit: monthlyMetalProfit, refetch: refetchMetalProfit } = useRealizedMetalProfit();
-  const { accounts: cashAccounts, totalBalance: totalCash, refetch: refetchCash } = useCashAccounts();
+  const { accounts: cashAccounts, totalBalance: totalCash, refetch: refetchCash, updateAccount, deleteAccount, createAccount } = useCashAccounts();
   const { cards: creditCards, refetch: refetchCards } = useCreditCards();
   const { totalIOwe, totalTheyOwe, refetch: refetchDebts } = useDebts();
   const { goals, addContribution, refetch: refetchGoals } = useGoals();
@@ -182,6 +184,9 @@ export default function DashboardPage() {
   const [payCard, setPayCard] = useState<CreditCardWithStats | null>(null);
   const [showTransfer, setShowTransfer] = useState<string | null>(null); // account id as default from
   const [contribGoalId, setContribGoalId] = useState<string | null>(null);
+  const [detailsAccountId, setDetailsAccountId] = useState<string | null>(null);
+  const [editAccount, setEditAccount] = useState<CashAccount | null>(null);
+  const [showAddAccount, setShowAddAccount] = useState(false);
 
   const handleRefresh = () => { refetchStats(); refetchItems(); refetchIncome(); refetchIncomeList(); refetchExpenses(); refetchMonthlyExpenses(); refetchMonthlyIncome(); refetchMetals(); refetchMetalProfit(); refetchCash(); refetchCards(); refetchDebts(); refetchGoals(); refetchTrips(); fetchHeatMap(); refetchCharts(); };
   const handleQuickAdd = async (saved: Parameters<typeof quickAdd>[0]) => { await quickAdd(saved); handleRefresh(); };
@@ -411,7 +416,16 @@ export default function DashboardPage() {
               const reserved = acc.reserved ?? 0;
               const free = Number(acc.balance) - reserved;
               return (
-                <div key={acc.id} className="group relative rounded-xl p-3.5 border border-gray-100 dark:border-gray-800 hover:border-gray-200 transition-all" style={{ background: `${acc.color}08` }}>
+                <div
+                  key={acc.id}
+                  onClick={() => setDetailsAccountId(acc.id)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDetailsAccountId(acc.id); } }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`View ${acc.name} details`}
+                  className="group relative rounded-xl p-3.5 border border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-sm transition-all cursor-pointer"
+                  style={{ background: `${acc.color}08` }}
+                >
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${acc.color}20`, color: acc.color }}>
                       <Icon size={14} />
@@ -422,7 +436,7 @@ export default function DashboardPage() {
                     </div>
                     {cashAccounts.length >= 2 && (
                       <button
-                        onClick={() => setShowTransfer(acc.id)}
+                        onClick={(e) => { e.stopPropagation(); setShowTransfer(acc.id); }}
                         className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-white/60 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400"
                         title="Transfer"
                       >
@@ -686,6 +700,39 @@ export default function DashboardPage() {
         goal={goals.find((g) => g.id === contribGoalId) || null}
         onClose={() => setContribGoalId(null)}
         onSave={addContribution}
+      />
+
+      <AddCashAccountModal
+        isOpen={showAddAccount}
+        account={editAccount}
+        onClose={() => { setShowAddAccount(false); setEditAccount(null); }}
+        onSave={async (data) => {
+          if (editAccount) {
+            await updateAccount(editAccount.id, data);
+          } else {
+            await createAccount(data);
+          }
+          handleRefresh();
+        }}
+      />
+
+      <CashAccountDetailsSheet
+        isOpen={detailsAccountId !== null}
+        accountId={detailsAccountId}
+        onClose={() => setDetailsAccountId(null)}
+        onEdit={(acc) => {
+          setDetailsAccountId(null);
+          setEditAccount(acc);
+          setShowAddAccount(true);
+        }}
+        onTransfer={(fromId) => {
+          setDetailsAccountId(null);
+          setShowTransfer(fromId);
+        }}
+        onDelete={async (id) => {
+          await deleteAccount(id);
+          handleRefresh();
+        }}
       />
     </div>
   );
