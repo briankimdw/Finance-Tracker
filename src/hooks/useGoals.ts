@@ -15,13 +15,6 @@ function calculateDays(targetDate: string | null): number | null {
   return Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function randomToken(): string {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let out = "";
-  for (let i = 0; i < 20; i++) out += chars[Math.floor(Math.random() * chars.length)];
-  return out;
-}
-
 export function useGoals() {
   const { user } = useAuth();
   const [goals, setGoals] = useState<GoalWithStats[]>([]);
@@ -142,16 +135,26 @@ export function useGoals() {
     await fetchGoals();
   };
 
-  const inviteToGoal = async (goalId: string, email: string): Promise<string | null> => {
-    const token = randomToken();
-    const { error } = await supabase.from("goal_invites").insert({
-      goal_id: goalId,
-      token,
-      email: email || null,
-      invited_by: user?.id ?? null,
-    });
-    if (error) return null;
-    return token;
+  const inviteToGoal = async (
+    goalId: string,
+    email: string
+  ): Promise<{ token: string; joinUrl: string; emailSent: boolean; reason?: string } | null> => {
+    try {
+      const res = await fetch("/api/goals/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goalId, email }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        console.error("[useGoals] inviteToGoal error:", body.error);
+        return null;
+      }
+      return body;
+    } catch (err) {
+      console.error("[useGoals] inviteToGoal threw:", err);
+      return null;
+    }
   };
 
   const removeMember = async (goalId: string, memberUserId: string) => {

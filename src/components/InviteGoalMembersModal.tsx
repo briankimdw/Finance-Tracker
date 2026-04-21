@@ -1,16 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Mail, Copy, Users, Check, Trash2 } from "lucide-react";
+import { X, Mail, Copy, Users, Check, Trash2, CheckCircle, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import type { GoalWithStats, GoalInvite, GoalMember } from "@/lib/types";
+
+interface InviteResult {
+  token: string;
+  joinUrl: string;
+  emailSent: boolean;
+  reason?: string;
+}
 
 interface InviteGoalMembersModalProps {
   isOpen: boolean;
   goal: GoalWithStats | null;
   onClose: () => void;
-  onInvite: (goalId: string, email: string) => Promise<string | null>;
+  onInvite: (goalId: string, email: string) => Promise<InviteResult | null>;
   onRemoveMember?: (goalId: string, userId: string) => Promise<void>;
 }
 
@@ -22,6 +29,7 @@ export default function InviteGoalMembersModal({ isOpen, goal, onClose, onInvite
   const [pendingInvites, setPendingInvites] = useState<GoalInvite[]>([]);
   const [memberEmails, setMemberEmails] = useState<Record<string, string>>({});
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ kind: "success" | "warn" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     if (!isOpen || !goal) return;
@@ -46,27 +54,31 @@ export default function InviteGoalMembersModal({ isOpen, goal, onClose, onInvite
     e.preventDefault();
     if (!email.trim()) return;
     setLoading(true);
-    const token = await onInvite(goal.id, email.trim());
+    setNotice(null);
+    const result = await onInvite(goal.id, email.trim());
     setLoading(false);
-    if (token) {
-      // Open user's email client pre-filled
-      const joinUrl = buildJoinUrl(token);
-      const inviterName = user?.email?.split("@")[0] || "A friend";
-      const subject = encodeURIComponent(`${inviterName} invited you to save together on NetWorth Tracker`);
-      const body = encodeURIComponent(
-        `Hi!\n\nI'm saving for "${goal.name}" on NetWorth Tracker and invited you to track it together.\n\nClick here to join:\n${joinUrl}\n\nThis link expires in 14 days.`
-      );
-      window.location.href = `mailto:${email.trim()}?subject=${subject}&body=${body}`;
-      setEmail("");
-      // Refresh pending list
-      const { data: invites } = await supabase
-        .from("goal_invites")
-        .select("*")
-        .eq("goal_id", goal.id)
-        .is("accepted_at", null)
-        .order("created_at", { ascending: false });
-      setPendingInvites((invites as GoalInvite[]) || []);
+    if (!result) {
+      setNotice({ kind: "error", text: "Couldn't create the invite. Please try again." });
+      return;
     }
+    if (result.emailSent) {
+      setNotice({ kind: "success", text: `Invite sent to ${email.trim()}.` });
+    } else {
+      // Invite row was created but email didn't send — show the copy-link path
+      setNotice({
+        kind: "warn",
+        text: `Invite created, but email didn't send${result.reason ? ` (${result.reason})` : ""}. Copy the link below to share it.`,
+      });
+    }
+    setEmail("");
+    // Refresh pending list
+    const { data: invites } = await supabase
+      .from("goal_invites")
+      .select("*")
+      .eq("goal_id", goal.id)
+      .is("accepted_at", null)
+      .order("created_at", { ascending: false });
+    setPendingInvites((invites as GoalInvite[]) || []);
   };
 
   const handleCopy = async (token: string) => {
@@ -111,10 +123,21 @@ export default function InviteGoalMembersModal({ isOpen, goal, onClose, onInvite
           <div className="flex gap-2">
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className={inputClass} placeholder="friend@example.com" />
             <button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-2.5 px-4 rounded-lg transition-all hover:shadow-lg hover:shadow-blue-600/20 shrink-0">
-              {loading ? "..." : "Invite"}
+              {loading ? "Sending..." : "Send invite"}
             </button>
           </div>
-          <p className="text-xs text-gray-400">This opens your email app with a pre-filled invite — just hit send.</p>
+          {notice ? (
+            <div className={`flex items-start gap-2 text-xs rounded-lg px-3 py-2 ${
+              notice.kind === "success" ? "bg-green-50 text-green-700 border border-green-100" :
+              notice.kind === "warn" ? "bg-amber-50 text-amber-700 border border-amber-100" :
+              "bg-red-50 text-red-700 border border-red-100"
+            }`}>
+              {notice.kind === "success" ? <CheckCircle size={13} className="mt-0.5 shrink-0" /> : <AlertCircle size={13} className="mt-0.5 shrink-0" />}
+              <span>{notice.text}</span>
+            </div>
+          ) : (
+            <p className="text-xs text-gray-400">We&apos;ll email them a link from NetWorth. Replies go to your inbox ({user?.email}).</p>
+          )}
         </form>
 
         {/* Pending invites */}
