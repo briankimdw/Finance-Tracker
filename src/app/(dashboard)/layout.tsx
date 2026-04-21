@@ -23,7 +23,7 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="lg:ml-64 pt-14 lg:pt-0 pb-24 lg:pb-0 min-h-screen overflow-x-hidden">
+      <main className="lg:ml-64 pt-16 lg:pt-0 pb-24 lg:pb-0 min-h-screen overflow-x-hidden">
         {!user && (
           <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center text-sm text-amber-700">
             Demo mode — connect Supabase and sign in to save your data

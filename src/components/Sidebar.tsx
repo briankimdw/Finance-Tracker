@@ -48,14 +48,31 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Minimal mobile header (brand only — nav is at bottom) */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-200/60 px-4 py-3 flex items-center justify-center">
+      {/* Mobile header — brand centered, avatar button on the right → /profile */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-200/60 px-4 py-2.5 flex items-center justify-between">
+        <div className="w-10" />  {/* spacer to balance the avatar */}
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 bg-blue-600 rounded-md flex items-center justify-center">
             <TrendingUp size={14} className="text-white" />
           </div>
           <span className="font-semibold text-gray-900 text-sm">NetWorth</span>
         </div>
+        {user ? (
+          <Link href="/profile" className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 ring-2 ring-transparent hover:ring-blue-200 transition-all relative" title="Your profile">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover border border-gray-200" />
+            ) : (
+              <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+                style={{ background: avatarColor }}>{avatarInitial}</div>
+            )}
+            {!profile?.username && (
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-400 rounded-full ring-2 ring-white" title="Set up your profile" />
+            )}
+          </Link>
+        ) : (
+          <Link href="/login" className="text-xs font-medium text-blue-600 hover:text-blue-700 px-2">Sign in</Link>
+        )}
       </div>
 
       <aside className="hidden lg:flex fixed top-0 left-0 z-40 h-full w-64 bg-gray-50/80 border-r border-gray-200/60 flex-col">
@@ -96,18 +113,23 @@ export default function Sidebar() {
         <div className="p-3 border-t border-gray-200/60">
           {user ? (
             <>
-              <Link href="/profile" className="flex items-center gap-2.5 px-2 py-2 mb-1 rounded-lg hover:bg-white/60 transition-colors">
+              <Link href="/profile" className="group flex items-center gap-2.5 p-2 mb-1 rounded-lg bg-white border border-gray-200 hover:border-blue-200 hover:shadow-sm transition-all relative">
                 {avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover border border-gray-200 shrink-0" />
+                  <img src={avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0" />
                 ) : (
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white font-semibold text-xs"
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-white font-semibold text-xs"
                     style={{ background: avatarColor }}>{avatarInitial}</div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-gray-700 truncate">{profile?.display_name || user.email?.split("@")[0]}</p>
-                  {profile?.username && <p className="text-[10px] text-gray-400 truncate">@{profile.username}</p>}
+                  <p className="text-xs font-semibold text-gray-900 truncate">{profile?.display_name || user.email?.split("@")[0]}</p>
+                  <p className="text-[10px] text-gray-400 truncate group-hover:text-blue-600 transition-colors">
+                    {profile?.username ? `@${profile.username} · Edit profile →` : "Tap to set up your profile →"}
+                  </p>
                 </div>
+                {!profile?.username && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-400 rounded-full ring-2 ring-white" />
+                )}
               </Link>
               <button onClick={signOut}
                 className="flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium text-gray-400 hover:text-red-600 hover:bg-red-50 w-full transition-all">
