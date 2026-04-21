@@ -6,7 +6,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, CreditCard, WalletCards, Wallet, MoreHorizontal,
-  Package, History, Coins, CalendarDays, Target, HandCoins, PieChart, X,
+  Package, History, Coins, CalendarDays, Target, HandCoins, PieChart, Plane, X,
   LogOut, LogIn, User, TrendingUp,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -22,6 +22,7 @@ const moreItems = [
   { href: "/income", label: "Income", icon: Wallet, color: "text-green-600 bg-green-50" },
   { href: "/debts", label: "Debts", icon: HandCoins, color: "text-amber-600 bg-amber-50" },
   { href: "/goals", label: "Goals", icon: Target, color: "text-blue-600 bg-blue-50" },
+  { href: "/trips", label: "Trips", icon: Plane, color: "text-sky-600 bg-sky-50" },
   { href: "/inventory", label: "Inventory", icon: Package, color: "text-orange-600 bg-orange-50" },
   { href: "/sales", label: "Sales", icon: History, color: "text-purple-600 bg-purple-50" },
   { href: "/metals", label: "Metals", icon: Coins, color: "text-yellow-600 bg-yellow-50" },

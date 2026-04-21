@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
-  LayoutDashboard, Package, History, CalendarDays, Wallet, CreditCard, Coins, WalletCards, Target, HandCoins, PieChart,
+  LayoutDashboard, Package, History, CalendarDays, Wallet, CreditCard, Coins, WalletCards, Target, HandCoins, PieChart, Plane,
   LogOut, LogIn, TrendingUp, User,
 } from "lucide-react";
 
@@ -26,6 +26,7 @@ const navItems: NavItem[] = [
   { href: "/sales", label: "Sales History", icon: History },
   { href: "/metals", label: "Metals", icon: Coins },
   { href: "/goals", label: "Goals", icon: Target },
+  { href: "/trips", label: "Trips", icon: Plane },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
 ];
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   Plus, DollarSign, TrendingUp, Package, Percent,
   Briefcase, Zap, BarChart3, Wallet, ArrowUpRight, CreditCard, Scale, Coins,
-  Calendar, PiggyBank, Banknote, Target, ArrowLeftRight,
+  Calendar, PiggyBank, Banknote, Target, ArrowLeftRight, Plane, MapPin, ArrowRight,
 } from "lucide-react";
 import AddItemModal from "@/components/AddItemModal";
 import AddIncomeModal from "@/components/AddIncomeModal";
@@ -28,6 +28,8 @@ import { useCreditCards } from "@/hooks/useCreditCards";
 import { useDebts } from "@/hooks/useDebts";
 import { useGoals } from "@/hooks/useGoals";
 import { getGoalIcon } from "@/lib/goalIcons";
+import { useTrips } from "@/hooks/useTrips";
+import { getTripIcon } from "@/lib/tripIcons";
 import { useChartData } from "@/hooks/useChartData";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
@@ -120,6 +122,7 @@ export default function DashboardPage() {
   const { cards: creditCards, refetch: refetchCards } = useCreditCards();
   const { totalIOwe, totalTheyOwe, refetch: refetchDebts } = useDebts();
   const { goals, addContribution, refetch: refetchGoals } = useGoals();
+  const { trips, refetch: refetchTrips } = useTrips();
   const { monthlyData, categoryData, refetch: refetchCharts } = useChartData();
 
   const [showAddItem, setShowAddItem] = useState(false);
@@ -150,7 +153,7 @@ export default function DashboardPage() {
   const [showTransfer, setShowTransfer] = useState<string | null>(null); // account id as default from
   const [contribGoalId, setContribGoalId] = useState<string | null>(null);
 
-  const handleRefresh = () => { refetchStats(); refetchItems(); refetchIncome(); refetchIncomeList(); refetchExpenses(); refetchMonthlyExpenses(); refetchMonthlyIncome(); refetchMetals(); refetchMetalProfit(); refetchCash(); refetchCards(); refetchDebts(); refetchGoals(); fetchHeatMap(); refetchCharts(); };
+  const handleRefresh = () => { refetchStats(); refetchItems(); refetchIncome(); refetchIncomeList(); refetchExpenses(); refetchMonthlyExpenses(); refetchMonthlyIncome(); refetchMetals(); refetchMetalProfit(); refetchCash(); refetchCards(); refetchDebts(); refetchGoals(); refetchTrips(); fetchHeatMap(); refetchCharts(); };
   const handleQuickAdd = async (saved: Parameters<typeof quickAdd>[0]) => { await quickAdd(saved); handleRefresh(); };
 
   const monthlyIncome = monthlyMain + monthlySide;
@@ -394,6 +397,49 @@ export default function DashboardPage() {
                     <Plus size={12} className="inline -ml-0.5" />
                   </button>
                 </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Upcoming trips */}
+      {trips.filter((t) => t.status !== "completed" && t.status !== "cancelled").length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Plane size={16} className="text-gray-400" />
+              <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Upcoming Trips</h2>
+            </div>
+            <Link href="/trips" className="text-xs text-blue-600 hover:text-blue-700 font-medium">View all →</Link>
+          </div>
+          <div className="space-y-3">
+            {trips.filter((t) => t.status !== "completed" && t.status !== "cancelled").slice(0, 3).map((t) => {
+              const Icon = getTripIcon(t.icon);
+              const progress = t.progress;
+              return (
+                <Link href={`/trips/${t.id}`} key={t.id} className="group flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105" style={{ background: `${t.color}15`, color: t.color }}>
+                    <Icon size={16} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between mb-1">
+                      <div className="min-w-0 flex items-center gap-2">
+                        <p className="text-sm font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">{t.name}</p>
+                        {t.destination && <span className="text-[11px] text-gray-400 flex items-center gap-0.5 shrink-0"><MapPin size={9} /> {t.destination}</span>}
+                      </div>
+                      <span className="text-xs font-medium tabular-nums shrink-0 ml-2" style={{ color: t.color }}>{progress.toFixed(0)}%</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full transition-all rounded-full" style={{ width: `${Math.min(100, progress)}%`, background: t.overBudget ? "#ef4444" : t.color }} />
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1 tabular-nums">
+                      ${t.totalActual.toFixed(2)} spent of ${Number(t.total_budget).toFixed(2)}
+                      {t.plannedUpcoming > 0 && <span> · ${t.plannedUpcoming.toFixed(2)} planned</span>}
+                    </p>
+                  </div>
+                  <ArrowRight size={14} className="text-gray-300 group-hover:text-gray-500 shrink-0 transition-colors" />
+                </Link>
               );
             })}
           </div>

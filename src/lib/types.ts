@@ -250,6 +250,60 @@ export interface GoalWithStats extends Goal {
   myRole: "owner" | "member" | null;
 }
 
+// ---- Trips (travel planning with itinerary budgets) ----
+
+export type TripStatus = "planning" | "active" | "completed" | "cancelled";
+export type TripItemCategory = "lodging" | "transport" | "food" | "activity" | "shopping" | "other";
+export type TripItemStatus = "planned" | "done" | "skipped";
+
+export interface Trip {
+  id: string;
+  user_id: string | null;
+  name: string;
+  destination: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  total_budget: number;
+  color: string;
+  icon: string;
+  image_url: string | null;
+  notes: string | null;
+  status: TripStatus;
+  display_order: number;
+  created_at: string;
+}
+
+export interface TripItem {
+  id: string;
+  trip_id: string;
+  user_id: string | null;
+  name: string;
+  category: TripItemCategory;
+  planned_amount: number;
+  actual_amount: number;
+  item_date: string | null;
+  status: TripItemStatus;
+  notes: string | null;
+  url: string | null;
+  display_order: number;
+  created_at: string;
+}
+
+export interface TripWithStats extends Trip {
+  items: TripItem[];
+  // totals computed over items
+  totalPlanned: number;    // sum of planned_amount on all items
+  totalActual: number;     // sum of actual_amount for items with status='done'
+  plannedUpcoming: number; // sum of planned_amount for items with status='planned'
+  skippedSavings: number;  // sum of planned_amount for items with status='skipped'
+  remaining: number;       // total_budget - totalActual - plannedUpcoming
+  available: number;       // total_budget - totalActual (what's left of the pool right now)
+  progress: number;        // (totalActual / total_budget) * 100
+  overBudget: boolean;     // totalActual + plannedUpcoming > total_budget
+  daysUntilStart: number | null;
+  daysUntilEnd: number | null;
+}
+
 // ---- Debts / IOUs ----
 
 export type DebtDirection = "i_owe" | "they_owe";
