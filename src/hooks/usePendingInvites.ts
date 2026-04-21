@@ -34,23 +34,86 @@ export function usePendingInvites() {
     }
     setLoading(true);
 
-    const [tripsRes, goalsRes] = await Promise.all([
+    const email = (user.email || "").toLowerCase();
+
+    // Pull invites two ways:
+    //  - friend-based: target_user_id = me
+    //  - email-based: email matches (case-insensitive) AND target_user_id is null
+    // Then dedupe by invite.id.
+    const [tripsByUser, tripsByEmail, goalsByUser, goalsByEmail] = await Promise.all([
       supabase
         .from("trip_invites")
         .select("*")
         .eq("target_user_id", user.id)
         .is("accepted_at", null)
         .order("created_at", { ascending: false }),
+      email
+        ? supabase
+            .from("trip_invites")
+            .select("*")
+            .ilike("email", email)
+            .is("target_user_id", null)
+            .is("accepted_at", null)
+            .order("created_at", { ascending: false })
+        : Promise.resolve({ data: [] }),
       supabase
         .from("goal_invites")
         .select("*")
         .eq("target_user_id", user.id)
         .is("accepted_at", null)
         .order("created_at", { ascending: false }),
+      email
+        ? supabase
+            .from("goal_invites")
+            .select("*")
+            .ilike("email", email)
+            .is("target_user_id", null)
+            .is("accepted_at", null)
+            .order("created_at", { ascending: false })
+        : Promise.resolve({ data: [] }),
     ]);
 
-    const tripInvites = (tripsRes.data as TripInvite[]) || [];
-    const goalInvites = (goalsRes.data as GoalInvite[]) || [];
+    // Dedupe + drop any trips where the user is already a member
+    const seenTripInvite = new Set<string>();
+    const tripInvitesRaw = [
+      ...((tripsByUser.data as TripInvite[]) || []),
+      ...((tripsByEmail.data as TripInvite[]) || []),
+    ].filter((i) => {
+      if (seenTripInvite.has(i.id)) return false;
+      seenTripInvite.add(i.id);
+      return true;
+    });
+    const seenGoalInvite = new Set<string>();
+    const goalInvitesRaw = [
+      ...((goalsByUser.data as GoalInvite[]) || []),
+      ...((goalsByEmail.data as GoalInvite[]) || []),
+    ].filter((i) => {
+      if (seenGoalInvite.has(i.id)) return false;
+      seenGoalInvite.add(i.id);
+      return true;
+    });
+
+    // Drop ones where user is already a member (auto-cleanup)
+    const [existingTripMems, existingGoalMems] = await Promise.all([
+      tripInvitesRaw.length > 0
+        ? supabase
+            .from("trip_members")
+            .select("trip_id")
+            .eq("user_id", user.id)
+            .in("trip_id", tripInvitesRaw.map((i) => i.trip_id))
+        : Promise.resolve({ data: [] }),
+      goalInvitesRaw.length > 0
+        ? supabase
+            .from("goal_members")
+            .select("goal_id")
+            .eq("user_id", user.id)
+            .in("goal_id", goalInvitesRaw.map((i) => i.goal_id))
+        : Promise.resolve({ data: [] }),
+    ]);
+    const alreadyInTrip = new Set(((existingTripMems.data as { trip_id: string }[]) || []).map((r) => r.trip_id));
+    const alreadyInGoal = new Set(((existingGoalMems.data as { goal_id: string }[]) || []).map((r) => r.goal_id));
+    const tripInvites = tripInvitesRaw.filter((i) => !alreadyInTrip.has(i.trip_id));
+    const goalInvites = goalInvitesRaw.filter((i) => !alreadyInGoal.has(i.goal_id));
 
     const tripIds = Array.from(new Set(tripInvites.map((i) => i.trip_id)));
     const goalIds = Array.from(new Set(goalInvites.map((i) => i.goal_id)));
