@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import FilterBar, { type Filters } from "@/components/FilterBar";
@@ -19,10 +19,10 @@ export default function SalesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="min-w-0">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Sales History</h1>
-        <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5">
-          {filtered.length} sales &middot; ${totalRevenue.toFixed(2)} revenue &middot;{" "}
+        <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5 break-words">
+          {filtered.length} sales · ${totalRevenue.toFixed(2)} revenue ·{" "}
           <span className={totalProfit >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}>{totalProfit >= 0 ? "+" : ""}${totalProfit.toFixed(2)} profit</span>
         </p>
       </div>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { User, Bed, Plane, Utensils, MapPin, ShoppingBag, Package, Users } from "lucide-react";

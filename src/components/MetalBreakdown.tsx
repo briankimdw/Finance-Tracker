@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { METALS, METAL_KEYS } from "@/lib/metals";

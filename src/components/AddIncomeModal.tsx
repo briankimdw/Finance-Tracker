@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { X, Pin, Wallet, Banknote } from "lucide-react";
@@ -135,7 +135,7 @@ export default function AddIncomeModal({ isOpen, onClose, onAdded, onSavePin }: 
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{acc.name}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500 capitalize">{acc.type} &middot; ${Number(acc.balance).toFixed(2)}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 capitalize">{acc.type} · ${Number(acc.balance).toFixed(2)}</p>
                       </div>
                       {isSelected && (
                         <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center shrink-0">

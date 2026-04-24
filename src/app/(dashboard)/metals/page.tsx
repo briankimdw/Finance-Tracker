@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -39,17 +39,17 @@ export default function MetalsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Metals Portfolio</h1>
-          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5">Track your precious metals holdings</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5 break-words">Track your precious metals holdings</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0 self-start sm:self-auto">
           <Link href="/metals/history" className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 font-medium py-2 px-4 rounded-lg flex items-center gap-2">
-            <History size={16} /><span className="hidden sm:inline">History</span>
+            <History size={16} /><span>History</span>
           </Link>
           <button onClick={() => setShowAddModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition-all hover:shadow-lg hover:shadow-blue-600/20">
-            <Plus size={16} /><span className="hidden sm:inline">Add Holding</span>
+            <Plus size={16} /><span>Add Holding</span>
           </button>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/client";
+﻿import { createClient } from "@/lib/supabase/client";
 
 /**
  * Adjusts the balance of a specific cash account by ID.

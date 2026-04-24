@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef } from "react";
 import { Plus, Pencil, Trash2, CreditCard as CardIcon, ArrowUpRight, ArrowDownRight, GripVertical, Wallet, PiggyBank, Banknote, Coins, Calendar, ArrowLeftRight } from "lucide-react";
@@ -118,10 +118,10 @@ export default function CardsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Accounts & Cards</h1>
-          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5">Track your cash, checking, and credit cards</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5 break-words">Track your cash, checking, and credit cards</p>
         </div>
       </div>
 
@@ -211,7 +211,7 @@ export default function CardsPage() {
               >
                 <Banknote size={20} />
                 <span className="text-xs font-medium">Add Cash on Hand</span>
-                <span className="text-[10px] text-gray-300 dark:text-gray-600 group-hover:text-blue-400">Track physical cash</span>
+                <span className="text-[11px] text-gray-300 dark:text-gray-600 group-hover:text-blue-400">Track physical cash</span>
               </button>
             )}
             {accounts.map((acc, i) => {
@@ -239,7 +239,7 @@ export default function CardsPage() {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-900 dark:text-gray-100 leading-tight">{acc.name}</p>
-                          <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{acc.type}</p>
+                          <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{acc.type}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -258,7 +258,7 @@ export default function CardsPage() {
                           <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div className="h-full" style={{ width: `${pct}%`, background: acc.color }} />
                           </div>
-                          <div className="flex items-center justify-between text-[10px] font-medium tabular-nums mt-1">
+                          <div className="flex items-center justify-between text-[11px] font-medium tabular-nums mt-1">
                             <span className="text-gray-500 dark:text-gray-400" title="Reserved for active goals">${reserved.toFixed(2)} reserved</span>
                             <span className={free >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}>${free.toFixed(2)} free</span>
                           </div>

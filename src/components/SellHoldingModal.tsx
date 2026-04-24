@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { X } from "lucide-react";
@@ -79,7 +79,7 @@ export default function SellHoldingModal({ isOpen, holding, onClose, onSold }: S
               <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">{holding.type}</span>
             </div>
             <p className="text-gray-900 dark:text-gray-100 font-medium">{holding.description || `${qty} oz ${meta.name}`}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{qty} oz @ ${Number(holding.cost_per_oz).toFixed(2)}/oz &middot; Cost: ${cost.toFixed(2)}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{qty} oz @ ${Number(holding.cost_per_oz).toFixed(2)}/oz · Cost: ${cost.toFixed(2)}</p>
           </div>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-5">

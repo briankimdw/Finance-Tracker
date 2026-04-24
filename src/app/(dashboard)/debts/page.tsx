@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import {
@@ -128,7 +128,7 @@ function PayDebtModal({ isOpen, debt, onClose, onPay }: {
               <div className="w-2 h-2 rounded-full" style={{ background: debt.color }} />
               <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{debt.person}</p>
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{debt.description || "No description"} &middot; ${debt.remaining.toFixed(2)} remaining</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{debt.description || "No description"} · ${debt.remaining.toFixed(2)} remaining</p>
             <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
               <div className="h-full transition-all rounded-full" style={{ width: `${debt.progress}%`, background: debt.color }} />
             </div>
@@ -250,13 +250,13 @@ export default function DebtsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Debts & IOUs</h1>
-          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5">{activeDebts.length} active</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5 break-words">{activeDebts.length} active</p>
         </div>
-        <button onClick={() => { setEditDebt(null); setShowAddModal(true); }} className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition-all hover:shadow-lg hover:shadow-blue-600/20">
-          <Plus size={16} /> Add Debt
+        <button onClick={() => { setEditDebt(null); setShowAddModal(true); }} className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-blue-600/20 shrink-0 self-start sm:self-auto">
+          <Plus size={16} /> <span>Add Debt</span>
         </button>
       </div>
 
@@ -331,7 +331,7 @@ export default function DebtsPage() {
                     <div className="w-2 h-8 rounded-sm" style={{ background: d.color }} />
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{d.person}</p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500">{d.direction === "i_owe" ? "I owed" : "They owed"} ${Number(d.original_amount).toFixed(2)} &middot; Settled {d.settled_date ? new Date(d.settled_date).toLocaleDateString() : ""}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">{d.direction === "i_owe" ? "I owed" : "They owed"} ${Number(d.original_amount).toFixed(2)} · Settled {d.settled_date ? new Date(d.settled_date).toLocaleDateString() : ""}</p>
                     </div>
                     <button onClick={(e) => { e.stopPropagation(); updateDebt(d.id, { settled: false, settled_date: null }); }} className="text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 px-2 py-1 rounded-md font-medium">Reopen</button>
                     <button onClick={(e) => { e.stopPropagation(); handleDeleteSettled(d); }} className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1.5"><Trash2 size={14} /></button>

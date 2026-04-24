@@ -286,7 +286,7 @@ export default function TripDetailPage() {
             </Link>
             <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: trip.color }} />
             <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate flex-1">{trip.name}</span>
-            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold shrink-0 ${
               trip.status === "active" ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300" :
               trip.status === "planning" ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300" :
               trip.status === "cancelled" ? "bg-gray-200 text-gray-600 dark:text-gray-400" : "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300"
@@ -309,26 +309,26 @@ export default function TripDetailPage() {
             <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_20%_30%,white,transparent_60%)]" />
           </div>
         )}
-        <div className="p-5">
-          <div className="flex items-start gap-4">
+        <div className="p-4 sm:p-5">
+          <div className="flex items-start gap-3 sm:gap-4 flex-wrap sm:flex-nowrap">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 -mt-10 shadow-lg border-4 border-white" style={{ background: trip.color, color: "white" }}>
               <Icon size={24} />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 truncate">{trip.name}</h1>
-                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold ${
                   trip.status === "active" ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300" :
                   trip.status === "planning" ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300" :
                   trip.status === "cancelled" ? "bg-gray-200 text-gray-600 dark:text-gray-400" : "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300"
                 }`}>{trip.status.toUpperCase()}</span>
                 {trip.is_shared && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300">
                     <Users size={10} /> SHARED · {trip.members.length}
                   </span>
                 )}
                 {linkedGoal && (
-                  <Link href="/goals" className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 hover:bg-blue-200" title={`Linked to goal: ${linkedGoal.name}`}>
+                  <Link href="/goals" className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 hover:bg-blue-200" title={`Linked to goal: ${linkedGoal.name}`}>
                     <Target size={10} /> {linkedGoal.name}
                   </Link>
                 )}
@@ -373,7 +373,7 @@ export default function TripDetailPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-1 shrink-0 flex-wrap">
               {trip.isOwner && !trip.is_shared && (
                 <button onClick={() => { updateTrip(trip.id, { is_shared: true }); setShowInviteModal(true); }}
                   className="text-xs bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 text-purple-700 dark:text-purple-300 px-2.5 py-1.5 rounded-md font-medium flex items-center gap-1"><UserPlus size={12} /> Invite</button>
@@ -576,11 +576,11 @@ function BudgetCard({ label, value, color, Icon, subtitle }: { label: string; va
   return (
     <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-3 shadow-sm">
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{label}</p>
+        <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{label}</p>
         {Icon && <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: `${color}15`, color }}><Icon size={11} /></div>}
       </div>
       <p className="text-lg font-bold text-gray-900 dark:text-gray-100 tabular-nums mt-0.5">${value.toFixed(2)}</p>
-      {subtitle && <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{subtitle}</p>}
+      {subtitle && <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{subtitle}</p>}
     </div>
   );
 }
@@ -696,8 +696,8 @@ function TripItemCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <p className={`text-sm font-semibold ${item.status === "skipped" ? "line-through text-gray-400 dark:text-gray-500" : "text-gray-900 dark:text-gray-100"}`}>{item.name}</p>
-              {item.status === "done" && <span className="text-[10px] font-bold bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded">DONE</span>}
-              {item.status === "skipped" && <span className="text-[10px] font-bold bg-gray-200 text-gray-600 dark:text-gray-400 px-1.5 py-0.5 rounded">SKIPPED</span>}
+              {item.status === "done" && <span className="text-[11px] font-bold bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded">DONE</span>}
+              {item.status === "skipped" && <span className="text-[11px] font-bold bg-gray-200 text-gray-600 dark:text-gray-400 px-1.5 py-0.5 rounded">SKIPPED</span>}
               {item.url && (
                 <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-gray-300 dark:text-gray-600 hover:text-blue-600 dark:hover:text-blue-400" title="Open link" onClick={(e) => e.stopPropagation()}><ExternalLink size={12} /></a>
               )}
@@ -723,7 +723,7 @@ function TripItemCard({
               <>
                 <p className="text-sm font-bold text-gray-900 dark:text-gray-100 tabular-nums">${actual.toFixed(2)}</p>
                 {diff !== 0 && (
-                  <p className={`text-[10px] tabular-nums ${diff > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
+                  <p className={`text-[11px] tabular-nums ${diff > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
                     {diff > 0 ? `+$${diff.toFixed(2)} over` : `−$${Math.abs(diff).toFixed(2)} saved`}
                   </p>
                 )}

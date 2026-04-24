@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
@@ -21,13 +21,13 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Inventory</h1>
-          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5">{filtered.length} items &middot; ${totalValue.toFixed(2)} invested</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5 break-words">{filtered.length} items · ${totalValue.toFixed(2)} invested</p>
         </div>
-        <button onClick={() => setShowAddModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition-colors">
-          <Plus size={18} /> Add Item
+        <button onClick={() => setShowAddModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors shrink-0 self-start sm:self-auto">
+          <Plus size={18} /> <span>Add Item</span>
         </button>
       </div>
 

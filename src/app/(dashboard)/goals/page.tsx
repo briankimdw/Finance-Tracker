@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef } from "react";
 import Link from "next/link";
@@ -139,13 +139,13 @@ export default function GoalsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Goals & Wishlist</h1>
-          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5">{activeGoals.length} active &middot; ${totalSaved.toFixed(2)} saved of ${totalTarget.toFixed(2)}</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5 break-words">{activeGoals.length} active · ${totalSaved.toFixed(2)} saved of ${totalTarget.toFixed(2)}</p>
         </div>
-        <button onClick={() => { setEditGoal(null); setShowAddModal(true); }} className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition-all hover:shadow-lg hover:shadow-blue-600/20">
-          <Plus size={16} /> New Goal
+        <button onClick={() => { setEditGoal(null); setShowAddModal(true); }} className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-blue-600/20 shrink-0 self-start sm:self-auto">
+          <Plus size={16} /> <span>New Goal</span>
         </button>
       </div>
 
@@ -276,20 +276,20 @@ export default function GoalsPage() {
                                   </a>
                                 )}
                                 {g.is_shared && (
-                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300">
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300">
                                     <Users size={10} /> SHARED · {g.members.length}
                                   </span>
                                 )}
                                 {(() => {
                                   const relatedTrip = trips.find((t) => t.goal_id === g.id);
                                   return relatedTrip ? (
-                                    <Link href={`/trips/${relatedTrip.id}`} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 hover:bg-sky-200" title={relatedTrip.name}>
+                                    <Link href={`/trips/${relatedTrip.id}`} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 hover:bg-sky-200" title={relatedTrip.name}>
                                       <Plane size={10} /> TRIP · ${relatedTrip.totalActual.toFixed(0)}/${Number(relatedTrip.total_budget).toFixed(0)}
                                     </Link>
                                   ) : null;
                                 })()}
                                 {isComplete && (
-                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300">
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300">
                                     <Trophy size={10} /> COMPLETE
                                   </span>
                                 )}
@@ -324,7 +324,7 @@ export default function GoalsPage() {
                                   {g.isOwner && (
                                     <button
                                       onClick={(e) => { e.stopPropagation(); setInviteGoal(g); }}
-                                      className="text-[10px] font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-0.5 ml-1"
+                                      className="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-0.5 ml-1"
                                     >
                                       <UserPlus size={10} /> Invite
                                     </button>

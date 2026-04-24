@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Search, X } from "lucide-react";
 import type { ItemCategory } from "@/lib/types";

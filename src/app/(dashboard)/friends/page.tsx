@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -130,9 +130,9 @@ export default function FriendsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="min-w-0">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Friends</h1>
-        <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5">Add friends to invite them to shared trips &amp; goals without sharing email addresses.</p>
+        <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5 break-words">Add friends to invite them to shared trips &amp; goals without sharing email addresses.</p>
       </div>
 
       {/* Compact profile summary (full customization on /profile) */}
@@ -212,7 +212,7 @@ export default function FriendsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300">
                         <Plane size={10} /> TRIP
                       </span>
                       <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{trip.name}</p>
@@ -242,7 +242,7 @@ export default function FriendsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">
                         <Target size={10} /> GOAL
                       </span>
                       <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{goal.name}</p>

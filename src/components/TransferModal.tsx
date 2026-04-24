@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { X, Wallet, Banknote, PiggyBank, Coins, ArrowRight, ArrowLeftRight } from "lucide-react";

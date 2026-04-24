@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { DollarSign, TrendingUp, Percent, Wallet } from "lucide-react";
 import type { PortfolioStats } from "@/lib/types";

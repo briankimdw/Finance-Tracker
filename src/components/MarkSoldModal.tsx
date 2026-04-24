@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { X } from "lucide-react";
@@ -58,7 +58,7 @@ export default function MarkSoldModal({ isOpen, item, onClose, onSold }: MarkSol
           <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3.5">
             <p className="text-gray-900 dark:text-gray-100 font-medium">{item.name}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {Number(item.purchase_price) === 0 ? "Free / Already Owned" : `Purchased for $${item.purchase_price.toFixed(2)}`} &middot; {new Date(item.purchase_date).toLocaleDateString()}
+              {Number(item.purchase_price) === 0 ? "Free / Already Owned" : `Purchased for $${item.purchase_price.toFixed(2)}`} · {new Date(item.purchase_date).toLocaleDateString()}
             </p>
           </div>
         </div>

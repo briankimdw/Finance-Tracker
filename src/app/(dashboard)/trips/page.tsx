@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -86,15 +86,15 @@ export default function TripsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Trips</h1>
-          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5">
+          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5 break-words">
             {activeTrips.length} active · ${totalSpent.toFixed(2)} spent of ${totalBudget.toFixed(2)}
           </p>
         </div>
-        <button onClick={() => { setEditTrip(null); setShowAddModal(true); }} className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition-all hover:shadow-lg hover:shadow-blue-600/20">
-          <Plus size={16} /> New Trip
+        <button onClick={() => { setEditTrip(null); setShowAddModal(true); }} className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-blue-600/20 shrink-0 self-start sm:self-auto">
+          <Plus size={16} /> <span>New Trip</span>
         </button>
       </div>
 
@@ -166,12 +166,12 @@ export default function TripsPage() {
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-600 transition-colors">{t.name}</h3>
                                   {t.is_shared && (
-                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300">
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300">
                                       <Users size={10} /> {t.members.length}
                                     </span>
                                   )}
                                   {linkedGoal && (
-                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300" title={`Linked to goal: ${linkedGoal.name}`}>
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300" title={`Linked to goal: ${linkedGoal.name}`}>
                                       <Target size={10} /> GOAL
                                     </span>
                                   )}
@@ -187,7 +187,7 @@ export default function TripsPage() {
                                   </p>
                                 )}
                               </div>
-                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${
+                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold shrink-0 ${
                                 t.status === "active" ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300" :
                                 t.status === "planning" ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
                               }`}>

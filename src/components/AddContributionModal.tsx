@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, Wallet, PiggyBank, Banknote, Coins } from "lucide-react";
@@ -113,7 +113,7 @@ export default function AddContributionModal({ isOpen, goal, onClose, onSave }: 
                   <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0"><Wallet size={14} className="text-gray-400" /></div>
                   <div className="flex-1">
                     <p>Not from any account</p>
-                    <p className="text-[10px] text-gray-400 font-normal">Just track progress — don&apos;t reserve cash</p>
+                    <p className="text-[11px] text-gray-400 font-normal">Just track progress — don&apos;t reserve cash</p>
                   </div>
                 </button>
                 {accounts.map((a) => {
@@ -129,7 +129,7 @@ export default function AddContributionModal({ isOpen, goal, onClose, onSave }: 
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className={`truncate ${isSelected ? "text-gray-900 dark:text-gray-100" : "text-gray-700 dark:text-gray-300"}`}>{a.name}</p>
-                        <p className="text-[10px] text-gray-400 dark:text-gray-500 font-normal tabular-nums">
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500 font-normal tabular-nums">
                           ${Number(a.balance).toFixed(2)} · <span className={free >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}>${free.toFixed(2)} free</span>
                         </p>
                       </div>

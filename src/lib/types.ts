@@ -1,4 +1,4 @@
-// ---- Profiles & friends ----
+﻿// ---- Profiles & friends ----
 
 export interface Profile {
   id: string;

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -240,17 +240,17 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
-          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5">Your complete financial overview</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5 break-words">Your complete financial overview</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0 self-start sm:self-auto">
           <button onClick={() => setShowAddIncome(true)} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 font-medium py-2 px-4 rounded-lg flex items-center gap-2">
-            <Plus size={16} /><span className="hidden sm:inline">Add Income</span>
+            <Plus size={16} /><span>Add Income</span>
           </button>
           <button onClick={() => setShowAddItem(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 hover:shadow-lg hover:shadow-blue-600/20">
-            <Plus size={16} /><span className="hidden sm:inline">Add Item</span>
+            <Plus size={16} /><span>Add Item</span>
           </button>
         </div>
       </div>
@@ -352,23 +352,23 @@ export default function DashboardPage() {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <div>
-            <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Cash & Banks</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Cash & Banks</p>
             <AnimatedNumber value={totalCash} prefix="$" className="text-sm font-semibold text-green-600 dark:text-green-400" />
           </div>
           <div>
-            <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Metals</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Metals</p>
             <AnimatedNumber value={metalStats.totalValue} prefix="$" className="text-sm font-semibold text-amber-600 dark:text-amber-400" />
           </div>
           <div>
-            <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Inventory</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Inventory</p>
             <AnimatedNumber value={stats.inventoryValue} prefix="$" className="text-sm font-semibold text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Owed to Me</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Owed to Me</p>
             <AnimatedNumber value={totalTheyOwe} prefix="$" className="text-sm font-semibold text-green-600 dark:text-green-400" />
           </div>
           <div>
-            <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Total Debt</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Total Debt</p>
             <AnimatedNumber value={totalCardDebt + totalIOwe} prefix={(totalCardDebt + totalIOwe) > 0.005 ? "-$" : "$"} className="text-sm font-semibold text-red-600 dark:text-red-400" />
           </div>
         </div>
@@ -436,7 +436,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate block">{acc.name}</span>
-                      <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{acc.type}</span>
+                      <span className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{acc.type}</span>
                     </div>
                     {cashAccounts.length >= 2 && (
                       <button
@@ -455,7 +455,7 @@ export default function DashboardPage() {
                       <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden flex">
                         <div className="h-full" style={{ width: `${Number(acc.balance) > 0 ? Math.min(100, (reserved / Number(acc.balance)) * 100) : 0}%`, background: acc.color }} />
                       </div>
-                      <div className="flex items-center justify-between text-[10px] font-medium tabular-nums">
+                      <div className="flex items-center justify-between text-[11px] font-medium tabular-nums">
                         <span className="text-gray-500 dark:text-gray-400" title="Reserved for active goals">${reserved.toFixed(2)} reserved</span>
                         <span className={free >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}>${free.toFixed(2)} free</span>
                       </div>
@@ -474,7 +474,7 @@ export default function DashboardPage() {
                 if (totalReserved <= 0) return null;
                 const totalFree = totalCash - totalReserved;
                 return (
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums mt-0.5">
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 tabular-nums mt-0.5">
                     ${totalReserved.toFixed(2)} reserved · <span className={totalFree >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}>${totalFree.toFixed(2)} free</span>
                   </p>
                 );
@@ -677,7 +677,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-gray-900 dark:text-gray-100 font-medium truncate">{item.name}</p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500">{item.status === "active" ? "In Stock" : "Sold"} &middot; {item.category}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">{item.status === "active" ? "In Stock" : "Sold"} · {item.category}</p>
                     </div>
                     <div className="text-right">
                       {profit !== null ? (
@@ -724,7 +724,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-900 dark:text-gray-100 font-medium truncate">{inc.source}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{inc.type === "main" ? "Main" : "Side"} &middot; {inc.category}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{inc.type === "main" ? "Main" : "Side"} · {inc.category}</p>
                   </div>
                   <div className="text-right">
                     <span className="text-sm font-semibold text-green-600 dark:text-green-400">+${Number(inc.amount).toFixed(2)}</span>

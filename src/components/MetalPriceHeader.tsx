@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { RefreshCw } from "lucide-react";
 import { useMetalPrices } from "@/hooks/useMetalPrices";

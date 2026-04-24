@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Plus, X, Briefcase, Zap } from "lucide-react";
 import type { SavedIncome } from "@/lib/types";

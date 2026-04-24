@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import {
@@ -180,7 +180,7 @@ export default function AddGoalModal({ isOpen, goal, onClose, onSave }: AddGoalM
 
           <div>
             <label className={labelClass}>Icon</label>
-            <div className="grid grid-cols-9 gap-2">
+            <div className="grid grid-cols-6 sm:grid-cols-9 gap-2">
               {ICONS.map(({ name, Icon }) => (
                 <button key={name} type="button" onClick={() => update("icon", name)}
                   className={`aspect-square rounded-lg flex items-center justify-center transition-all ${form.icon === name ? "ring-2 ring-offset-1 ring-gray-400" : "hover:bg-gray-100 dark:hover:bg-gray-800"}`}

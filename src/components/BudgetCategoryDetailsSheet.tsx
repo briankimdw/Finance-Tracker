@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pencil, Trash2, CreditCard, Banknote, ArrowDownRight, ArrowUpRight, Receipt, TrendingUp, TrendingDown } from "lucide-react";
@@ -240,7 +240,7 @@ export default function BudgetCategoryDetailsSheet({
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">{budget.category}</h2>
                 <p className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">
-                  ${monthly.toFixed(2)} / month &middot; {thisMonthName}
+                  ${monthly.toFixed(2)} / month · {thisMonthName}
                 </p>
               </div>
             </div>
@@ -256,7 +256,7 @@ export default function BudgetCategoryDetailsSheet({
                 </p>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 tabular-nums">
-                ${spent.toFixed(2)} of ${monthly.toFixed(2)} budget &middot; {progress.toFixed(0)}%
+                ${spent.toFixed(2)} of ${monthly.toFixed(2)} budget · {progress.toFixed(0)}%
               </p>
               <div className="mt-3 h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div
@@ -368,7 +368,7 @@ export default function BudgetCategoryDetailsSheet({
                                 <Banknote size={10} /> Cash
                               </span>
                             )}
-                            {e.notes ? <span className="truncate">&middot; {e.notes}</span> : null}
+                            {e.notes ? <span className="truncate">· {e.notes}</span> : null}
                           </div>
                         </div>
                         <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-100 shrink-0">

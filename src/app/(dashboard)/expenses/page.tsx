@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { Plus, Trash2, Search, X, Receipt, CreditCard, Pencil, Banknote, ArrowDownRight } from "lucide-react";
@@ -43,13 +43,13 @@ export default function ExpensesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Expenses</h1>
-          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5">{filtered.length} entries &middot; ${totalSpent.toFixed(2)} spent{totalPayments > 0 ? ` &middot; $${totalPayments.toFixed(2)} card payments` : ""}</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5 break-words">{filtered.length} entries · ${totalSpent.toFixed(2)} spent{totalPayments > 0 ? ` · $${totalPayments.toFixed(2)} card payments` : ""}</p>
         </div>
-        <button onClick={() => setShowAddModal(true)} className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition-all hover:shadow-lg hover:shadow-red-600/20">
-          <Plus size={18} /> Add Expense
+        <button onClick={() => setShowAddModal(true)} className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-red-600/20 shrink-0 self-start sm:self-auto">
+          <Plus size={18} /> <span>Add Expense</span>
         </button>
       </div>
 
@@ -136,7 +136,7 @@ export default function ExpensesPage() {
                       <td className="px-4 py-3.5 text-sm">
                         <div className="flex items-center gap-2">
                           {exp.is_card_payment && (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300">
                               <ArrowDownRight size={10} /> PAYMENT
                             </span>
                           )}

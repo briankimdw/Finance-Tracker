@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -55,14 +55,14 @@ export default function BudgetPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="flex items-center justify-between"
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
       >
-        <div>
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Budget</h1>
-          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5">Track spending against monthly limits</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5 break-words">Track spending against monthly limits</p>
         </div>
-        <button onClick={() => { setEditBudget(null); setShowModal(true); }} className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition-all hover:shadow-lg hover:shadow-blue-600/20">
-          <Plus size={16} /> New Budget
+        <button onClick={() => { setEditBudget(null); setShowModal(true); }} className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-blue-600/20 shrink-0 self-start sm:self-auto">
+          <Plus size={16} /> <span>New Budget</span>
         </button>
       </motion.div>
 

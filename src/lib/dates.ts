@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Returns today's date in EST (America/New_York) as YYYY-MM-DD.
  * Using browser's local time fails for users not in EST, and using
  * new Date().toISOString() uses UTC which rolls over at 8pm EST

@@ -1,4 +1,4 @@
-import type { MetalType } from "./types";
+﻿import type { MetalType } from "./types";
 
 export const METALS: Record<
   MetalType,
