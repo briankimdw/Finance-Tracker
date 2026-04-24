@@ -575,3 +575,64 @@ export interface PortfolioStats {
   pnlPercent: number;
   metalBreakdown: Record<MetalType, MetalMetrics>;
 }
+
+// ---- PC Deals (flip evaluator) ----
+
+export type PCPartCategory =
+  | "cpu"
+  | "gpu"
+  | "ram"
+  | "storage"
+  | "motherboard"
+  | "psu"
+  | "case"
+  | "cooler"
+  | "monitor"
+  | "peripheral"
+  | "other";
+
+export type PCDealStatus = "evaluating" | "purchased" | "rejected" | "sold";
+
+export interface PCDealPart {
+  id: string;
+  deal_id: string;
+  category: PCPartCategory;
+  name: string;
+  condition: string | null;
+  estimated_value: number;
+  notes: string | null;
+  display_order: number;
+  created_at: string;
+}
+
+export interface PCDeal {
+  id: string;
+  user_id: string | null;
+  name: string;
+  source: string | null;
+  listing_url: string | null;
+  asking_price: number;
+  seller_notes: string | null;
+  condition: string | null;
+  status: PCDealStatus;
+  purchased_price: number | null;
+  purchased_date: string | null;
+  sold_for: number | null;
+  sold_date: string | null;
+  selling_fees: number;
+  notes: string | null;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type PCDealVerdict = "great" | "good" | "fair" | "skip";
+
+export interface PCDealWithParts extends PCDeal {
+  parts: PCDealPart[];
+  totalPartsValue: number;    // sum of estimated_value
+  potentialProfit: number;    // totalPartsValue - asking_price
+  profitMargin: number;       // 0-100
+  verdict: PCDealVerdict;
+  actualProfit: number | null; // if status=sold: sold_for - purchased_price - selling_fees
+}

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, CreditCard, WalletCards, Wallet, MoreHorizontal,
   Package, History, Coins, CalendarDays, Target, HandCoins, PieChart, Plane, Users, X,
-  LogOut, LogIn, TrendingUp, UserCog,
+  LogOut, LogIn, TrendingUp, UserCog, Cpu,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useFriends } from "@/hooks/useFriends";
@@ -29,6 +29,7 @@ const moreItems = [
   { href: "/trips", label: "Trips", icon: Plane, color: "text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40" },
   { href: "/inventory", label: "Inventory", icon: Package, color: "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40" },
   { href: "/sales", label: "Sales", icon: History, color: "text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40" },
+  { href: "/pc-deals", label: "PC Deals", icon: Cpu, color: "text-emerald-600 bg-emerald-50" },
   { href: "/metals", label: "Metals", icon: Coins, color: "text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/40" },
   { href: "/calendar", label: "Calendar", icon: CalendarDays, color: "text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40" },
   { href: "/profile", label: "Profile", icon: UserCog, color: "text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/40" },

@@ -7,7 +7,7 @@ import { useFriends } from "@/hooks/useFriends";
 import { usePendingInvites } from "@/hooks/usePendingInvites";
 import {
   LayoutDashboard, Package, History, CalendarDays, Wallet, CreditCard, Coins, WalletCards, Target, HandCoins, PieChart, Plane, Users,
-  LogOut, LogIn, TrendingUp, UserCog,
+  LogOut, LogIn, TrendingUp, UserCog, Cpu,
 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { Command } from "lucide-react";
@@ -29,6 +29,7 @@ const navItems: NavItem[] = [
   { href: "/debts", label: "Debts", icon: HandCoins },
   { href: "/inventory", label: "Inventory", icon: Package, divider: true },
   { href: "/sales", label: "Sales History", icon: History },
+  { href: "/pc-deals", label: "PC Deals", icon: Cpu },
   { href: "/metals", label: "Metals", icon: Coins },
   { href: "/goals", label: "Goals", icon: Target },
   { href: "/trips", label: "Trips", icon: Plane },
