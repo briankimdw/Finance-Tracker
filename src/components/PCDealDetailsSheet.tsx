@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ExternalLink, Pencil, Trash2, Search, Plus, Check, X, DollarSign, Calendar,
-  CheckCircle2, XCircle, RotateCcw, TrendingUp, TrendingDown, Cpu,
+  CheckCircle2, XCircle, RotateCcw, TrendingUp, TrendingDown, Cpu, Zap,
 } from "lucide-react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -86,6 +86,43 @@ export default function PCDealDetailsSheet({
   // Inline editing state for a part's estimated value
   const [editingPartId, setEditingPartId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>("");
+
+  // Per-part eBay lookup state
+  const [lookups, setLookups] = useState<Record<string, { status: "idle" | "loading" | "ok" | "error"; median?: number; sampleCount?: number; low?: number; high?: number; error?: string }>>({});
+
+  const lookupPrice = async (partId: string, name: string, applyToValue: boolean) => {
+    const q = name.trim();
+    if (q.length < 3) return;
+    setLookups((prev) => ({ ...prev, [partId]: { status: "loading" } }));
+    try {
+      const res = await fetch("/api/pc-parts/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: q }),
+      });
+      const data = await res.json();
+      if (data.error || data.median === null || data.sampleCount === 0) {
+        setLookups((prev) => ({ ...prev, [partId]: { status: "error", error: data.error || "No listings" } }));
+        return;
+      }
+      setLookups((prev) => ({
+        ...prev,
+        [partId]: {
+          status: "ok",
+          median: Number(data.median),
+          sampleCount: Number(data.sampleCount),
+          low: Number(data.low),
+          high: Number(data.high),
+        },
+      }));
+      if (applyToValue) {
+        await onUpdatePart(partId, { estimated_value: Number(data.median) });
+        toast.success(`${q}: $${Number(data.median).toFixed(2)} (eBay median, ${data.sampleCount} sold)`);
+      }
+    } catch (err) {
+      setLookups((prev) => ({ ...prev, [partId]: { status: "error", error: err instanceof Error ? err.message : "Network error" } }));
+    }
+  };
 
   // Add-part inline draft
   const [adding, setAdding] = useState(false);
@@ -453,12 +490,25 @@ export default function PCDealDetailsSheet({
                         ${Number(p.estimated_value).toFixed(2)}
                       </button>
                     )}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); lookupPrice(p.id, p.name, true); }}
+                      disabled={!p.name.trim() || lookups[p.id]?.status === "loading"}
+                      className="text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 p-1.5 rounded-lg hover:bg-white dark:hover:bg-gray-900 disabled:opacity-30 disabled:hover:text-gray-400"
+                      title="Auto-fill from eBay sold listings"
+                    >
+                      {lookups[p.id]?.status === "loading" ? (
+                        <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25"/><path fill="currentColor" d="M4 12a8 8 0 018-8V2.5a9.5 9.5 0 00-9.5 9.5H4z"/></svg>
+                      ) : (
+                        <Zap size={13} />
+                      )}
+                    </button>
                     <a
                       href={buildEbaySoldUrl(p.name)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-white dark:hover:bg-gray-900"
-                      title="Check eBay sold prices"
+                      title="Open eBay sold listings"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Search size={13} />

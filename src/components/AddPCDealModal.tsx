@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  DollarSign, Link as LinkIcon, Search, Plus, X, ChevronDown, ChevronUp, Store,
+  DollarSign, Link as LinkIcon, Search, Plus, X, ChevronDown, ChevronUp, Store, Zap,
 } from "lucide-react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import type {
@@ -115,6 +115,48 @@ export default function AddPCDealModal({ isOpen, deal, existingParts, onClose, o
   const [parts, setParts] = useState<DraftPart[]>([]);
   const [removedPartIds, setRemovedPartIds] = useState<string[]>([]);
   const [expandedPriceKey, setExpandedPriceKey] = useState<string | null>(null);
+  // per-part lookup state keyed by part _key
+  const [lookups, setLookups] = useState<Record<string, { status: "idle" | "loading" | "ok" | "error"; median?: number; avg?: number; low?: number; high?: number; sampleCount?: number; error?: string }>>({});
+
+  // Fire an eBay sold-listings lookup for a given part and auto-fill estimated_value
+  const lookupPrice = async (key: string, query: string, applyToValue: boolean) => {
+    const q = query.trim();
+    if (q.length < 3) return;
+    setLookups((prev) => ({ ...prev, [key]: { status: "loading" } }));
+    try {
+      const res = await fetch("/api/pc-parts/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: q }),
+      });
+      const data = await res.json();
+      if (data.error || data.median === null || data.sampleCount === 0) {
+        setLookups((prev) => ({ ...prev, [key]: { status: "error", error: data.error || "No listings" } }));
+        return;
+      }
+      setLookups((prev) => ({
+        ...prev,
+        [key]: {
+          status: "ok",
+          median: Number(data.median),
+          avg: Number(data.avg),
+          low: Number(data.low),
+          high: Number(data.high),
+          sampleCount: Number(data.sampleCount),
+        },
+      }));
+      if (applyToValue) {
+        // Only fill if user hasn't already typed a non-zero value
+        const current = parts.find((p) => p._key === key);
+        const existing = parseFloat(current?.estimated_value || "");
+        if (!existing || existing === 0) {
+          updatePart(key, { estimated_value: String(data.median) });
+        }
+      }
+    } catch (err) {
+      setLookups((prev) => ({ ...prev, [key]: { status: "error", error: err instanceof Error ? err.message : "Network error" } }));
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -366,6 +408,12 @@ export default function AddPCDealModal({ isOpen, deal, existingParts, onClose, o
                           type="text"
                           value={p.name}
                           onChange={(e) => updatePart(p._key, { name: e.target.value })}
+                          onBlur={() => {
+                            // Auto-fetch on blur if name set + no lookup yet + no manual value
+                            if (p.name.trim().length >= 3 && !lookups[p._key]) {
+                              lookupPrice(p._key, p.name, true);
+                            }
+                          }}
                           className={inputClass + " !py-2 text-xs"}
                           placeholder={`${meta.label} model / name`}
                         />
@@ -388,9 +436,22 @@ export default function AddPCDealModal({ isOpen, deal, existingParts, onClose, o
                       <div className="col-span-3 sm:col-span-1 flex items-center gap-1 justify-end">
                         <button
                           type="button"
+                          onClick={() => lookupPrice(p._key, p.name, true)}
+                          disabled={!p.name.trim() || lookups[p._key]?.status === "loading"}
+                          title={p.name.trim() ? "Auto-fill from eBay sold listings" : "Type a part name first"}
+                          className="text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 disabled:opacity-30 disabled:hover:text-gray-400 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 relative"
+                        >
+                          {lookups[p._key]?.status === "loading" ? (
+                            <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25"/><path fill="currentColor" d="M4 12a8 8 0 018-8V2.5a9.5 9.5 0 00-9.5 9.5H4z"/></svg>
+                          ) : (
+                            <Zap size={13} />
+                          )}
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => setExpandedPriceKey(expanded ? null : p._key)}
                           disabled={!p.name.trim()}
-                          title={p.name.trim() ? "Check prices" : "Type a part name first"}
+                          title={p.name.trim() ? "Check prices on eBay / Newegg / Amazon" : "Type a part name first"}
                           className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-30 disabled:hover:text-gray-400 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                         >
                           <Search size={13} />
@@ -405,6 +466,30 @@ export default function AddPCDealModal({ isOpen, deal, existingParts, onClose, o
                         </button>
                       </div>
                     </div>
+
+                    {/* Lookup result chip */}
+                    {lookups[p._key]?.status === "ok" && (
+                      <div className="mt-1.5 flex items-center gap-2 text-[11px] text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 rounded-md px-2 py-1">
+                        <Zap size={10} />
+                        <span className="font-medium">eBay median ${lookups[p._key].median?.toFixed(2)}</span>
+                        <span className="text-emerald-600/70 dark:text-emerald-400/70">
+                          · {lookups[p._key].sampleCount} sold · ${lookups[p._key].low?.toFixed(0)}–${lookups[p._key].high?.toFixed(0)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => updatePart(p._key, { estimated_value: String(lookups[p._key].median) })}
+                          className="ml-auto text-emerald-700 dark:text-emerald-300 hover:underline font-medium"
+                          title="Apply median to estimated value"
+                        >
+                          Use
+                        </button>
+                      </div>
+                    )}
+                    {lookups[p._key]?.status === "error" && (
+                      <p className="mt-1.5 text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded-md px-2 py-1">
+                        ⚠ {lookups[p._key].error}
+                      </p>
+                    )}
                     <AnimatePresence initial={false}>
                       {expanded && (
                         <motion.div
