@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-// Cache TTL: 24 hours. eBay prices don't move fast.
+// Cache TTL: 24 hours.
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 export interface PriceSample {
@@ -23,6 +23,13 @@ export interface PriceLookup {
   cached: boolean;
   fetchedAt: string;
   error?: string;
+  // Diagnostic info — visible in client toast when something goes wrong.
+  diagnostics?: {
+    strategiesTried: string[];
+    rawHtmlBytes?: number;
+    chunksFound?: number;
+    blockedBy?: string;
+  };
 }
 
 function normalizeQuery(q: string): string {
@@ -36,8 +43,6 @@ function median(nums: number[]): number {
   return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
 }
 
-// Filter outliers using IQR. Helps when a single listing is way off (e.g. bundled
-// or mislabeled).
 function trimOutliers(nums: number[]): number[] {
   if (nums.length < 4) return nums;
   const sorted = [...nums].sort((a, b) => a - b);
@@ -49,40 +54,52 @@ function trimOutliers(nums: number[]): number[] {
   return sorted.filter((n) => n >= lo && n <= hi);
 }
 
-/**
- * Scrape eBay sold listings for the given query. Returns raw parsed results.
- * This hits the public eBay HTML page — no API key needed — which means the
- * parser is fragile by nature. We're defensive: multiple regex fallbacks,
- * outlier trimming, sanity checks.
- */
-async function scrapeEbaySold(query: string, signal: AbortSignal): Promise<{ samples: PriceSample[]; raw: number[] }> {
-  const url = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&LH_Sold=1&LH_Complete=1&rt=nc&_ipg=60`;
-  const res = await fetch(url, {
-    signal,
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.9",
-      "Accept-Encoding": "gzip, deflate, br",
-      "Cache-Control": "no-cache",
-      "Sec-Fetch-Dest": "document",
-      "Sec-Fetch-Mode": "navigate",
-      "Sec-Fetch-Site": "none",
-      "Upgrade-Insecure-Requests": "1",
-    },
-  });
-  if (!res.ok) {
-    throw new Error(`eBay returned ${res.status}`);
-  }
-  const html = await res.text();
-  console.log(`[pc-parts/lookup] "${query}" — html ${html.length} bytes`);
+const REALISTIC_HEADERS: Record<string, string> = {
+  "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
+  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
+  "Cache-Control": "no-cache",
+  "Sec-Fetch-Dest": "document",
+  "Sec-Fetch-Mode": "navigate",
+  "Sec-Fetch-Site": "none",
+  "Upgrade-Insecure-Requests": "1",
+};
 
-  // Try multiple split patterns. eBay's HTML varies by region/test cohort.
+function buildScraperApiUrl(target: string, key: string): string {
+  // Plain v1 endpoint — keeps it simple. ~10 reqs/sec on free tier.
+  return `https://api.scraperapi.com/?api_key=${encodeURIComponent(key)}&url=${encodeURIComponent(target)}&country_code=us`;
+}
+
+interface FetchOutcome {
+  html: string;
+  bytes: number;
+  blocked: boolean;       // looks like a captcha / blocked page
+  source: string;         // strategy label for diagnostics
+}
+
+async function fetchHtml(url: string, signal: AbortSignal, strategy: string): Promise<FetchOutcome> {
+  const useScraperApi = !!process.env.SCRAPER_API_KEY;
+  const targetUrl = useScraperApi ? buildScraperApiUrl(url, process.env.SCRAPER_API_KEY!) : url;
+
+  const res = await fetch(targetUrl, {
+    signal,
+    headers: useScraperApi ? {} : REALISTIC_HEADERS,
+  });
+  const html = res.ok ? await res.text() : "";
+  const bytes = html.length;
+  // Heuristic: blocked pages tend to be small (<5KB) or contain "captcha" / "Pardon Our Interruption" / "denied"
+  const blocked = !res.ok || bytes < 5000 || /captcha|pardon our interruption|access denied|robot/i.test(html.slice(0, 8000));
+  console.log(`[pc-parts/lookup] ${strategy}: status=${res.status} bytes=${bytes} blocked=${blocked}`);
+  return { html, bytes, blocked, source: useScraperApi ? `${strategy}+scraperapi` : strategy };
+}
+
+function extractPrices(html: string): { samples: PriceSample[]; raw: number[]; chunks: number } {
+  // Try multiple split patterns — eBay's HTML varies by page version.
   const splitPatterns: RegExp[] = [
-    /<li[^>]*class="[^"]*s-item[^"]*s-item__pl-on-bottom[^"]*"[^>]*>/g,
-    /<li[^>]*class="[^"]*s-item__pl-on-bottom[^"]*"[^>]*>/g,
     /<li[^>]*class="[^"]*s-item[^"]*"[^>]*>/g,
-    /<div[^>]*class="[^"]*s-item[^"]*"[^>]*>/g,
+    /<div[^>]*class="[^"]*srp-river-results-listing[^"]*"[^>]*>/g,
+    /<li[^>]*data-viewport[^>]*>/g,
+    /<div[^>]*data-listing-id[^>]*>/g,
   ];
   let chunks: string[] = [];
   for (const pat of splitPatterns) {
@@ -90,31 +107,20 @@ async function scrapeEbaySold(query: string, signal: AbortSignal): Promise<{ sam
     if (split.length > chunks.length) chunks = split;
     if (chunks.length >= 5) break;
   }
-  console.log(`[pc-parts/lookup] "${query}" — ${chunks.length} candidate item chunks`);
 
   const raw: number[] = [];
   const samples: PriceSample[] = [];
 
   for (const chunk of chunks) {
-    // Title — try several known wrappers
     const titleMatch =
       chunk.match(/<span[^>]*role="heading"[^>]*>([^<]+)<\/span>/i) ||
       chunk.match(/<div[^>]*class="[^"]*s-item__title[^"]*"[^>]*>(?:<span[^>]*>)?([^<]+)<\/(?:span|div)>/i) ||
       chunk.match(/<span[^>]*class="[^"]*s-item__title[^"]*"[^>]*>([^<]+)<\/span>/i) ||
       chunk.match(/<h3[^>]*class="[^"]*s-item__title[^"]*"[^>]*>([^<]+)<\/h3>/i) ||
       chunk.match(/data-testid="item-title"[^>]*>([^<]+)</i);
-    const title = titleMatch ? titleMatch[1].replace(/\s+/g, " ").trim() : "";
-    if (!title || /shop on ebay/i.test(title) || /^new listing/i.test(title.trim())) {
-      // skip but allow titles that legitimately start with "New Listing —" by stripping it
-    }
-    const cleanTitle = title.replace(/^new listing\s*/i, "").trim();
+    const cleanTitle = (titleMatch ? titleMatch[1] : "").replace(/\s+/g, " ").replace(/^new listing\s*/i, "").trim();
     if (!cleanTitle || /shop on ebay/i.test(cleanTitle)) continue;
 
-    // Price — handle ranges, "Sold" prefix, and currency wrapping.
-    // Common forms:
-    //   <span class="s-item__price">$320.00</span>
-    //   <span class="POSITIVE">$320.00</span>
-    //   <span class="s-item__price"><span ...>$320.00 to $450.00</span></span>
     const priceMatch =
       chunk.match(/<span[^>]*class="[^"]*s-item__price[^"]*"[^>]*>[\s\S]{0,80}?\$([0-9,]+(?:\.\d{1,2})?)/i) ||
       chunk.match(/data-testid="item-price"[^>]*>[\s\S]{0,80}?\$([0-9,]+(?:\.\d{1,2})?)/i) ||
@@ -123,54 +129,102 @@ async function scrapeEbaySold(query: string, signal: AbortSignal): Promise<{ sam
     const price = parseFloat(priceMatch[1].replace(/,/g, ""));
     if (isNaN(price) || price <= 1 || price > 100_000) continue;
 
-    // URL to the listing
     const urlMatch =
       chunk.match(/<a[^>]*class="[^"]*s-item__link[^"]*"[^>]*href="([^"]+)"/i) ||
       chunk.match(/<a[^>]*href="(https?:\/\/[^"]*\/itm\/[^"]+)"/i);
     const link = urlMatch ? urlMatch[1] : null;
 
-    // Condition chip (optional)
     const condMatch =
       chunk.match(/<span[^>]*class="[^"]*SECONDARY_INFO[^"]*"[^>]*>([^<]+)<\/span>/i) ||
       chunk.match(/data-testid="item-condition"[^>]*>([^<]+)</i);
     const condition = condMatch ? condMatch[1].trim() : null;
 
     raw.push(price);
-    if (samples.length < 8) {
-      samples.push({ title: cleanTitle, price, url: link, condition });
-    }
-
+    if (samples.length < 8) samples.push({ title: cleanTitle, price, url: link, condition });
     if (raw.length >= 30) break;
   }
 
-  console.log(`[pc-parts/lookup] "${query}" — extracted ${raw.length} prices`);
-  return { samples, raw };
+  return { samples, raw, chunks: chunks.length };
+}
+
+interface ScrapeResult {
+  samples: PriceSample[];
+  raw: number[];
+  source: string;
+  diagnostics: { strategiesTried: string[]; rawHtmlBytes: number; chunksFound: number; blockedBy?: string };
+}
+
+async function scrape(query: string, signal: AbortSignal): Promise<ScrapeResult> {
+  const strategiesTried: string[] = [];
+  let lastBytes = 0;
+  let lastChunks = 0;
+  let blockedBy: string | undefined;
+
+  // Strategy chain — we stop on the first non-blocked, prices-found result.
+  const strategies: Array<{ label: string; url: string }> = [
+    {
+      label: "ebay-sold-mobile",
+      url: `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&LH_Sold=1&LH_Complete=1&_ipg=60`,
+    },
+    {
+      label: "ebay-active-mobile",
+      url: `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&_sop=15&_ipg=60`,
+    },
+    {
+      label: "ebay-sold-desktop",
+      url: `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&LH_Sold=1&LH_Complete=1`,
+    },
+  ];
+
+  for (const s of strategies) {
+    strategiesTried.push(s.label);
+    try {
+      const out = await fetchHtml(s.url, signal, s.label);
+      lastBytes = out.bytes;
+      if (out.blocked) {
+        blockedBy = blockedBy ?? s.label;
+        continue;
+      }
+      const parsed = extractPrices(out.html);
+      lastChunks = parsed.chunks;
+      console.log(`[pc-parts/lookup] ${s.label}: chunks=${parsed.chunks} prices=${parsed.raw.length}`);
+      if (parsed.raw.length > 0) {
+        return {
+          samples: parsed.samples,
+          raw: parsed.raw,
+          source: out.source,
+          diagnostics: { strategiesTried, rawHtmlBytes: out.bytes, chunksFound: parsed.chunks },
+        };
+      }
+    } catch (err) {
+      console.error(`[pc-parts/lookup] ${s.label} error:`, err);
+    }
+  }
+
+  return {
+    samples: [],
+    raw: [],
+    source: "none",
+    diagnostics: { strategiesTried, rawHtmlBytes: lastBytes, chunksFound: lastChunks, blockedBy },
+  };
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as { query?: string; forceRefresh?: boolean };
     const rawQuery = (body.query || "").trim();
-    if (!rawQuery) {
-      return NextResponse.json({ error: "query required" }, { status: 400 });
-    }
-    if (rawQuery.length < 3) {
-      return NextResponse.json({ error: "query too short" }, { status: 400 });
-    }
+    if (!rawQuery) return NextResponse.json({ error: "query required" }, { status: 400 });
+    if (rawQuery.length < 3) return NextResponse.json({ error: "query too short" }, { status: 400 });
 
     const key = normalizeQuery(rawQuery);
     const supabase = await createClient();
 
-    // Check cache
     if (!body.forceRefresh) {
       const { data: cached } = await supabase
-        .from("pc_part_price_cache")
-        .select("*")
-        .eq("query_key", key)
-        .maybeSingle();
+        .from("pc_part_price_cache").select("*").eq("query_key", key).maybeSingle();
       if (cached) {
         const age = Date.now() - new Date(cached.fetched_at).getTime();
-        if (age < CACHE_TTL_MS) {
+        if (age < CACHE_TTL_MS && Number(cached.sample_count) > 0) {
           return NextResponse.json({
             query: rawQuery,
             median: cached.median ? Number(cached.median) : null,
@@ -187,68 +241,63 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Fresh scrape (with timeout guard)
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-    let samples: PriceSample[] = [];
-    let raw: number[] = [];
+    const timeout = setTimeout(() => controller.abort(), 12_000);
+    let result: ScrapeResult;
     try {
-      const result = await scrapeEbaySold(key, controller.signal);
-      samples = result.samples;
-      raw = result.raw;
+      result = await scrape(key, controller.signal);
     } finally {
       clearTimeout(timeout);
     }
 
-    if (raw.length === 0) {
+    if (result.raw.length === 0) {
+      const useScraperApi = !!process.env.SCRAPER_API_KEY;
+      const hint = useScraperApi
+        ? "ScraperAPI returned no results. Try a more specific part name."
+        : "eBay is blocking the server (Vercel datacenter IPs). Set SCRAPER_API_KEY in Vercel env vars (free tier at scraperapi.com) to enable proxy fetching.";
       return NextResponse.json({
         query: rawQuery,
         median: null, avg: null, low: null, high: null,
-        sampleCount: 0, samples: [], source: "ebay_sold",
+        sampleCount: 0, samples: [], source: "none",
         cached: false, fetchedAt: new Date().toISOString(),
-        error: "No sold listings found. Try a more specific part name.",
+        error: hint,
+        diagnostics: result.diagnostics,
       } as PriceLookup);
     }
 
-    const trimmed = trimOutliers(raw);
+    const trimmed = trimOutliers(result.raw);
     const med = Math.round(median(trimmed) * 100) / 100;
     const avg = Math.round((trimmed.reduce((s, n) => s + n, 0) / trimmed.length) * 100) / 100;
     const low = Math.round(Math.min(...trimmed) * 100) / 100;
     const high = Math.round(Math.max(...trimmed) * 100) / 100;
 
-    // Write-through cache
-    await supabase.from("pc_part_price_cache").upsert(
-      {
-        query_key: key,
-        median: med, avg, low, high,
-        sample_count: trimmed.length,
-        samples: samples,
-        source: "ebay_sold",
-        fetched_at: new Date().toISOString(),
-      },
-      { onConflict: "query_key" }
-    );
+    await supabase.from("pc_part_price_cache").upsert({
+      query_key: key,
+      median: med, avg, low, high,
+      sample_count: trimmed.length,
+      samples: result.samples,
+      source: result.source,
+      fetched_at: new Date().toISOString(),
+    }, { onConflict: "query_key" });
 
     return NextResponse.json({
       query: rawQuery,
       median: med, avg, low, high,
       sampleCount: trimmed.length,
-      samples,
-      source: "ebay_sold",
+      samples: result.samples,
+      source: result.source,
       cached: false,
       fetchedAt: new Date().toISOString(),
+      diagnostics: result.diagnostics,
     } as PriceLookup);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json(
-      {
-        query: "",
-        median: null, avg: null, low: null, high: null,
-        sampleCount: 0, samples: [], source: "ebay_sold",
-        cached: false, fetchedAt: new Date().toISOString(),
-        error: msg,
-      } as PriceLookup,
-      { status: 500 }
-    );
+    console.error("[pc-parts/lookup] uncaught:", msg);
+    return NextResponse.json({
+      query: "", median: null, avg: null, low: null, high: null,
+      sampleCount: 0, samples: [], source: "error",
+      cached: false, fetchedAt: new Date().toISOString(),
+      error: msg,
+    } as PriceLookup, { status: 500 });
   }
 }

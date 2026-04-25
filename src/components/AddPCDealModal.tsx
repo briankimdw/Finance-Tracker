@@ -140,7 +140,8 @@ export default function AddPCDealModal({ isOpen, deal, existingParts, onClose, o
         return;
       }
       if (data.median === null || data.sampleCount === 0) {
-        setLookups((prev) => ({ ...prev, [key]: { status: "error", error: data.error || "No sold listings found" } }));
+        const diag = data.diagnostics ? ` (tried: ${(data.diagnostics.strategiesTried || []).join(", ")})` : "";
+        setLookups((prev) => ({ ...prev, [key]: { status: "error", error: (data.error || "No listings found") + diag } }));
         return;
       }
       setLookups((prev) => ({
