@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { useRealtimeRefetch } from "@/lib/useRealtimeRefetch";
 import type { Profile } from "@/lib/types";
 
 export function useProfile() {
@@ -17,7 +18,13 @@ export function useProfile() {
       setLoading(false);
       return;
     }
-    setLoading(true);
+    // Only flip loading on the first fetch — silent re-fetches (realtime
+    // updates, optimistic toggles) shouldn't flash a loading state in
+    // every consumer (Sidebar, MobileBottomNav, etc.)
+    setProfile((current) => {
+      if (!current) setLoading(true);
+      return current;
+    });
     const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
     if (error) console.error("[useProfile] fetch error:", error);
     setProfile((data as Profile | null) ?? null);
@@ -27,6 +34,11 @@ export function useProfile() {
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  // Live-update across components: when the profile row changes anywhere
+  // (e.g. nav_preferences toggled on /profile), Sidebar / MobileBottomNav
+  // refetch and re-render without a page refresh.
+  useRealtimeRefetch(["profiles"], fetchProfile);
 
   const setUsername = async (
     username: string
