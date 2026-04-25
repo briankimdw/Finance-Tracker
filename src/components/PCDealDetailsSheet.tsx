@@ -106,8 +106,14 @@ export default function PCDealDetailsSheet({
         body: JSON.stringify({ query: q }),
       });
       const data = await res.json();
-      if (data.error || data.median === null || data.sampleCount === 0) {
-        setLookups((prev) => ({ ...prev, [partId]: { status: "error", error: data.error || "No listings" } }));
+      if (!res.ok) {
+        const reason = data?.error || `eBay lookup failed (${res.status})`;
+        setLookups((prev) => ({ ...prev, [partId]: { status: "error", error: reason } }));
+        toast.error(reason);
+        return;
+      }
+      if (data.median === null || data.sampleCount === 0) {
+        setLookups((prev) => ({ ...prev, [partId]: { status: "error", error: data.error || "No sold listings found" } }));
         return;
       }
       setLookups((prev) => ({
@@ -126,7 +132,9 @@ export default function PCDealDetailsSheet({
         toast.success(`${q}: $${Number(data.median).toFixed(2)} (eBay median, ${data.sampleCount} sold)`);
       }
     } catch (err) {
-      setLookups((prev) => ({ ...prev, [partId]: { status: "error", error: err instanceof Error ? err.message : "Network error" } }));
+      const msg = err instanceof Error ? err.message : "Network error";
+      setLookups((prev) => ({ ...prev, [partId]: { status: "error", error: msg } }));
+      toast.error(`Lookup failed: ${msg}`);
     }
   };
 

@@ -56,57 +56,94 @@ function trimOutliers(nums: number[]): number[] {
  * outlier trimming, sanity checks.
  */
 async function scrapeEbaySold(query: string, signal: AbortSignal): Promise<{ samples: PriceSample[]; raw: number[] }> {
-  const url = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&LH_Sold=1&LH_Complete=1&rt=nc`;
+  const url = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&LH_Sold=1&LH_Complete=1&rt=nc&_ipg=60`;
   const res = await fetch(url, {
     signal,
     headers: {
-      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9",
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       "Accept-Language": "en-US,en;q=0.9",
+      "Accept-Encoding": "gzip, deflate, br",
+      "Cache-Control": "no-cache",
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "none",
+      "Upgrade-Insecure-Requests": "1",
     },
   });
   if (!res.ok) {
     throw new Error(`eBay returned ${res.status}`);
   }
   const html = await res.text();
+  console.log(`[pc-parts/lookup] "${query}" — html ${html.length} bytes`);
 
-  // Extract item blocks. eBay wraps each result in <li class="s-item ...">.
-  // Split into chunks and extract title + price + URL per chunk.
-  const chunks = html.split(/<li[^>]*class="[^"]*s-item[^"]*"[^>]*>/).slice(1);
+  // Try multiple split patterns. eBay's HTML varies by region/test cohort.
+  const splitPatterns: RegExp[] = [
+    /<li[^>]*class="[^"]*s-item[^"]*s-item__pl-on-bottom[^"]*"[^>]*>/g,
+    /<li[^>]*class="[^"]*s-item__pl-on-bottom[^"]*"[^>]*>/g,
+    /<li[^>]*class="[^"]*s-item[^"]*"[^>]*>/g,
+    /<div[^>]*class="[^"]*s-item[^"]*"[^>]*>/g,
+  ];
+  let chunks: string[] = [];
+  for (const pat of splitPatterns) {
+    const split = html.split(pat).slice(1);
+    if (split.length > chunks.length) chunks = split;
+    if (chunks.length >= 5) break;
+  }
+  console.log(`[pc-parts/lookup] "${query}" — ${chunks.length} candidate item chunks`);
+
   const raw: number[] = [];
   const samples: PriceSample[] = [];
 
   for (const chunk of chunks) {
-    // Title: often in s-item__title span
-    const titleMatch = chunk.match(/<div class="[^"]*s-item__title[^"]*"[^>]*>(?:<span[^>]*>)?([^<]+)<\/(?:span|div)>/i) ||
+    // Title — try several known wrappers
+    const titleMatch =
+      chunk.match(/<span[^>]*role="heading"[^>]*>([^<]+)<\/span>/i) ||
+      chunk.match(/<div[^>]*class="[^"]*s-item__title[^"]*"[^>]*>(?:<span[^>]*>)?([^<]+)<\/(?:span|div)>/i) ||
       chunk.match(/<span[^>]*class="[^"]*s-item__title[^"]*"[^>]*>([^<]+)<\/span>/i) ||
-      chunk.match(/<h3[^>]*class="[^"]*s-item__title[^"]*"[^>]*>([^<]+)<\/h3>/i);
+      chunk.match(/<h3[^>]*class="[^"]*s-item__title[^"]*"[^>]*>([^<]+)<\/h3>/i) ||
+      chunk.match(/data-testid="item-title"[^>]*>([^<]+)</i);
     const title = titleMatch ? titleMatch[1].replace(/\s+/g, " ").trim() : "";
-    if (!title || /shop on ebay/i.test(title)) continue;
+    if (!title || /shop on ebay/i.test(title) || /^new listing/i.test(title.trim())) {
+      // skip but allow titles that legitimately start with "New Listing —" by stripping it
+    }
+    const cleanTitle = title.replace(/^new listing\s*/i, "").trim();
+    if (!cleanTitle || /shop on ebay/i.test(cleanTitle)) continue;
 
-    // Price: look for s-item__price element. May include a range "$300 to $400".
-    const priceMatch = chunk.match(/<span[^>]*class="[^"]*s-item__price[^"]*"[^>]*>(?:<span[^>]*>)?\$([0-9,]+(?:\.\d{1,2})?)/i);
+    // Price — handle ranges, "Sold" prefix, and currency wrapping.
+    // Common forms:
+    //   <span class="s-item__price">$320.00</span>
+    //   <span class="POSITIVE">$320.00</span>
+    //   <span class="s-item__price"><span ...>$320.00 to $450.00</span></span>
+    const priceMatch =
+      chunk.match(/<span[^>]*class="[^"]*s-item__price[^"]*"[^>]*>[\s\S]{0,80}?\$([0-9,]+(?:\.\d{1,2})?)/i) ||
+      chunk.match(/data-testid="item-price"[^>]*>[\s\S]{0,80}?\$([0-9,]+(?:\.\d{1,2})?)/i) ||
+      chunk.match(/\$([0-9,]+(?:\.\d{1,2})?)/);
     if (!priceMatch) continue;
     const price = parseFloat(priceMatch[1].replace(/,/g, ""));
-    if (isNaN(price) || price <= 1) continue;   // skip absurd values
-    if (price > 100_000) continue;              // guard against formatting errors
+    if (isNaN(price) || price <= 1 || price > 100_000) continue;
 
     // URL to the listing
-    const urlMatch = chunk.match(/<a[^>]*class="[^"]*s-item__link[^"]*"[^>]*href="([^"]+)"/i);
+    const urlMatch =
+      chunk.match(/<a[^>]*class="[^"]*s-item__link[^"]*"[^>]*href="([^"]+)"/i) ||
+      chunk.match(/<a[^>]*href="(https?:\/\/[^"]*\/itm\/[^"]+)"/i);
     const link = urlMatch ? urlMatch[1] : null;
 
     // Condition chip (optional)
-    const condMatch = chunk.match(/<span[^>]*class="[^"]*SECONDARY_INFO[^"]*"[^>]*>([^<]+)<\/span>/i);
+    const condMatch =
+      chunk.match(/<span[^>]*class="[^"]*SECONDARY_INFO[^"]*"[^>]*>([^<]+)<\/span>/i) ||
+      chunk.match(/data-testid="item-condition"[^>]*>([^<]+)</i);
     const condition = condMatch ? condMatch[1].trim() : null;
 
     raw.push(price);
     if (samples.length < 8) {
-      samples.push({ title, price, url: link, condition });
+      samples.push({ title: cleanTitle, price, url: link, condition });
     }
 
-    if (raw.length >= 30) break;   // 30 samples is plenty
+    if (raw.length >= 30) break;
   }
 
+  console.log(`[pc-parts/lookup] "${query}" — extracted ${raw.length} prices`);
   return { samples, raw };
 }
 

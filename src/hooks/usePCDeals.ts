@@ -181,15 +181,73 @@ export function usePCDeals() {
     await fetchDeals();
   };
 
-  // ---------- Status transitions ----------
+  // ---------- Status transitions (with inventory hook) ----------
+  // markPurchased also creates an `items` row so the PC shows in Inventory
+  // and flows naturally through Sales History when later marked sold.
   const markPurchased = async (
     id: string,
     args: { purchasedPrice: number; purchasedDate: string }
   ) => {
+    const deal = deals.find((d) => d.id === id);
+    if (!deal) {
+      console.error("[usePCDeals] markPurchased: deal not found", id);
+      return;
+    }
+
+    // Build a description with the parts list so the inventory item
+    // captures the breakdown.
+    const partsDescription = deal.parts.length > 0
+      ? deal.parts.map((p) => `${p.name} ($${Number(p.estimated_value).toFixed(2)})`).join("\n")
+      : "";
+    const noteParts = [
+      `From PC Deal: ${deal.name}`,
+      deal.source ? `Source: ${deal.source}` : null,
+      deal.listing_url ? `Listing: ${deal.listing_url}` : null,
+      partsDescription ? `\nParts:\n${partsDescription}` : null,
+      deal.notes,
+    ].filter(Boolean).join("\n");
+
+    let inventoryItemId = deal.inventory_item_id;
+    try {
+      if (inventoryItemId) {
+        // Already linked — just update purchase fields
+        await supabase.from("items").update({
+          purchase_price: args.purchasedPrice,
+          purchase_date: args.purchasedDate,
+          status: "active",
+        }).eq("id", inventoryItemId);
+      } else {
+        const { data: item, error: itemErr } = await supabase
+          .from("items")
+          .insert({
+            user_id: user?.id ?? null,
+            name: deal.name,
+            category: "Electronics",
+            purchase_price: args.purchasedPrice,
+            purchase_date: args.purchasedDate,
+            platform_bought: deal.source ?? "Other",
+            condition: deal.condition ?? "Used",
+            status: "active",
+            notes: noteParts || null,
+            pc_deal_id: id,
+          })
+          .select("id")
+          .single();
+        if (itemErr) {
+          console.error("[usePCDeals] markPurchased item insert error:", itemErr);
+        } else if (item) {
+          inventoryItemId = item.id;
+        }
+      }
+    } catch (err) {
+      console.error("[usePCDeals] markPurchased inventory failure:", err);
+    }
+
     await updateDeal(id, {
       status: "purchased",
       purchased_price: args.purchasedPrice,
       purchased_date: args.purchasedDate,
+      inventory_item_id: inventoryItemId,
     });
   };
 
@@ -197,6 +255,27 @@ export function usePCDeals() {
     id: string,
     args: { soldFor: number; soldDate: string; sellingFees?: number }
   ) => {
+    const deal = deals.find((d) => d.id === id);
+    if (!deal) {
+      console.error("[usePCDeals] markSold: deal not found", id);
+      return;
+    }
+
+    // Update the linked inventory item to mark it sold (so Sales History reflects it)
+    if (deal.inventory_item_id) {
+      try {
+        await supabase.from("items").update({
+          status: "sold",
+          sale_price: args.soldFor,
+          sale_date: args.soldDate,
+          fees: args.sellingFees ?? 0,
+          platform_sold: deal.source ?? null,
+        }).eq("id", deal.inventory_item_id);
+      } catch (err) {
+        console.error("[usePCDeals] markSold inventory update failure:", err);
+      }
+    }
+
     await updateDeal(id, {
       status: "sold",
       sold_for: args.soldFor,
@@ -209,6 +288,8 @@ export function usePCDeals() {
     await updateDeal(id, { status: "rejected" });
   };
 
+  // Reset wipes purchased/sold values; we leave the inventory item alone so the
+  // user can clean up manually if they want (avoids accidental data loss).
   const resetToEvaluating = async (id: string) => {
     await updateDeal(id, {
       status: "evaluating",

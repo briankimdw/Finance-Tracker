@@ -621,6 +621,7 @@ export interface PCDeal {
   sold_date: string | null;
   selling_fees: number;
   notes: string | null;
+  inventory_item_id: string | null;  // when purchased, points to the auto-created items row
   display_order: number;
   created_at: string;
   updated_at: string;

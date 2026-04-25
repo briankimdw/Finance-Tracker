@@ -119,8 +119,11 @@ export default function AddPCDealModal({ isOpen, deal, existingParts, onClose, o
   type LookupSample = { title: string; price: number; url: string | null; condition: string | null };
   const [lookups, setLookups] = useState<Record<string, { status: "idle" | "loading" | "ok" | "error"; median?: number; avg?: number; low?: number; high?: number; sampleCount?: number; samples?: LookupSample[]; error?: string }>>({});
 
-  // Fire an eBay sold-listings lookup for a given part and auto-fill estimated_value
-  const lookupPrice = async (key: string, query: string, applyToValue: boolean) => {
+  // Fire an eBay sold-listings lookup for a given part. `mode`:
+  //   - "auto"   : fill the value only if user hasn't typed anything yet (used by onBlur)
+  //   - "force"  : always overwrite the value with the median (used by ⚡ button)
+  //   - "preview": just show results, don't touch the value
+  const lookupPrice = async (key: string, query: string, mode: "auto" | "force" | "preview" = "auto") => {
     const q = query.trim();
     if (q.length < 3) return;
     setLookups((prev) => ({ ...prev, [key]: { status: "loading" } }));
@@ -128,11 +131,16 @@ export default function AddPCDealModal({ isOpen, deal, existingParts, onClose, o
       const res = await fetch("/api/pc-parts/lookup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: q }),
+        body: JSON.stringify({ query: q, forceRefresh: mode === "force" }),
       });
       const data = await res.json();
-      if (data.error || data.median === null || data.sampleCount === 0) {
-        setLookups((prev) => ({ ...prev, [key]: { status: "error", error: data.error || "No listings" } }));
+      if (!res.ok) {
+        const reason = data?.error || `eBay lookup failed (${res.status})`;
+        setLookups((prev) => ({ ...prev, [key]: { status: "error", error: reason } }));
+        return;
+      }
+      if (data.median === null || data.sampleCount === 0) {
+        setLookups((prev) => ({ ...prev, [key]: { status: "error", error: data.error || "No sold listings found" } }));
         return;
       }
       setLookups((prev) => ({
@@ -147,8 +155,9 @@ export default function AddPCDealModal({ isOpen, deal, existingParts, onClose, o
           samples: Array.isArray(data.samples) ? data.samples : [],
         },
       }));
-      if (applyToValue) {
-        // Only fill if user hasn't already typed a non-zero value
+      if (mode === "force") {
+        updatePart(key, { estimated_value: String(data.median) });
+      } else if (mode === "auto") {
         const current = parts.find((p) => p._key === key);
         const existing = parseFloat(current?.estimated_value || "");
         if (!existing || existing === 0) {
@@ -411,9 +420,10 @@ export default function AddPCDealModal({ isOpen, deal, existingParts, onClose, o
                           value={p.name}
                           onChange={(e) => updatePart(p._key, { name: e.target.value })}
                           onBlur={() => {
-                            // Auto-fetch on blur if name set + no lookup yet + no manual value
-                            if (p.name.trim().length >= 3 && !lookups[p._key]) {
-                              lookupPrice(p._key, p.name, true);
+                            // Auto-fetch on blur if name set + no successful lookup yet
+                            const status = lookups[p._key]?.status;
+                            if (p.name.trim().length >= 3 && status !== "ok" && status !== "loading") {
+                              lookupPrice(p._key, p.name, "auto");
                             }
                           }}
                           className={inputClass + " !py-2 text-xs"}
@@ -438,9 +448,9 @@ export default function AddPCDealModal({ isOpen, deal, existingParts, onClose, o
                       <div className="col-span-3 sm:col-span-1 flex items-center gap-1 justify-end">
                         <button
                           type="button"
-                          onClick={() => lookupPrice(p._key, p.name, true)}
+                          onClick={() => lookupPrice(p._key, p.name, "force")}
                           disabled={!p.name.trim() || lookups[p._key]?.status === "loading"}
-                          title={p.name.trim() ? "Auto-fill from eBay sold listings" : "Type a part name first"}
+                          title={p.name.trim() ? "Auto-fill from eBay sold listings (overrides current value)" : "Type a part name first"}
                           className="text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 disabled:opacity-30 disabled:hover:text-gray-400 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 relative"
                         >
                           {lookups[p._key]?.status === "loading" ? (
