@@ -4,36 +4,31 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  LayoutDashboard, CreditCard, WalletCards, Wallet, MoreHorizontal,
-  Package, History, Coins, CalendarDays, Target, HandCoins, PieChart, Plane, Users, X,
-  LogOut, LogIn, TrendingUp, UserCog, Cpu,
-} from "lucide-react";
+import { MoreHorizontal, X, LogOut, LogIn, TrendingUp, UserCog } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useFriends } from "@/hooks/useFriends";
 import { usePendingInvites } from "@/hooks/usePendingInvites";
 import { useProfile } from "@/hooks/useProfile";
+import { NAV_ITEMS, filterNavItems, type NavItem } from "@/lib/navItems";
 
-const primaryTabs = [
-  { href: "/", label: "Home", icon: LayoutDashboard },
-  { href: "/budget", label: "Budget", icon: PieChart },
-  { href: "/cards", label: "Cards", icon: WalletCards },
-  { href: "/expenses", label: "Spend", icon: CreditCard },
-];
+// The 4 routes pinned to the bottom of the bottom-nav. Anything else lives in the More sheet.
+const PRIMARY_HREFS = ["/", "/budget", "/cards", "/expenses"];
 
-const moreItems = [
-  { href: "/income", label: "Income", icon: Wallet, color: "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/40" },
-  { href: "/debts", label: "Debts", icon: HandCoins, color: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40" },
-  { href: "/friends", label: "Friends", icon: Users, color: "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40" },
-  { href: "/goals", label: "Goals", icon: Target, color: "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40" },
-  { href: "/trips", label: "Trips", icon: Plane, color: "text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40" },
-  { href: "/inventory", label: "Inventory", icon: Package, color: "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40" },
-  { href: "/sales", label: "Sales", icon: History, color: "text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40" },
-  { href: "/pc-deals", label: "PC Deals", icon: Cpu, color: "text-emerald-600 bg-emerald-50" },
-  { href: "/metals", label: "Metals", icon: Coins, color: "text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/40" },
-  { href: "/calendar", label: "Calendar", icon: CalendarDays, color: "text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40" },
-  { href: "/profile", label: "Profile", icon: UserCog, color: "text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/40" },
-];
+// Override the label only for primary pinned tabs (shorter for the small grid)
+const PRIMARY_LABELS: Record<string, string> = {
+  "/": "Home",
+  "/expenses": "Spend",
+};
+
+function pickPrimary(items: NavItem[]) {
+  // Preserve the order in PRIMARY_HREFS so the bottom-nav stays Home, Budget, Cards, Spend
+  const byHref = new Map(items.map((i) => [i.href, i]));
+  return PRIMARY_HREFS.map((h) => byHref.get(h)).filter((it): it is NavItem => Boolean(it));
+}
+
+function pickMore(items: NavItem[]) {
+  return items.filter((i) => !PRIMARY_HREFS.includes(i.href));
+}
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
@@ -43,6 +38,9 @@ export default function MobileBottomNav() {
   const { profile } = useProfile();
   const pendingCount = incoming.length + tripInvites.length + goalInvites.length;
   const [moreOpen, setMoreOpen] = useState(false);
+  const visibleNav = filterNavItems(NAV_ITEMS, profile?.nav_preferences ?? null);
+  const primaryTabs = pickPrimary(visibleNav);
+  const moreItems = pickMore(visibleNav);
 
   const isActive = (href: string) => pathname === href;
   const isInMore = moreItems.some((m) => m.href === pathname);
@@ -148,12 +146,16 @@ export default function MobileBottomNav() {
         )}
       </AnimatePresence>
 
-      {/* Bottom nav */}
+      {/* Bottom nav — grid columns scale to actual primary count + 1 (More button) */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 pb-safe">
-        <div className="grid grid-cols-5 h-16">
+        <div
+          className="grid h-16"
+          style={{ gridTemplateColumns: `repeat(${primaryTabs.length + 1}, minmax(0, 1fr))` }}
+        >
           {primaryTabs.map((tab) => {
             const Icon = tab.icon;
             const active = isActive(tab.href);
+            const label = PRIMARY_LABELS[tab.href] ?? tab.label;
             return (
               <Link
                 key={tab.href}
@@ -168,7 +170,7 @@ export default function MobileBottomNav() {
                   />
                 )}
                 <Icon size={20} className={active ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500"} />
-                <span className={`text-[10px] font-medium ${active ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500"}`}>{tab.label}</span>
+                <span className={`text-[10px] font-medium ${active ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500"}`}>{label}</span>
               </Link>
             );
           })}

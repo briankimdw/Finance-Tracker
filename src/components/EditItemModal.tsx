@@ -1,8 +1,9 @@
 ﻿"use client";
 
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, TrendingUp } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import PriceLookup from "@/components/PriceLookup";
 import type { Item, ItemCategory, BuyPlatform, ItemCondition } from "@/lib/types";
 
 const categories: ItemCategory[] = [
@@ -88,6 +89,17 @@ export default function EditItemModal({ isOpen, item, onClose, onUpdated }: Edit
           <div>
             <label className={labelClass}>Item Name *</label>
             <input type="text" value={form.name} onChange={(e) => update("name", e.target.value)} required className={inputClass} placeholder="e.g. Nike Air Jordan 1 Retro High" />
+            {form.name.trim().length >= 3 && (
+              <div className="mt-2 p-2.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
+                <div className="flex items-center gap-1.5 text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                  <TrendingUp size={11} /> Resale comp
+                </div>
+                <PriceLookup
+                  query={form.name}
+                  onApply={(price) => update("purchase_price", String(price))}
+                />
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>

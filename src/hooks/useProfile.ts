@@ -59,12 +59,35 @@ export function useProfile() {
   };
 
   const updateProfile = async (
-    data: Partial<Pick<Profile, "display_name" | "bio" | "avatar_url" | "color">>
+    data: Partial<Pick<Profile, "display_name" | "bio" | "avatar_url" | "color" | "nav_preferences">>
   ): Promise<{ ok: boolean; error?: string }> => {
     if (!user) return { ok: false, error: "Not signed in" };
     const { error } = await supabase
       .from("profiles")
       .update({ ...data, updated_at: new Date().toISOString() })
+      .eq("id", user.id);
+    if (error) return { ok: false, error: error.message };
+    await fetchProfile();
+    return { ok: true };
+  };
+
+  /**
+   * Toggle a single nav route's visibility. `visible=false` hides it from the
+   * sidebar / mobile bottom nav More sheet. Missing keys default to visible
+   * so we only ever store overrides — keeps the row small.
+   */
+  const setNavVisibility = async (
+    route: string,
+    visible: boolean
+  ): Promise<{ ok: boolean; error?: string }> => {
+    if (!user) return { ok: false, error: "Not signed in" };
+    const current = (profile?.nav_preferences ?? {}) as Record<string, boolean>;
+    const next: Record<string, boolean> = { ...current };
+    if (visible) delete next[route];
+    else next[route] = false;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ nav_preferences: next, updated_at: new Date().toISOString() })
       .eq("id", user.id);
     if (error) return { ok: false, error: error.message };
     await fetchProfile();
@@ -102,5 +125,5 @@ export function useProfile() {
     await fetchProfile();
   };
 
-  return { profile, loading, refetch: fetchProfile, setUsername, updateDisplayName, updateProfile, uploadAvatar, removeAvatar };
+  return { profile, loading, refetch: fetchProfile, setUsername, updateDisplayName, updateProfile, setNavVisibility, uploadAvatar, removeAvatar };
 }

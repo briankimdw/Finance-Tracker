@@ -6,12 +6,14 @@ import { motion } from "framer-motion";
 import {
   User as UserIcon, AtSign, Mail, Camera, Trash2,
   Palette, Save, Sparkles, ArrowLeft, Sun, Moon, Monitor,
+  Menu, Eye, EyeOff,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useTheme } from "@/context/ThemeContext";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { NAV_ITEMS, isNavRouteVisible } from "@/lib/navItems";
 
 const COLORS = [
   "#3b82f6", "#8b5cf6", "#10b981", "#f59e0b",
@@ -42,11 +44,19 @@ function Avatar({ name, url, size = 96, color }: { name: string; url?: string | 
 
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
-  const { profile, loading, setUsername, updateProfile, uploadAvatar, removeAvatar } = useProfile();
+  const { profile, loading, setUsername, updateProfile, setNavVisibility, uploadAvatar, removeAvatar } = useProfile();
   const { theme, setTheme } = useTheme();
   const { success, error: toastError, info } = useToast();
   const confirm = useConfirm();
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const [savingNav, setSavingNav] = useState<string | null>(null);
+
+  const handleToggleNav = async (route: string, nextVisible: boolean) => {
+    setSavingNav(route);
+    const res = await setNavVisibility(route, nextVisible);
+    setSavingNav(null);
+    if (!res.ok) toastError(res.error || "Couldn't save preference");
+  };
 
   const [form, setForm] = useState({
     username: "",
@@ -262,6 +272,74 @@ export default function ProfilePage() {
               >
                 <Icon size={14} />
                 {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Sidebar items — toggle which routes appear in the sidebar / mobile More sheet */}
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+          <Menu size={13} /> Sidebar items
+        </h3>
+        <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-3">
+          Hide sections you don&apos;t use. Hidden items disappear from the sidebar (and the mobile More sheet) but their data stays intact — flip them back on any time.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const visible = isNavRouteVisible(item.href, profile?.nav_preferences);
+            const isProfile = item.essential;
+            const isSaving = savingNav === item.href;
+            return (
+              <button
+                key={item.href}
+                type="button"
+                disabled={isProfile || isSaving}
+                onClick={() => handleToggleNav(item.href, !visible)}
+                className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all ${
+                  isProfile
+                    ? "border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 cursor-default opacity-70"
+                    : visible
+                    ? "border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-700"
+                    : "border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/40 hover:border-gray-300 dark:hover:border-gray-600"
+                }`}
+              >
+                <div
+                  className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
+                    visible ? item.color || "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300" : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500"
+                  }`}
+                >
+                  <Icon size={15} />
+                </div>
+                <span className={`flex-1 text-sm font-medium ${visible ? "text-gray-900 dark:text-gray-100" : "text-gray-400 dark:text-gray-500 line-through decoration-gray-300 dark:decoration-gray-600"}`}>
+                  {item.label}
+                </span>
+                {isProfile ? (
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider shrink-0">Always on</span>
+                ) : isSaving ? (
+                  <Sparkles size={14} className="text-blue-500 dark:text-blue-400 animate-pulse shrink-0" />
+                ) : (
+                  <span
+                    className={`relative inline-flex w-9 h-5 rounded-full transition-colors shrink-0 ${
+                      visible ? "bg-blue-500 dark:bg-blue-600" : "bg-gray-200 dark:bg-gray-700"
+                    }`}
+                    aria-hidden
+                  >
+                    <span
+                      className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                        visible ? "translate-x-4" : "translate-x-0.5"
+                      }`}
+                    />
+                  </span>
+                )}
+                {!isProfile && (
+                  <span className="sr-only">{visible ? "Hide" : "Show"} {item.label}</span>
+                )}
+                <span className="sr-only">
+                  {visible ? <Eye size={12} /> : <EyeOff size={12} />}
+                </span>
               </button>
             );
           })}

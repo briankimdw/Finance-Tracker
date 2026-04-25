@@ -5,38 +5,10 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useFriends } from "@/hooks/useFriends";
 import { usePendingInvites } from "@/hooks/usePendingInvites";
-import {
-  LayoutDashboard, Package, History, CalendarDays, Wallet, CreditCard, Coins, WalletCards, Target, HandCoins, PieChart, Plane, Users,
-  LogOut, LogIn, TrendingUp, UserCog, Cpu,
-} from "lucide-react";
+import { LogOut, LogIn, TrendingUp, Command } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
-import { Command } from "lucide-react";
 import { useCommandPaletteContext } from "@/context/CommandPaletteContext";
-
-interface NavItem {
-  href: string;
-  label: string;
-  icon: typeof LayoutDashboard;
-  divider?: boolean;
-}
-
-const navItems: NavItem[] = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/budget", label: "Budget", icon: PieChart },
-  { href: "/expenses", label: "Expenses", icon: CreditCard },
-  { href: "/cards", label: "Cards", icon: WalletCards },
-  { href: "/income", label: "Income", icon: Wallet },
-  { href: "/debts", label: "Debts", icon: HandCoins },
-  { href: "/inventory", label: "Inventory", icon: Package, divider: true },
-  { href: "/sales", label: "Sales History", icon: History },
-  { href: "/pc-deals", label: "PC Deals", icon: Cpu },
-  { href: "/metals", label: "Metals", icon: Coins },
-  { href: "/goals", label: "Goals", icon: Target },
-  { href: "/trips", label: "Trips", icon: Plane },
-  { href: "/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/friends", label: "Friends", icon: Users, divider: true },
-  { href: "/profile", label: "Profile", icon: UserCog },
-];
+import { NAV_ITEMS, filterNavItems } from "@/lib/navItems";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -49,6 +21,7 @@ export default function Sidebar() {
   const avatarUrl = profile?.avatar_url || null;
   const avatarInitial = (profile?.display_name || profile?.username || user?.email || "?").charAt(0).toUpperCase();
   const avatarColor = profile?.color || "#3b82f6";
+  const navItems = filterNavItems(NAV_ITEMS, profile?.nav_preferences ?? null);
 
   return (
     <>

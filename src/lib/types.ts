@@ -8,6 +8,8 @@ export interface Profile {
   avatar_url: string | null;
   bio: string | null;
   color: string | null;
+  // Per-user nav visibility map. Missing key = visible. `{ "/metals": false }` hides Metals.
+  nav_preferences: Record<string, boolean> | null;
   created_at: string;
   updated_at: string;
 }

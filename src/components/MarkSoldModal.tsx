@@ -1,9 +1,10 @@
 ﻿"use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
+import { X, TrendingUp } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { todayEST } from "@/lib/dates";
+import PriceLookup from "@/components/PriceLookup";
 import type { Item, SellPlatform } from "@/lib/types";
 
 const sellPlatforms: SellPlatform[] = [
@@ -54,12 +55,21 @@ export default function MarkSoldModal({ isOpen, item, onClose, onSold }: MarkSol
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Mark as Sold</h2>
           <button onClick={onClose} className="p-1 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"><X size={20} /></button>
         </div>
-        <div className="px-5 pt-4">
+        <div className="px-5 pt-4 space-y-3">
           <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3.5">
             <p className="text-gray-900 dark:text-gray-100 font-medium">{item.name}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
               {Number(item.purchase_price) === 0 ? "Free / Already Owned" : `Purchased for $${item.purchase_price.toFixed(2)}`} · {new Date(item.purchase_date).toLocaleDateString()}
             </p>
+          </div>
+          <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/50">
+            <div className="flex items-center gap-1.5 text-[10px] text-amber-700 dark:text-amber-300 uppercase tracking-wider mb-1.5 font-semibold">
+              <TrendingUp size={11} /> Comp before you list
+            </div>
+            <PriceLookup
+              query={item.name}
+              onApply={(price) => update("sale_price", String(price))}
+            />
           </div>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-5">

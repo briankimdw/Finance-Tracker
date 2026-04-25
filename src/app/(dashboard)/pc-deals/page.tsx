@@ -4,10 +4,12 @@ import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Plus, Cpu, ExternalLink, Pencil, Trash2, CheckCircle2, XCircle,
-  Sparkles, TrendingUp, Package,
+  Sparkles, TrendingUp, Package, Zap, Search, ChevronDown, ChevronUp,
 } from "lucide-react";
 import AddPCDealModal, { getCategoryMeta, type PCDealFormData } from "@/components/AddPCDealModal";
 import PCDealDetailsSheet from "@/components/PCDealDetailsSheet";
+import QuickFlipModal, { type QuickFlipData } from "@/components/QuickFlipModal";
+import PriceLookup from "@/components/PriceLookup";
 import { usePCDeals } from "@/hooks/usePCDeals";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -61,6 +63,10 @@ export default function PCDealsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editDeal, setEditDeal] = useState<PCDealWithParts | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showQuickFlip, setShowQuickFlip] = useState(false);
+  const [quickFlipPrefill, setQuickFlipPrefill] = useState<{ name?: string; value?: number }>({});
+  const [quickQuery, setQuickQuery] = useState("");
+  const [quickLookupOpen, setQuickLookupOpen] = useState(false);
 
   // Live-bound selected deal so the details sheet reflects hook state.
   const selectedDeal = useMemo(
@@ -166,6 +172,30 @@ export default function PCDealsPage() {
     }
   };
 
+  const handleQuickFlipSave = async (data: QuickFlipData) => {
+    try {
+      const created = await createDeal({
+        name: data.name,
+        source: data.source,
+        listing_url: data.listing_url,
+        asking_price: data.asking_price,
+        seller_notes: null,
+        condition: "used",
+        notes: data.notes,
+      });
+      if (created) {
+        await addPart(created.id, {
+          category: data.category,
+          name: data.name,
+          estimated_value: data.estimated_value,
+        });
+      }
+      success(`Tracking "${data.name}"`);
+    } catch {
+      toastError("Couldn't save flip");
+    }
+  };
+
   const handleMarkPurchasedQuick = async (deal: PCDealWithParts) => {
     try {
       await markPurchased(deal.id, {
@@ -196,12 +226,65 @@ export default function PCDealsPage() {
             {activeCount} active &middot; {purchasedCount} purchased &middot; ${profitThisYear.toFixed(2)} profit this year
           </p>
         </div>
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          <button
+            onClick={() => { setQuickFlipPrefill({}); setShowQuickFlip(true); }}
+            className="bg-amber-500 hover:bg-amber-600 text-white font-medium py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all hover:shadow-lg hover:shadow-amber-500/20"
+            title="Single-item flip — keyboard, mouse, GPU, etc."
+          >
+            <Zap size={15} /> <span>Quick Flip</span>
+          </button>
+          <button
+            onClick={() => { setEditDeal(null); setShowAddModal(true); }}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-blue-600/20"
+          >
+            <Plus size={16} /> <span>New Deal</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Quick Lookup — collapsible eBay price comp for any individual part */}
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
         <button
-          onClick={() => { setEditDeal(null); setShowAddModal(true); }}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-blue-600/20 shrink-0 self-start sm:self-auto"
+          type="button"
+          onClick={() => setQuickLookupOpen((o) => !o)}
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
         >
-          <Plus size={16} /> <span>New Deal</span>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <Search size={14} />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Quick price lookup</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">Comp eBay sold prices for any part — no deal needed.</p>
+            </div>
+          </div>
+          {quickLookupOpen ? <ChevronUp size={16} className="text-gray-400 dark:text-gray-500" /> : <ChevronDown size={16} className="text-gray-400 dark:text-gray-500" />}
         </button>
+        {quickLookupOpen && (
+          <div className="px-4 pb-4 pt-1 border-t border-gray-100 dark:border-gray-800 space-y-3">
+            <input
+              type="text"
+              value={quickQuery}
+              onChange={(e) => setQuickQuery(e.target.value)}
+              placeholder="e.g. Logitech G Pro X Superlight, RTX 4070, 32GB DDR4 3600"
+              className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-400 dark:focus:border-amber-500"
+            />
+            {quickQuery.trim().length >= 3 && (
+              <PriceLookup
+                query={quickQuery}
+                onApply={(price) => {
+                  // Hand off to Quick Flip with name + resale value pre-filled
+                  setQuickFlipPrefill({ name: quickQuery.trim(), value: price });
+                  setShowQuickFlip(true);
+                }}
+              />
+            )}
+            <p className="text-[10px] text-gray-400 dark:text-gray-500">
+              Click <span className="font-semibold">Use price</span> to start tracking this as a flip — auto-fills the name and resale value.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Summary tiles */}
@@ -239,8 +322,8 @@ export default function PCDealsPage() {
         <EmptyState
           icon={Sparkles}
           title="No PC deals yet"
-          description="Paste listings from Facebook, eBay, OfferUp, or Craigslist. Add each part with an estimated resale value to see if the flip is worth it."
-          action={{ label: "Evaluate your first deal", onClick: () => setShowAddModal(true) }}
+          description="Evaluate full PC builds (multi-part) or use Quick Flip for single items like a keyboard or GPU. eBay sold-prices are pulled in automatically."
+          action={{ label: "Quick Flip a single item", onClick: () => { setQuickFlipPrefill({}); setShowQuickFlip(true); } }}
         />
       ) : (
         <div className="space-y-8">
@@ -278,6 +361,14 @@ export default function PCDealsPage() {
         existingParts={editDeal?.parts}
         onClose={() => { setShowAddModal(false); setEditDeal(null); }}
         onSave={handleSave}
+      />
+
+      <QuickFlipModal
+        isOpen={showQuickFlip}
+        onClose={() => setShowQuickFlip(false)}
+        onSave={handleQuickFlipSave}
+        defaultName={quickFlipPrefill.name}
+        defaultEstimatedValue={quickFlipPrefill.value}
       />
 
       <PCDealDetailsSheet
