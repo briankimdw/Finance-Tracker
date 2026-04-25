@@ -116,7 +116,8 @@ export default function AddPCDealModal({ isOpen, deal, existingParts, onClose, o
   const [removedPartIds, setRemovedPartIds] = useState<string[]>([]);
   const [expandedPriceKey, setExpandedPriceKey] = useState<string | null>(null);
   // per-part lookup state keyed by part _key
-  const [lookups, setLookups] = useState<Record<string, { status: "idle" | "loading" | "ok" | "error"; median?: number; avg?: number; low?: number; high?: number; sampleCount?: number; error?: string }>>({});
+  type LookupSample = { title: string; price: number; url: string | null; condition: string | null };
+  const [lookups, setLookups] = useState<Record<string, { status: "idle" | "loading" | "ok" | "error"; median?: number; avg?: number; low?: number; high?: number; sampleCount?: number; samples?: LookupSample[]; error?: string }>>({});
 
   // Fire an eBay sold-listings lookup for a given part and auto-fill estimated_value
   const lookupPrice = async (key: string, query: string, applyToValue: boolean) => {
@@ -143,6 +144,7 @@ export default function AddPCDealModal({ isOpen, deal, existingParts, onClose, o
           low: Number(data.low),
           high: Number(data.high),
           sampleCount: Number(data.sampleCount),
+          samples: Array.isArray(data.samples) ? data.samples : [],
         },
       }));
       if (applyToValue) {
@@ -467,22 +469,43 @@ export default function AddPCDealModal({ isOpen, deal, existingParts, onClose, o
                       </div>
                     </div>
 
-                    {/* Lookup result chip */}
+                    {/* Lookup result + recent sales */}
                     {lookups[p._key]?.status === "ok" && (
-                      <div className="mt-1.5 flex items-center gap-2 text-[11px] text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 rounded-md px-2 py-1">
-                        <Zap size={10} />
-                        <span className="font-medium">eBay median ${lookups[p._key].median?.toFixed(2)}</span>
-                        <span className="text-emerald-600/70 dark:text-emerald-400/70">
-                          · {lookups[p._key].sampleCount} sold · ${lookups[p._key].low?.toFixed(0)}–${lookups[p._key].high?.toFixed(0)}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => updatePart(p._key, { estimated_value: String(lookups[p._key].median) })}
-                          className="ml-auto text-emerald-700 dark:text-emerald-300 hover:underline font-medium"
-                          title="Apply median to estimated value"
-                        >
-                          Use
-                        </button>
+                      <div className="mt-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1.5 border border-emerald-100 dark:border-emerald-900">
+                        <div className="flex items-center gap-2 text-[11px] text-emerald-700 dark:text-emerald-300">
+                          <Zap size={10} />
+                          <span className="font-medium">eBay median ${lookups[p._key].median?.toFixed(2)}</span>
+                          <span className="text-emerald-600/70 dark:text-emerald-400/70">
+                            · {lookups[p._key].sampleCount} sold · ${lookups[p._key].low?.toFixed(0)}–${lookups[p._key].high?.toFixed(0)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updatePart(p._key, { estimated_value: String(lookups[p._key].median) })}
+                            className="ml-auto text-emerald-700 dark:text-emerald-300 hover:underline font-medium"
+                            title="Apply median to estimated value"
+                          >
+                            Use
+                          </button>
+                        </div>
+                        {lookups[p._key].samples && lookups[p._key].samples!.length > 0 && (
+                          <details className="mt-1 group/det">
+                            <summary className="cursor-pointer text-[10px] text-emerald-600/80 dark:text-emerald-400/80 hover:text-emerald-700 dark:hover:text-emerald-300 select-none list-none flex items-center gap-1">
+                              <ChevronDown size={10} className="transition-transform group-open/det:rotate-180" />
+                              See {lookups[p._key].samples!.length} recent sales
+                            </summary>
+                            <div className="mt-1.5 space-y-0.5">
+                              {lookups[p._key].samples!.map((s, i) => (
+                                <div key={i} className="flex items-center gap-2 text-[11px]">
+                                  <span className="font-bold text-gray-900 dark:text-gray-100 tabular-nums w-12">${s.price.toFixed(2)}</span>
+                                  <a href={s.url || "#"} target="_blank" rel="noopener noreferrer" className="flex-1 truncate text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
+                                    {s.title}
+                                  </a>
+                                  {s.condition && <span className="text-[9px] text-gray-400 dark:text-gray-500 shrink-0 uppercase tracking-wider">{s.condition}</span>}
+                                </div>
+                              ))}
+                            </div>
+                          </details>
+                        )}
                       </div>
                     )}
                     {lookups[p._key]?.status === "error" && (

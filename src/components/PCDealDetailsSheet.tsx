@@ -83,12 +83,17 @@ export default function PCDealDetailsSheet({
   const confirm = useConfirm();
   const toast = useToast();
 
-  // Inline editing state for a part's estimated value
+  // Inline editing state — full edit (name + category + value)
   const [editingPartId, setEditingPartId] = useState<string | null>(null);
-  const [editingValue, setEditingValue] = useState<string>("");
+  const [editingDraft, setEditingDraft] = useState<{ name: string; category: PCPartCategory; value: string }>({
+    name: "",
+    category: "gpu",
+    value: "",
+  });
 
   // Per-part eBay lookup state
-  const [lookups, setLookups] = useState<Record<string, { status: "idle" | "loading" | "ok" | "error"; median?: number; sampleCount?: number; low?: number; high?: number; error?: string }>>({});
+  type LookupSample = { title: string; price: number; url: string | null; condition: string | null };
+  const [lookups, setLookups] = useState<Record<string, { status: "idle" | "loading" | "ok" | "error"; median?: number; sampleCount?: number; low?: number; high?: number; samples?: LookupSample[]; error?: string }>>({});
 
   const lookupPrice = async (partId: string, name: string, applyToValue: boolean) => {
     const q = name.trim();
@@ -113,6 +118,7 @@ export default function PCDealDetailsSheet({
           sampleCount: Number(data.sampleCount),
           low: Number(data.low),
           high: Number(data.high),
+          samples: Array.isArray(data.samples) ? data.samples : [],
         },
       }));
       if (applyToValue) {
@@ -145,7 +151,7 @@ export default function PCDealDetailsSheet({
   useEffect(() => {
     if (!isOpen) {
       setEditingPartId(null);
-      setEditingValue("");
+      setEditingDraft({ name: "", category: "gpu", value: "" });
       setAdding(false);
       setNewPart({ category: "gpu", name: "", estimated_value: "" });
       setPrompt(null);
@@ -191,17 +197,22 @@ export default function PCDealDetailsSheet({
 
   const handleStartEditPart = (p: PCDealPart) => {
     setEditingPartId(p.id);
-    setEditingValue(String(p.estimated_value));
+    setEditingDraft({ name: p.name, category: p.category, value: String(p.estimated_value) });
   };
 
   const handleSavePartEdit = async (p: PCDealPart) => {
-    const value = parseFloat(editingValue);
+    const value = parseFloat(editingDraft.value);
     if (!Number.isFinite(value) || value < 0) {
       setEditingPartId(null);
       return;
     }
+    const name = editingDraft.name.trim();
+    if (!name) {
+      setEditingPartId(null);
+      return;
+    }
     try {
-      await onUpdatePart(p.id, { estimated_value: value });
+      await onUpdatePart(p.id, { estimated_value: value, name, category: editingDraft.category });
       toast.success("Part updated");
     } catch {
       toast.error("Couldn't update part");
@@ -433,63 +444,150 @@ export default function PCDealDetailsSheet({
               {deal.parts.map((p) => {
                 const meta = getCategoryMeta(p.category);
                 const isEditing = editingPartId === p.id;
+                if (isEditing) {
+                  return (
+                    <div key={p.id} className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-blue-950/30 p-3 space-y-2">
+                      <div className="grid grid-cols-12 gap-2">
+                        <div className="col-span-4">
+                          <select
+                            value={editingDraft.category}
+                            onChange={(e) => setEditingDraft((d) => ({ ...d, category: e.target.value as PCPartCategory }))}
+                            className={inputClass + " !px-2 !py-2 text-xs"}
+                            aria-label="Category"
+                          >
+                            {PART_CATEGORIES.map((c) => (
+                              <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-span-8">
+                          <input
+                            type="text"
+                            autoFocus
+                            value={editingDraft.name}
+                            onChange={(e) => setEditingDraft((d) => ({ ...d, name: e.target.value }))}
+                            className={inputClass + " !py-2 text-xs"}
+                            placeholder="Part name"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") { e.preventDefault(); void handleSavePartEdit(p); }
+                              else if (e.key === "Escape") setEditingPartId(null);
+                            }}
+                          />
+                        </div>
+                        <div className="col-span-7">
+                          <div className="relative">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-xs">$</span>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={editingDraft.value}
+                              onChange={(e) => setEditingDraft((d) => ({ ...d, value: e.target.value }))}
+                              className={inputClass + " !pl-6 !py-2 text-xs"}
+                              placeholder="Estimated value"
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") { e.preventDefault(); void handleSavePartEdit(p); }
+                                else if (e.key === "Escape") setEditingPartId(null);
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className="col-span-5 flex items-center gap-1 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => { lookupPrice(p.id, editingDraft.name, false); }}
+                            disabled={!editingDraft.name.trim() || lookups[p.id]?.status === "loading"}
+                            title="Auto-fill from eBay"
+                            className="px-2 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 text-xs flex items-center gap-1"
+                          >
+                            {lookups[p.id]?.status === "loading" ? (
+                              <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25"/><path fill="currentColor" d="M4 12a8 8 0 018-8V2.5a9.5 9.5 0 00-9.5 9.5H4z"/></svg>
+                            ) : (
+                              <Zap size={12} />
+                            )}
+                            <span className="hidden sm:inline">Lookup</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingPartId(null)}
+                            className="px-2 py-1.5 rounded-lg text-xs text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-900"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSavePartEdit(p)}
+                            className="px-2 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-xs flex items-center gap-1"
+                            aria-label="Save"
+                          >
+                            <Check size={12} /> Save
+                          </button>
+                        </div>
+                      </div>
+                      {/* Lookup result + recent sales while editing */}
+                      {lookups[p.id]?.status === "ok" && (
+                        <div className="rounded-lg bg-white/70 dark:bg-gray-900/70 border border-emerald-200 dark:border-emerald-800 px-3 py-2">
+                          <div className="flex items-center gap-2 text-[11px] text-emerald-700 dark:text-emerald-300 font-medium">
+                            <Zap size={11} />
+                            <span>eBay median ${lookups[p.id].median?.toFixed(2)} · {lookups[p.id].sampleCount} sold · ${lookups[p.id].low?.toFixed(0)}–${lookups[p.id].high?.toFixed(0)}</span>
+                            <button
+                              type="button"
+                              onClick={() => setEditingDraft((d) => ({ ...d, value: String(lookups[p.id].median) }))}
+                              className="ml-auto text-emerald-700 dark:text-emerald-300 hover:underline"
+                            >
+                              Use median
+                            </button>
+                          </div>
+                          {lookups[p.id].samples && lookups[p.id].samples!.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-semibold">Recent sales</p>
+                              {lookups[p.id].samples!.slice(0, 5).map((s, i) => (
+                                <div key={i} className="flex items-center gap-2 text-[11px]">
+                                  <span className="font-bold text-gray-900 dark:text-gray-100 tabular-nums w-14">${s.price.toFixed(2)}</span>
+                                  <a href={s.url || "#"} target="_blank" rel="noopener noreferrer" className="flex-1 truncate text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
+                                    {s.title}
+                                  </a>
+                                  {s.condition && <span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0">{s.condition}</span>}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
                 return (
                   <div
                     key={p.id}
                     className="group flex items-center gap-3 rounded-xl bg-gray-50 dark:bg-gray-800 px-3 py-2.5"
                   >
-                    <div
-                      className="w-8 h-8 rounded-lg bg-white dark:bg-gray-900 flex items-center justify-center text-base shrink-0"
-                      aria-hidden
+                    <button
+                      type="button"
+                      onClick={() => handleStartEditPart(p)}
+                      className="w-8 h-8 rounded-lg bg-white dark:bg-gray-900 flex items-center justify-center text-base shrink-0 hover:ring-2 hover:ring-blue-400"
+                      title="Edit part"
+                      aria-label="Edit part category"
                     >
                       {meta.emoji}
-                    </div>
-                    <div className="flex-1 min-w-0">
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStartEditPart(p)}
+                      className="flex-1 min-w-0 text-left"
+                      title="Tap to edit"
+                    >
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{p.name || meta.label}</p>
                       <p className="text-[11px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">{meta.label}</p>
-                    </div>
-                    {isEditing ? (
-                      <div className="flex items-center gap-1">
-                        <div className="relative w-24">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-xs">$</span>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            autoFocus
-                            value={editingValue}
-                            onChange={(e) => setEditingValue(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                void handleSavePartEdit(p);
-                              } else if (e.key === "Escape") {
-                                setEditingPartId(null);
-                              }
-                            }}
-                            className={inputClass + " !pl-5 !py-1.5 text-xs"}
-                            aria-label="Estimated value"
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleSavePartEdit(p)}
-                          className="p-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-                          aria-label="Save"
-                        >
-                          <Check size={13} />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleStartEditPart(p)}
-                        className="text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums px-2 py-1 rounded-lg hover:bg-white dark:hover:bg-gray-900 transition-colors"
-                        title="Tap to edit estimate"
-                      >
-                        ${Number(p.estimated_value).toFixed(2)}
-                      </button>
-                    )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStartEditPart(p)}
+                      className="text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums px-2 py-1 rounded-lg hover:bg-white dark:hover:bg-gray-900 transition-colors"
+                      title="Tap to edit"
+                    >
+                      ${Number(p.estimated_value).toFixed(2)}
+                    </button>
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); lookupPrice(p.id, p.name, true); }}
