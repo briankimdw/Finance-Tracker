@@ -4,11 +4,12 @@ import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Plus, Cpu, ExternalLink, Pencil, Trash2, CheckCircle2, XCircle,
-  Sparkles, TrendingUp, Package, Zap,
+  Sparkles, TrendingUp, Package, Zap, Search,
 } from "lucide-react";
 import AddPCDealModal, { getCategoryMeta, type PCDealFormData } from "@/components/AddPCDealModal";
 import PCDealDetailsSheet from "@/components/PCDealDetailsSheet";
 import QuickFlipModal, { type QuickFlipData } from "@/components/QuickFlipModal";
+import PriceLookup from "@/components/PriceLookup";
 import { usePCDeals } from "@/hooks/usePCDeals";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -63,6 +64,7 @@ export default function PCDealsPage() {
   const [editDeal, setEditDeal] = useState<PCDealWithParts | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showQuickFlip, setShowQuickFlip] = useState(false);
+  const [quickQuery, setQuickQuery] = useState("");
 
   // Live-bound selected deal so the details sheet reflects hook state.
   const selectedDeal = useMemo(
@@ -239,6 +241,31 @@ export default function PCDealsPage() {
         </div>
       </div>
 
+      {/* Quick eBay search — type any part name, click a link, comp manually */}
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-3">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-7 h-7 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <Search size={13} />
+          </div>
+          <input
+            type="text"
+            value={quickQuery}
+            onChange={(e) => setQuickQuery(e.target.value)}
+            placeholder="Search any part — keyboard, RTX 4070, 32GB DDR4 3600…"
+            className="flex-1 bg-transparent text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
+          />
+          {quickQuery && (
+            <button
+              type="button"
+              onClick={() => setQuickQuery("")}
+              className="text-[10px] text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 px-2 py-1"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        <PriceLookup query={quickQuery} compact />
+      </div>
 
       {/* Summary tiles */}
       {deals.length > 0 && (
