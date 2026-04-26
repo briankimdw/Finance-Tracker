@@ -97,15 +97,41 @@ export function useMonthlyExpenseStats() {
   return { total, loading, refetch: fetchStats };
 }
 
+export interface ExpenseFilters {
+  search: string;
+  category: string;
+  dateFrom: string;
+  dateTo: string;
+  // Payment method filter. Special values:
+  //   ""               → no filter
+  //   "credit"         → any credit-card charge (regardless of which card)
+  //   "cash" / "debit" / "bank_transfer" / "other" → match payment_method exactly
+  paidWith: string;
+  // Specific credit card (overrides paidWith filter for credit charges)
+  cardId: string;
+  // Specific cash account (Checking / Savings / Cash on hand etc.)
+  cashAccountId: string;
+}
+
 export function filterExpenses(
   expenses: Expense[],
-  filters: { search: string; category: string; dateFrom: string; dateTo: string }
+  filters: ExpenseFilters
 ): Expense[] {
   return expenses.filter((e) => {
     if (filters.search && !e.name.toLowerCase().includes(filters.search.toLowerCase()) && !(e.notes || "").toLowerCase().includes(filters.search.toLowerCase())) return false;
     if (filters.category && e.category !== filters.category) return false;
     if (filters.dateFrom && e.date < filters.dateFrom) return false;
     if (filters.dateTo && e.date > filters.dateTo) return false;
+    if (filters.paidWith) {
+      // For "credit" filter we match any credit-card charge (ignore card payments)
+      if (filters.paidWith === "credit") {
+        if (e.payment_method !== "credit" || e.is_card_payment) return false;
+      } else if (e.payment_method !== filters.paidWith) {
+        return false;
+      }
+    }
+    if (filters.cardId && e.credit_card_id !== filters.cardId) return false;
+    if (filters.cashAccountId && e.cash_account_id !== filters.cashAccountId) return false;
     return true;
   });
 }

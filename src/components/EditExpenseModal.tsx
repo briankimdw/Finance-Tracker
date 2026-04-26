@@ -1,9 +1,10 @@
 ﻿"use client";
 
 import { useState, useEffect } from "react";
-import { X, CreditCard as CardIcon, Banknote } from "lucide-react";
+import { X, CreditCard as CardIcon, Banknote, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useCreditCards } from "@/hooks/useCreditCards";
+import { useCashAccounts } from "@/hooks/useCashAccounts";
 import type { Expense, ExpenseCategory, ExpenseFrequency, PaymentMethod } from "@/lib/types";
 
 const categories: ExpenseCategory[] = [
@@ -24,9 +25,11 @@ interface EditExpenseModalProps {
 export default function EditExpenseModal({ isOpen, expense, onClose, onUpdated }: EditExpenseModalProps) {
   const supabase = createClient();
   const { cards } = useCreditCards();
+  const { accounts } = useCashAccounts();
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [creditCardId, setCreditCardId] = useState<string>("");
+  const [cashAccountId, setCashAccountId] = useState<string>("");
   const [isCardPayment, setIsCardPayment] = useState(false);
   const [form, setForm] = useState({
     name: "", category: "Groceries" as ExpenseCategory, amount: "", date: "",
@@ -46,6 +49,7 @@ export default function EditExpenseModal({ isOpen, expense, onClose, onUpdated }
       });
       setPaymentMethod(expense.payment_method || "cash");
       setCreditCardId(expense.credit_card_id || "");
+      setCashAccountId(expense.cash_account_id || "");
       setIsCardPayment(expense.is_card_payment || false);
     }
   }, [expense]);
@@ -55,6 +59,8 @@ export default function EditExpenseModal({ isOpen, expense, onClose, onUpdated }
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    const accountIdToUse = (paymentMethod !== "credit" || isCardPayment) ? (cashAccountId || null) : null;
+
     const { error } = await supabase.from("expenses").update({
       name: form.name,
       category: form.category,
@@ -65,6 +71,7 @@ export default function EditExpenseModal({ isOpen, expense, onClose, onUpdated }
       notes: form.notes || null,
       payment_method: paymentMethod,
       credit_card_id: paymentMethod === "credit" || isCardPayment ? (creditCardId || null) : null,
+      cash_account_id: accountIdToUse,
       is_card_payment: isCardPayment,
     }).eq("id", expense.id);
     setLoading(false);
@@ -147,6 +154,24 @@ export default function EditExpenseModal({ isOpen, expense, onClose, onUpdated }
                   {cards.map((c) => <option key={c.id} value={c.id}>{c.name}{c.last_four ? ` •••• ${c.last_four}` : ""}</option>)}
                 </select>
               )}
+            </div>
+          )}
+
+          {/* Paid-from account picker — only when not a pure credit-card charge */}
+          {(paymentMethod !== "credit" || isCardPayment) && accounts.length > 0 && (
+            <div>
+              <label className={labelClass}>{isCardPayment ? "Paid from" : "Account"}</label>
+              <select value={cashAccountId} onChange={(e) => setCashAccountId(e.target.value)} className={inputClass}>
+                <option value="">— Not linked —</option>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name} ({a.type}) · ${Number(a.balance).toFixed(2)}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+                Helps you filter expenses by Checking vs Savings vs Cash on hand. Editing this won&apos;t auto-shift balances.
+              </p>
             </div>
           )}
 

@@ -1,12 +1,20 @@
 ﻿"use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Search, X, Receipt, CreditCard, Pencil, Banknote, ArrowDownRight } from "lucide-react";
+import { Plus, Trash2, Search, X, Receipt, CreditCard, Pencil, Banknote, ArrowDownRight, Wallet, PiggyBank, Coins } from "lucide-react";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import EditExpenseModal from "@/components/EditExpenseModal";
-import { useExpenses, filterExpenses } from "@/hooks/useExpenses";
+import { useExpenses, filterExpenses, type ExpenseFilters } from "@/hooks/useExpenses";
 import { useCreditCards } from "@/hooks/useCreditCards";
-import type { ExpenseCategory, Expense } from "@/lib/types";
+import { useCashAccounts } from "@/hooks/useCashAccounts";
+import type { ExpenseCategory, Expense, CashAccountType } from "@/lib/types";
+
+const ACCOUNT_TYPE_ICON: Record<CashAccountType, typeof Wallet> = {
+  checking: Wallet,
+  savings: PiggyBank,
+  cash: Banknote,
+  other: Coins,
+};
 
 const expenseCategories: ExpenseCategory[] = [
   "Rent / Mortgage", "Utilities", "Groceries", "Dining Out", "Transportation",
@@ -18,9 +26,13 @@ const expenseCategories: ExpenseCategory[] = [
 export default function ExpensesPage() {
   const { expenses, loading, refetch, deleteExpense } = useExpenses();
   const { cards } = useCreditCards();
+  const { accounts } = useCashAccounts();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
-  const [filters, setFilters] = useState({ search: "", category: "", dateFrom: "", dateTo: "" });
+  const [filters, setFilters] = useState<ExpenseFilters>({
+    search: "", category: "", dateFrom: "", dateTo: "",
+    paidWith: "", cardId: "", cashAccountId: "",
+  });
 
   const filtered = filterExpenses(expenses, filters);
   // Don't double-count card payments in the spending total
@@ -35,10 +47,19 @@ export default function ExpensesPage() {
   const topCategories = Array.from(categoryTotals.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3);
 
   const cardMap = new Map(cards.map((c) => [c.id, c]));
+  const accountMap = new Map(accounts.map((a) => [a.id, a]));
 
-  const updateFilter = (field: string, value: string) => setFilters((prev) => ({ ...prev, [field]: value }));
-  const hasFilters = filters.search || filters.category || filters.dateFrom || filters.dateTo;
-  const clearFilters = () => setFilters({ search: "", category: "", dateFrom: "", dateTo: "" });
+  const updateFilter = (field: keyof ExpenseFilters, value: string) => setFilters((prev) => {
+    // Mutually exclusive: picking a specific card auto-sets paidWith="credit",
+    // picking a specific cash account auto-sets paidWith to a non-credit method.
+    // Keep it simple — just write the field; the user can clear via Clear button.
+    return { ...prev, [field]: value };
+  });
+  const hasFilters = filters.search || filters.category || filters.dateFrom || filters.dateTo || filters.paidWith || filters.cardId || filters.cashAccountId;
+  const clearFilters = () => setFilters({
+    search: "", category: "", dateFrom: "", dateTo: "",
+    paidWith: "", cardId: "", cashAccountId: "",
+  });
   const inputClass = "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 dark:focus:border-blue-500";
 
   return (
@@ -74,7 +95,7 @@ export default function ExpensesPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm">
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm space-y-3">
         <div className="flex flex-wrap gap-3">
           <div className="relative flex-1 min-w-[200px]">
             <Search size={16} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
@@ -86,9 +107,74 @@ export default function ExpensesPage() {
           </select>
           <input type="date" value={filters.dateFrom} onChange={(e) => updateFilter("dateFrom", e.target.value)} className={inputClass} />
           <input type="date" value={filters.dateTo} onChange={(e) => updateFilter("dateTo", e.target.value)} className={inputClass} />
+        </div>
+
+        {/* Paid-with filter row — payment method + specific card + specific account */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mr-1">Paid with:</span>
+          {/* Payment method chips */}
+          {([
+            { v: "", label: "All", icon: null },
+            { v: "credit", label: "Credit Card", icon: CreditCard },
+            { v: "cash", label: "Cash", icon: Banknote },
+            { v: "debit", label: "Debit", icon: Wallet },
+            { v: "bank_transfer", label: "Bank Transfer", icon: ArrowDownRight },
+            { v: "other", label: "Other", icon: null },
+          ] as const).map((opt) => {
+            const active = filters.paidWith === opt.v;
+            const Icon = opt.icon;
+            return (
+              <button
+                key={opt.v}
+                type="button"
+                onClick={() => updateFilter("paidWith", opt.v)}
+                className={`text-xs px-2.5 py-1.5 rounded-md font-medium border transition-colors flex items-center gap-1 ${
+                  active
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800"
+                }`}
+              >
+                {Icon && <Icon size={11} />}
+                {opt.label}
+              </button>
+            );
+          })}
+
+          {/* Specific card */}
+          {cards.length > 0 && (
+            <select
+              value={filters.cardId}
+              onChange={(e) => updateFilter("cardId", e.target.value)}
+              className={`${inputClass} text-xs py-1.5`}
+            >
+              <option value="">Any card</option>
+              {cards.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}{c.last_four ? ` ••${c.last_four}` : ""}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {/* Specific cash account */}
+          {accounts.length > 0 && (
+            <select
+              value={filters.cashAccountId}
+              onChange={(e) => updateFilter("cashAccountId", e.target.value)}
+              className={`${inputClass} text-xs py-1.5`}
+            >
+              <option value="">Any account</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name} ({a.type})
+                </option>
+              ))}
+            </select>
+          )}
+
           {hasFilters && (
-            <button onClick={clearFilters} className="flex items-center gap-1 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
-              <X size={14} /> Clear
+            <button onClick={clearFilters} className="ml-auto flex items-center gap-1 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+              <X size={12} /> Clear
             </button>
           )}
         </div>
@@ -126,7 +212,9 @@ export default function ExpensesPage() {
                 </tr>
               ) : (
                 filtered.map((exp) => {
-                  const card = exp.credit_card_id ? cardMap.get(exp.credit_card_id) : null;
+                  const card = exp.credit_card_id && !exp.is_card_payment ? cardMap.get(exp.credit_card_id) : null;
+                  const account = exp.cash_account_id ? accountMap.get(exp.cash_account_id) : null;
+                  const AccountIcon = account ? ACCOUNT_TYPE_ICON[account.type] : null;
                   return (
                     <tr
                       key={exp.id}
@@ -145,14 +233,38 @@ export default function ExpensesPage() {
                       </td>
                       <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">{exp.category}</td>
                       <td className="px-4 py-3.5 text-sm">
-                        {card ? (
+                        {/* Card-payment rows: show card pill (paid TO) + account pill (paid FROM) */}
+                        {exp.is_card_payment ? (
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {exp.credit_card_id && cardMap.get(exp.credit_card_id) && (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md text-white" style={{ background: cardMap.get(exp.credit_card_id)!.color }}>
+                                <CreditCard size={10} />
+                                {cardMap.get(exp.credit_card_id)!.name}
+                              </span>
+                            )}
+                            {account && AccountIcon && (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md border" style={{ background: `${account.color}15`, color: account.color, borderColor: `${account.color}40` }}>
+                                <AccountIcon size={10} />
+                                from {account.name}
+                              </span>
+                            )}
+                          </div>
+                        ) : card ? (
                           <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-md text-white" style={{ background: card.color }}>
                             <CreditCard size={11} />
                             {card.name}{card.last_four ? ` ••${card.last_four}` : ""}
                           </span>
+                        ) : account && AccountIcon ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-md border" style={{ background: `${account.color}15`, color: account.color, borderColor: `${account.color}40` }}>
+                            <AccountIcon size={11} />
+                            {account.name}
+                          </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                            <Banknote size={12} /> Cash
+                            {exp.payment_method === "cash" ? <><Banknote size={12} /> Cash</>
+                              : exp.payment_method === "debit" ? <><Wallet size={12} /> Debit</>
+                              : exp.payment_method === "bank_transfer" ? <><ArrowDownRight size={12} /> Bank transfer</>
+                              : <>{exp.payment_method}</>}
                           </span>
                         )}
                       </td>

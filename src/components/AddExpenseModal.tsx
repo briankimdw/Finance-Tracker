@@ -68,6 +68,10 @@ export default function AddExpenseModal({ isOpen, onClose, onAdded, defaultCardI
     setLoading(true);
 
     const cardIdToUse = isCardPayment ? (creditCardId || null) : paymentMethod === "credit" ? (creditCardId || null) : null;
+    // Tag the expense with the cash account when paying from one (cash/debit/
+    // bank_transfer) OR when this expense is a card payment funded from an
+    // account. Pure credit-card charges leave this null.
+    const accountIdToUse = (paymentMethod !== "credit" || isCardPayment) ? (selectedAccount || null) : null;
 
     const { error } = await supabase.from("expenses").insert({
       user_id: user?.id ?? null,
@@ -80,6 +84,7 @@ export default function AddExpenseModal({ isOpen, onClose, onAdded, defaultCardI
       notes: form.notes || null,
       payment_method: paymentMethod,
       credit_card_id: cardIdToUse,
+      cash_account_id: accountIdToUse,
       is_card_payment: isCardPayment,
     });
     setLoading(false);

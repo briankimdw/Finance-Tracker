@@ -195,6 +195,9 @@ export interface Expense {
   notes: string | null;
   payment_method: PaymentMethod;
   credit_card_id: string | null;
+  // Cash account this expense was paid from (when not paid with credit card),
+  // or the funding account for a card payment. Nullable for older rows.
+  cash_account_id: string | null;
   is_card_payment: boolean;
   created_at: string;
 }
