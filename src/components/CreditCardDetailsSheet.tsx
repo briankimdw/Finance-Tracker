@@ -5,9 +5,10 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   CreditCard as CardIcon,
-  Pencil, Trash2, ArrowUpRight, ArrowDownRight, Calendar,
+  Pencil, Trash2, ArrowUpRight, ArrowDownRight, Calendar, Wand2,
 } from "lucide-react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import AdjustBalanceModal from "@/components/AdjustBalanceModal";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 import { createClient } from "@/lib/supabase/client";
@@ -60,6 +61,7 @@ export default function CreditCardDetailsSheet({
 
   const [transactions, setTransactions] = useState<CardTransaction[]>([]);
   const [loadingTx, setLoadingTx] = useState(false);
+  const [showAdjust, setShowAdjust] = useState(false);
 
   useEffect(() => {
     if (!isOpen || !card) return;
@@ -174,8 +176,16 @@ export default function CreditCardDetailsSheet({
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 260, damping: 26, delay: 0.04 }}
-          className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4"
+          className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 relative"
         >
+          <button
+            type="button"
+            onClick={() => setShowAdjust(true)}
+            className="absolute top-3 right-3 inline-flex items-center gap-1 text-[11px] font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-950/40 px-2 py-1 rounded-md transition-colors"
+            title="Correct a wrong balance — useful when a payment was logged for the wrong amount"
+          >
+            <Wand2 size={11} /> Correct
+          </button>
           <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">
             Current balance
           </p>
@@ -370,6 +380,17 @@ export default function CreditCardDetailsSheet({
           </button>
         </div>
       </div>
+
+      {card && (
+        <AdjustBalanceModal
+          isOpen={showAdjust}
+          kind="card"
+          targetId={card.id}
+          targetName={card.name}
+          currentBalance={Number(card.balance)}
+          onClose={() => setShowAdjust(false)}
+        />
+      )}
     </BottomSheet>
   );
 }

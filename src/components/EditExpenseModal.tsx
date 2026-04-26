@@ -5,7 +5,23 @@ import { X, CreditCard as CardIcon, Banknote, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useCreditCards } from "@/hooks/useCreditCards";
 import { useCashAccounts } from "@/hooks/useCashAccounts";
+import { adjustAccountBalance } from "@/lib/updateBalance";
 import type { Expense, ExpenseCategory, ExpenseFrequency, PaymentMethod } from "@/lib/types";
+
+/**
+ * Returns the SIGNED amount this expense applied to its linked cash account.
+ * Negative = money left the account (debit). Positive = money returned (refund).
+ * Returns 0 if the expense doesn't touch a cash account (pure card charge with
+ * no cash_account_id, or no account linked).
+ */
+function cashEffect(exp: { amount: number; payment_method: PaymentMethod; is_card_payment: boolean; cash_account_id: string | null }): { accountId: string | null; delta: number } {
+  // Pure credit-card charges and refunds (payment_method=credit, is_card_payment=false)
+  // don't touch any cash account.
+  const fundedFromCash = exp.is_card_payment || exp.payment_method !== "credit";
+  if (!fundedFromCash || !exp.cash_account_id) return { accountId: null, delta: 0 };
+  // Cash debit: positive amount = money out (negative delta on account)
+  return { accountId: exp.cash_account_id, delta: -Number(exp.amount) };
+}
 
 const categories: ExpenseCategory[] = [
   "Rent / Mortgage", "Utilities", "Groceries", "Dining Out", "Transportation",
@@ -60,11 +76,29 @@ export default function EditExpenseModal({ isOpen, expense, onClose, onUpdated }
     e.preventDefault();
     setLoading(true);
     const accountIdToUse = (paymentMethod !== "credit" || isCardPayment) ? (cashAccountId || null) : null;
+    const newAmount = parseFloat(form.amount);
+
+    // Compute old vs. new cash-account effect so we can rebalance accounts
+    // automatically. This is what fixes "I paid $500 but logged $400" — the
+    // user just edits the amount, and the cash account gets re-debited the
+    // missing $100 in the same write.
+    const oldEffect = cashEffect({
+      amount: Number(expense.amount),
+      payment_method: expense.payment_method,
+      is_card_payment: expense.is_card_payment,
+      cash_account_id: expense.cash_account_id,
+    });
+    const newEffect = cashEffect({
+      amount: newAmount,
+      payment_method: paymentMethod,
+      is_card_payment: isCardPayment,
+      cash_account_id: accountIdToUse,
+    });
 
     const { error } = await supabase.from("expenses").update({
       name: form.name,
       category: form.category,
-      amount: parseFloat(form.amount),
+      amount: newAmount,
       date: form.date,
       recurring: form.recurring,
       frequency: form.recurring ? form.frequency : "One-time",
@@ -74,6 +108,24 @@ export default function EditExpenseModal({ isOpen, expense, onClose, onUpdated }
       cash_account_id: accountIdToUse,
       is_card_payment: isCardPayment,
     }).eq("id", expense.id);
+
+    if (!error) {
+      // Apply the rebalance.
+      // Same account: net delta only. Different/null accounts: revert old + apply new.
+      if (oldEffect.accountId && oldEffect.accountId === newEffect.accountId) {
+        const net = newEffect.delta - oldEffect.delta;
+        if (net !== 0) await adjustAccountBalance(oldEffect.accountId, net);
+      } else {
+        if (oldEffect.accountId && oldEffect.delta !== 0) {
+          // Reverse the old effect (delta was negative for debit; reverse with positive)
+          await adjustAccountBalance(oldEffect.accountId, -oldEffect.delta);
+        }
+        if (newEffect.accountId && newEffect.delta !== 0) {
+          await adjustAccountBalance(newEffect.accountId, newEffect.delta);
+        }
+      }
+    }
+
     setLoading(false);
     if (!error) {
       onUpdated();

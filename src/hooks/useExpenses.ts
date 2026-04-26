@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useRealtimeRefetch } from "@/lib/useRealtimeRefetch";
+import { adjustAccountBalance } from "@/lib/updateBalance";
 import type { Expense } from "@/lib/types";
 
 export function useExpenses() {
@@ -30,7 +31,23 @@ export function useExpenses() {
   useRealtimeRefetch(["expenses"], fetchExpenses);
 
   const deleteExpense = async (id: string) => {
+    // Look up the expense before deleting so we can reverse any cash-account
+    // debit it caused. Pure credit-card charges (payment_method=credit AND
+    // is_card_payment=false) didn't touch a cash account, so nothing to revert.
+    const { data: row } = await supabase
+      .from("expenses")
+      .select("amount, payment_method, is_card_payment, cash_account_id")
+      .eq("id", id)
+      .maybeSingle();
     await supabase.from("expenses").delete().eq("id", id);
+    if (row) {
+      const e = row as { amount: number; payment_method: string; is_card_payment: boolean; cash_account_id: string | null };
+      const fundedFromCash = e.is_card_payment || e.payment_method !== "credit";
+      if (fundedFromCash && e.cash_account_id) {
+        // Original effect was -amount on the account; reversal is +amount.
+        await adjustAccountBalance(e.cash_account_id, Number(e.amount));
+      }
+    }
     await fetchExpenses();
   };
 

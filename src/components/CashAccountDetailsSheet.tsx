@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Wallet, PiggyBank, Banknote, Coins,
-  Pencil, ArrowLeftRight, Trash2, ArrowRight, Target, HandCoins, ArrowDown, ArrowUp,
+  Pencil, ArrowLeftRight, Trash2, ArrowRight, Target, HandCoins, ArrowDown, ArrowUp, Wand2,
 } from "lucide-react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -17,6 +17,7 @@ import { useAuth } from "@/context/AuthContext";
 import { getGoalIcon } from "@/lib/goalIcons";
 import { formatESTDate } from "@/lib/dates";
 import ReceiveMoneyModal from "@/components/ReceiveMoneyModal";
+import AdjustBalanceModal from "@/components/AdjustBalanceModal";
 import type { CashAccount, CashAccountType } from "@/lib/types";
 
 const ACCOUNT_ICON: Record<CashAccountType, typeof Wallet> = {
@@ -96,6 +97,7 @@ export default function CashAccountDetailsSheet({
   const [debtPayments, setDebtPayments] = useState<DebtPaymentRow[]>([]);
   const [loadingData, setLoadingData] = useState(false);
   const [showReceive, setShowReceive] = useState(false);
+  const [showAdjust, setShowAdjust] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Fetch reservations (contributions) + recent transfers when open + account change
@@ -258,8 +260,16 @@ export default function CashAccountDetailsSheet({
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 260, damping: 26, delay: 0.04 }}
-          className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4"
+          className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 relative"
         >
+          <button
+            type="button"
+            onClick={() => setShowAdjust(true)}
+            className="absolute top-3 right-3 inline-flex items-center gap-1 text-[11px] font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-950/40 px-2 py-1 rounded-md transition-colors"
+            title="Correct a drifted balance"
+          >
+            <Wand2 size={11} /> Correct
+          </button>
           <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">
             Balance
           </p>
@@ -558,6 +568,15 @@ export default function CashAccountDetailsSheet({
         isOpen={showReceive}
         onClose={() => setShowReceive(false)}
         defaultAccountId={account.id}
+        onSaved={() => setRefreshKey((k) => k + 1)}
+      />
+      <AdjustBalanceModal
+        isOpen={showAdjust}
+        kind="cash"
+        targetId={account.id}
+        targetName={account.name}
+        currentBalance={balance}
+        onClose={() => setShowAdjust(false)}
         onSaved={() => setRefreshKey((k) => k + 1)}
       />
     </BottomSheet>
