@@ -1,6 +1,7 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Plus, Trash2, Search, X, Receipt, CreditCard, Pencil, Banknote, ArrowDownRight, Wallet, PiggyBank, Coins } from "lucide-react";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import EditExpenseModal from "@/components/EditExpenseModal";
@@ -24,6 +25,7 @@ const expenseCategories: ExpenseCategory[] = [
 ];
 
 export default function ExpensesPage() {
+  const searchParams = useSearchParams();
   const { expenses, loading, refetch, deleteExpense } = useExpenses();
   const { cards } = useCreditCards();
   const { accounts } = useCashAccounts();
@@ -33,6 +35,21 @@ export default function ExpensesPage() {
     search: "", category: "", dateFrom: "", dateTo: "",
     paidWith: "", cardId: "", cashAccountId: "",
   });
+
+  // Initialize filters from URL search params (e.g. ?category=Groceries from
+  // a "See all" click on a budget category sheet). Runs once on mount only.
+  useEffect(() => {
+    if (!searchParams) return;
+    const category = searchParams.get("category") || "";
+    const cardId = searchParams.get("cardId") || "";
+    const cashAccountId = searchParams.get("cashAccountId") || "";
+    const paidWith = searchParams.get("paidWith") || "";
+    if (category || cardId || cashAccountId || paidWith) {
+      setFilters((prev) => ({ ...prev, category, cardId, cashAccountId, paidWith }));
+    }
+    // Run only on first paint — once the user starts editing, leave them alone
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filtered = filterExpenses(expenses, filters);
   // Don't double-count card payments in the spending total

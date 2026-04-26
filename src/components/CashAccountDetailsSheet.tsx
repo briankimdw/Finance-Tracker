@@ -376,7 +376,7 @@ export default function CashAccountDetailsSheet({
             </div>
             {debtPayments.length > 0 && (
               <Link
-                href="/debts"
+                href={`/accounts/${account.id}`}
                 onClick={onClose}
                 className="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:underline"
               >
@@ -443,11 +443,22 @@ export default function CashAccountDetailsSheet({
 
         {/* Recent activity (transfers) */}
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <ArrowLeftRight size={14} className="text-gray-400 dark:text-gray-500" />
-            <h3 className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Recent Transfers
-            </h3>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2">
+              <ArrowLeftRight size={14} className="text-gray-400 dark:text-gray-500" />
+              <h3 className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Recent Transfers
+              </h3>
+            </div>
+            {transfers.length > 0 && (
+              <Link
+                href={`/accounts/${account.id}`}
+                onClick={onClose}
+                className="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                See all
+              </Link>
+            )}
           </div>
           {loadingData ? (
             <div className="text-xs text-gray-400 dark:text-gray-500 py-3">Loading…</div>

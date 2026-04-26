@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Pencil, Trash2, CreditCard, Banknote, ArrowDownRight, ArrowUpRight, Receipt, TrendingUp, TrendingDown } from "lucide-react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -324,7 +325,18 @@ export default function BudgetCategoryDetailsSheet({
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Recent transactions</h3>
-                <span className="text-[11px] text-gray-400 dark:text-gray-500 tabular-nums">{recentExpenses.length}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-gray-400 dark:text-gray-500 tabular-nums">{recentExpenses.length}</span>
+                  {budget && recentExpenses.length > 0 && (
+                    <Link
+                      href={`/expenses?category=${encodeURIComponent(budget.category)}`}
+                      onClick={onClose}
+                      className="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      See all
+                    </Link>
+                  )}
+                </div>
               </div>
               {recentExpenses.length === 0 ? (
                 <div className="bg-gray-50 dark:bg-gray-800/60 rounded-xl px-4 py-8 text-center">

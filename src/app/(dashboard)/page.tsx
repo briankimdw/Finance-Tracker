@@ -655,6 +655,11 @@ export default function DashboardPage() {
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm min-w-0">
           <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
             <h2 className="text-sm font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Recent Reselling</h2>
+            {recentItems.length > 5 && (
+              <Link href="/inventory" className="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:underline">
+                See all →
+              </Link>
+            )}
           </div>
           <div className="p-3 space-y-1.5">
             {recentItems.length === 0 ? (
@@ -704,6 +709,11 @@ export default function DashboardPage() {
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm min-w-0">
           <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
             <h2 className="text-sm font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Recent Income</h2>
+            {recentIncomes.length > 5 && (
+              <Link href="/income" className="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:underline">
+                See all →
+              </Link>
+            )}
           </div>
           <div className="p-3 space-y-1.5">
             {recentIncomes.length === 0 ? (

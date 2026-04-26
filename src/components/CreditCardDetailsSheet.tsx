@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   CreditCard as CardIcon,
@@ -271,11 +272,22 @@ export default function CreditCardDetailsSheet({
 
         {/* Recent activity */}
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <CardIcon size={14} className="text-gray-400 dark:text-gray-500" />
-            <h3 className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Recent Activity
-            </h3>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2">
+              <CardIcon size={14} className="text-gray-400 dark:text-gray-500" />
+              <h3 className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Recent Activity
+              </h3>
+            </div>
+            {card && transactions.length > 0 && (
+              <Link
+                href={`/cards/${card.id}`}
+                onClick={onClose}
+                className="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                See all
+              </Link>
+            )}
           </div>
           {loadingTx ? (
             <div className="text-xs text-gray-400 dark:text-gray-500 py-3">Loading…</div>
