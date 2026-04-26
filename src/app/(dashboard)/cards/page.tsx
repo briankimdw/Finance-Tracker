@@ -1,11 +1,13 @@
 ﻿"use client";
 
 import { useState, useRef } from "react";
-import { Plus, Pencil, Trash2, CreditCard as CardIcon, ArrowUpRight, ArrowDownRight, GripVertical, Wallet, PiggyBank, Banknote, Coins, Calendar, ArrowLeftRight } from "lucide-react";
+import { Plus, Pencil, Trash2, CreditCard as CardIcon, ArrowUpRight, ArrowDownRight, GripVertical, Wallet, PiggyBank, Banknote, Coins, Calendar, ArrowLeftRight, HandCoins, Undo2 } from "lucide-react";
 import AddCreditCardModal from "@/components/AddCreditCardModal";
 import AddCashAccountModal from "@/components/AddCashAccountModal";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import TransferModal from "@/components/TransferModal";
+import ReceiveMoneyModal from "@/components/ReceiveMoneyModal";
+import RefundCardModal from "@/components/RefundCardModal";
 import CashAccountDetailsSheet from "@/components/CashAccountDetailsSheet";
 import CreditCardDetailsSheet from "@/components/CreditCardDetailsSheet";
 import { useCreditCards } from "@/hooks/useCreditCards";
@@ -48,6 +50,9 @@ export default function CardsPage() {
   const [chargeCard, setChargeCard] = useState<CreditCardWithStats | null>(null);
   const [showTransfer, setShowTransfer] = useState(false);
   const [transferFromId, setTransferFromId] = useState<string | undefined>(undefined);
+  const [showReceive, setShowReceive] = useState(false);
+  const [receiveDefaultAccount, setReceiveDefaultAccount] = useState<string | undefined>(undefined);
+  const [refundCard, setRefundCard] = useState<CreditCardWithStats | null>(null);
   const [detailsAccountId, setDetailsAccountId] = useState<string | null>(null);
   const [detailsCardId, setDetailsCardId] = useState<string | null>(null);
   const detailsCard = detailsCardId ? cards.find((c) => c.id === detailsCardId) ?? null : null;
@@ -175,6 +180,11 @@ export default function CardsPage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">Cash & Bank Accounts</h2>
           <div className="flex items-center gap-2">
+            {accounts.length >= 1 && (
+              <button onClick={() => { setReceiveDefaultAccount(undefined); setShowReceive(true); }} className="text-sm text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 font-medium px-3 py-1.5 rounded-lg hover:bg-green-50 dark:hover:bg-green-950/40 transition-colors flex items-center gap-1" title="Friend sent you money — log it and credit an account">
+                <HandCoins size={14} /> Receive
+              </button>
+            )}
             {accounts.length >= 2 && (
               <button onClick={() => setShowTransfer(true)} className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors flex items-center gap-1">
                 <ArrowLeftRight size={14} /> Transfer
@@ -379,6 +389,9 @@ export default function CardsPage() {
                       <button onClick={(e) => { e.stopPropagation(); setPayCard(card); }} className="flex-1 flex items-center justify-center gap-1 text-xs bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-100 border border-green-200 dark:border-green-800 px-2.5 py-1.5 rounded-md transition-colors">
                         <ArrowDownRight size={12} /> Pay
                       </button>
+                      <button onClick={(e) => { e.stopPropagation(); setRefundCard(card); }} className="flex items-center justify-center gap-1 text-xs bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 px-2.5 py-1.5 rounded-md transition-colors" title="Record a return / refund onto this card">
+                        <Undo2 size={12} /> Refund
+                      </button>
                       <button onClick={(e) => { e.stopPropagation(); setEditCard(card); setShowAddCardModal(true); }} className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-1.5" title="Edit"><Pencil size={14} /></button>
                       <button onClick={(e) => { e.stopPropagation(); if (confirm(`Delete ${card.name}?`)) deleteCard(card.id); }} className="text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors p-1.5" title="Delete"><Trash2 size={14} /></button>
                     </div>
@@ -395,6 +408,8 @@ export default function CardsPage() {
       <AddExpenseModal isOpen={!!chargeCard} onClose={() => setChargeCard(null)} onAdded={refetchCards} defaultCardId={chargeCard?.id} />
       <AddExpenseModal isOpen={!!payCard} onClose={() => setPayCard(null)} onAdded={refetchCards} defaultCardId={payCard?.id} defaultIsCardPayment={true} />
       <TransferModal isOpen={showTransfer} onClose={() => { setShowTransfer(false); setTransferFromId(undefined); }} onTransferred={refetchCards} defaultFromId={transferFromId} />
+      <ReceiveMoneyModal isOpen={showReceive} onClose={() => { setShowReceive(false); setReceiveDefaultAccount(undefined); }} defaultAccountId={receiveDefaultAccount} />
+      <RefundCardModal isOpen={refundCard !== null} card={refundCard} onClose={() => setRefundCard(null)} onSaved={refetchCards} />
 
       <CashAccountDetailsSheet
         isOpen={detailsAccountId !== null}
