@@ -107,13 +107,15 @@ export default function ReceiveMoneyModal({ isOpen, onClose, onSaved, defaultAcc
       return;
     }
 
-    // 2. Record the payment (full amount)
+    // 2. Record the payment (full amount, tagged with the destination account
+    //    so the account's "Recent Receives" history can show it)
     await supabase.from("debt_payments").insert({
       debt_id: debtRow.id,
       user_id: user?.id ?? null,
       amount: val,
       date,
       notes: notes.trim() || null,
+      cash_account_id: accountId,
     });
 
     // 3. Credit the cash account

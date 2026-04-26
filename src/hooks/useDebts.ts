@@ -62,9 +62,29 @@ export function useDebts() {
   };
 
   const addPayment = async (debtId: string, amount: number, notes?: string, date?: string, accountId?: string) => {
+    // If no explicit accountId, look up the user's first checking account so we
+    // can store it on the payment row (for "recent receives" history per account).
+    let resolvedAccountId = accountId ?? null;
+    if (!resolvedAccountId) {
+      let q = supabase
+        .from("cash_accounts")
+        .select("id")
+        .eq("type", "checking")
+        .order("display_order", { ascending: true })
+        .limit(1);
+      if (user) q = q.eq("user_id", user.id);
+      else q = q.is("user_id", null);
+      const { data } = await q;
+      resolvedAccountId = data?.[0]?.id ?? null;
+    }
+
     const { error } = await supabase.from("debt_payments").insert({
-      debt_id: debtId, user_id: user?.id ?? null, amount,
-      date: date || todayEST(), notes: notes || null,
+      debt_id: debtId,
+      user_id: user?.id ?? null,
+      amount,
+      date: date || todayEST(),
+      notes: notes || null,
+      cash_account_id: resolvedAccountId,
     });
 
     if (!error) {
@@ -74,8 +94,8 @@ export function useDebts() {
         // - I owe them (I'm paying back): money LEAVES my account (negative)
         // - They owe me (I'm receiving payment): money ENTERS my account (positive)
         const signed = debt.direction === "i_owe" ? -amount : amount;
-        if (accountId) {
-          await adjustAccountBalance(accountId, signed);
+        if (resolvedAccountId) {
+          await adjustAccountBalance(resolvedAccountId, signed);
         } else {
           await adjustCheckingBalance(user?.id ?? null, signed);
         }

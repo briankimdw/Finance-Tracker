@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Wallet, PiggyBank, Banknote, Coins,
-  Pencil, ArrowLeftRight, Trash2, ArrowRight, Target,
+  Pencil, ArrowLeftRight, Trash2, ArrowRight, Target, HandCoins, ArrowDown, ArrowUp,
 } from "lucide-react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { getGoalIcon } from "@/lib/goalIcons";
 import { formatESTDate } from "@/lib/dates";
+import ReceiveMoneyModal from "@/components/ReceiveMoneyModal";
 import type { CashAccount, CashAccountType } from "@/lib/types";
 
 const ACCOUNT_ICON: Record<CashAccountType, typeof Wallet> = {
@@ -49,6 +50,21 @@ interface TransferRow {
   notes: string | null;
 }
 
+// Cash flow recorded against this account via debt_payments.cash_account_id.
+// `direction` of the parent debt tells us if money came in (they_owe) or out (i_owe).
+interface DebtPaymentRow {
+  id: string;
+  amount: number;
+  date: string;
+  notes: string | null;
+  debts: {
+    person: string;
+    direction: "i_owe" | "they_owe";
+    description: string | null;
+    color: string;
+  } | null;
+}
+
 interface CashAccountDetailsSheetProps {
   isOpen: boolean;
   accountId: string | null;
@@ -77,7 +93,10 @@ export default function CashAccountDetailsSheet({
 
   const [reservations, setReservations] = useState<GoalReservation[]>([]);
   const [transfers, setTransfers] = useState<TransferRow[]>([]);
+  const [debtPayments, setDebtPayments] = useState<DebtPaymentRow[]>([]);
   const [loadingData, setLoadingData] = useState(false);
+  const [showReceive, setShowReceive] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Fetch reservations (contributions) + recent transfers when open + account change
   useEffect(() => {
@@ -106,7 +125,21 @@ export default function CashAccountDetailsSheet({
         if (user) transfersQ = transfersQ.eq("user_id", user.id);
         else transfersQ = transfersQ.is("user_id", null);
 
-        const [contribRes, transfersRes] = await Promise.all([contribQ, transfersQ]);
+        // Debt payments tied to this account — receives (they_owe) and
+        // payments out (i_owe). Pull the parent debt for person + direction.
+        let debtPaymentsQ = supabase
+          .from("debt_payments")
+          .select("id, amount, date, notes, debts(person, direction, description, color)")
+          .eq("cash_account_id", accountId)
+          .order("date", { ascending: false })
+          .order("created_at", { ascending: false })
+          .limit(20);
+        if (user) debtPaymentsQ = debtPaymentsQ.eq("user_id", user.id);
+        else debtPaymentsQ = debtPaymentsQ.is("user_id", null);
+
+        const [contribRes, transfersRes, debtPaymentsRes] = await Promise.all([
+          contribQ, transfersQ, debtPaymentsQ,
+        ]);
         if (cancelled) return;
 
         // Group contributions by goal
@@ -132,10 +165,21 @@ export default function CashAccountDetailsSheet({
         out.sort((a, b) => b.amount - a.amount);
         setReservations(out);
         setTransfers((transfersRes.data || []) as TransferRow[]);
+        // Supabase nests joined relations as object OR array depending on FK
+        // shape — normalize to a single object/null here.
+        type RawDebtPaymentRow = Omit<DebtPaymentRow, "debts"> & {
+          debts: DebtPaymentRow["debts"] | DebtPaymentRow["debts"][] | null;
+        };
+        const dpRows: DebtPaymentRow[] = ((debtPaymentsRes.data || []) as RawDebtPaymentRow[]).map((r) => ({
+          ...r,
+          debts: Array.isArray(r.debts) ? r.debts[0] ?? null : r.debts,
+        }));
+        setDebtPayments(dpRows);
       } catch {
         if (!cancelled) {
           setReservations([]);
           setTransfers([]);
+          setDebtPayments([]);
         }
       } finally {
         if (!cancelled) setLoadingData(false);
@@ -146,7 +190,7 @@ export default function CashAccountDetailsSheet({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, accountId, user, supabase, goals]);
+  }, [isOpen, accountId, user, supabase, goals, refreshKey]);
 
   if (!account) return null;
 
@@ -321,6 +365,82 @@ export default function CashAccountDetailsSheet({
           )}
         </div>
 
+        {/* Recent receives + payouts (debt_payments tied to this account) */}
+        <div>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2">
+              <HandCoins size={14} className="text-gray-400 dark:text-gray-500" />
+              <h3 className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Recent Receives &amp; Payouts
+              </h3>
+            </div>
+            {debtPayments.length > 0 && (
+              <Link
+                href="/debts"
+                onClick={onClose}
+                className="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                See all
+              </Link>
+            )}
+          </div>
+          {loadingData ? (
+            <div className="text-xs text-gray-400 dark:text-gray-500 py-3">Loading…</div>
+          ) : debtPayments.length === 0 ? (
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
+              No money received or paid out from this account yet. Use{" "}
+              <span className="font-medium text-green-600 dark:text-green-400">Receive</span>{" "}
+              on the Cards page when a friend pays you back.
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {debtPayments.map((p) => {
+                const incoming = p.debts?.direction === "they_owe";
+                const personName = p.debts?.person ?? "Unknown";
+                const sign = incoming ? "+" : "−";
+                const amountClass = incoming
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-red-600 dark:text-red-400";
+                return (
+                  <Link
+                    key={p.id}
+                    href="/debts"
+                    onClick={onClose}
+                    className="group flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                        incoming
+                          ? "bg-green-100 dark:bg-green-950/40 text-green-600 dark:text-green-400"
+                          : "bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400"
+                      }`}
+                    >
+                      {incoming ? <ArrowDown size={15} /> : <ArrowUp size={15} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {incoming ? `From ${personName}` : `To ${personName}`}
+                      </p>
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                        {incoming ? "Received" : "Paid out"} ·{" "}
+                        {formatESTDate(p.date, { month: "short", day: "numeric", year: "numeric" })}
+                        {p.notes ? ` · ${p.notes}` : p.debts?.description ? ` · ${p.debts.description}` : ""}
+                      </p>
+                    </div>
+                    <span className={`text-sm font-semibold tabular-nums shrink-0 ${amountClass}`}>
+                      {sign}${Number(p.amount).toFixed(2)}
+                    </span>
+                    <ArrowRight
+                      size={14}
+                      className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 shrink-0 transition-colors"
+                    />
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         {/* Recent activity (transfers) */}
         <div>
           <div className="flex items-center gap-2 mb-2">
@@ -385,12 +505,11 @@ export default function CashAccountDetailsSheet({
         <div className="flex gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
           <button
             type="button"
-            onClick={() => {
-              onEdit(account);
-            }}
-            className="flex-1 flex items-center justify-center gap-1.5 text-sm font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl transition-colors"
+            onClick={() => setShowReceive(true)}
+            className="flex-1 flex items-center justify-center gap-1.5 text-sm font-medium bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-green-600/20"
+            title="Log money received from a friend"
           >
-            <Pencil size={14} /> Edit
+            <HandCoins size={14} /> Receive
           </button>
           {canTransfer && (
             <button
@@ -405,6 +524,16 @@ export default function CashAccountDetailsSheet({
           )}
           <button
             type="button"
+            onClick={() => {
+              onEdit(account);
+            }}
+            className="flex items-center justify-center gap-1.5 text-sm font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2.5 rounded-xl transition-colors"
+            title="Edit account"
+          >
+            <Pencil size={14} />
+          </button>
+          <button
+            type="button"
             onClick={handleDelete}
             aria-label={`Delete ${account.name}`}
             className="flex items-center justify-center gap-1.5 text-sm font-medium bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 border border-red-200 dark:border-red-800 px-4 py-2.5 rounded-xl transition-colors"
@@ -413,6 +542,13 @@ export default function CashAccountDetailsSheet({
           </button>
         </div>
       </div>
+
+      <ReceiveMoneyModal
+        isOpen={showReceive}
+        onClose={() => setShowReceive(false)}
+        defaultAccountId={account.id}
+        onSaved={() => setRefreshKey((k) => k + 1)}
+      />
     </BottomSheet>
   );
 }

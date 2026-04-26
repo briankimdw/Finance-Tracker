@@ -433,6 +433,9 @@ export interface DebtPayment {
   amount: number;
   date: string;
   notes: string | null;
+  // Account that received the money (they_owe) or funded the payment (i_owe).
+  // Nullable for older rows recorded before this column existed.
+  cash_account_id: string | null;
   created_at: string;
 }
 
