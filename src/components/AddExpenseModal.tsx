@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useState, useEffect } from "react";
-import { X, CreditCard as CardIcon, Banknote, Wallet } from "lucide-react";
+import { X, CreditCard as CardIcon, Banknote, Wallet, Split } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useCreditCards } from "@/hooks/useCreditCards";
@@ -42,6 +42,17 @@ export default function AddExpenseModal({ isOpen, onClose, onAdded, defaultCardI
     recurring: false, frequency: "Monthly" as ExpenseFrequency, notes: "",
   });
 
+  // ───── Split-payment state ──────────────────────────────────────────────
+  // Split mode lets the user pay one purchase with multiple methods (e.g.
+  // $40 cash + $60 credit). Disabled by default; toggling it reveals two
+  // portion blocks with their own amount + method pickers. On save, we
+  // insert one expense row per portion sharing a single split_group_id.
+  const [splitEnabled, setSplitEnabled] = useState(false);
+  const [splitCashAmount, setSplitCashAmount] = useState("");
+  const [splitCardAmount, setSplitCardAmount] = useState("");
+  const [splitCashAccountId, setSplitCashAccountId] = useState("");
+  const [splitCardId, setSplitCardId] = useState("");
+
   useEffect(() => {
     if (isOpen && defaultCardId) {
       setPaymentMethod("credit");
@@ -57,7 +68,15 @@ export default function AddExpenseModal({ isOpen, onClose, onAdded, defaultCardI
     if (isOpen && accounts.length > 0 && !payFromAccount) {
       setPayFromAccount(accounts[0].id);
     }
-  }, [isOpen, defaultCardId, defaultIsCardPayment, accounts, payFromAccount]);
+    // Initialize split defaults: first checking + first card
+    if (isOpen && !splitCashAccountId) {
+      const firstChecking = accounts.find((a) => a.type === "checking") || accounts[0];
+      if (firstChecking) setSplitCashAccountId(firstChecking.id);
+    }
+    if (isOpen && !splitCardId && cards.length > 0) {
+      setSplitCardId(cards[0].id);
+    }
+  }, [isOpen, defaultCardId, defaultIsCardPayment, accounts, cards, payFromAccount, splitCashAccountId, splitCardId]);
 
   if (!isOpen) return null;
 
@@ -67,10 +86,77 @@ export default function AddExpenseModal({ isOpen, onClose, onAdded, defaultCardI
     e.preventDefault();
     setLoading(true);
 
+    const resetForm = () => {
+      setForm({ name: "", category: "Groceries", amount: "", date: todayEST(), recurring: false, frequency: "Monthly", notes: "" });
+      setPaymentMethod("cash");
+      setCreditCardId("");
+      setPayFromAccount("");
+      setIsCardPayment(false);
+      setSplitEnabled(false);
+      setSplitCashAmount("");
+      setSplitCardAmount("");
+    };
+
+    if (splitEnabled) {
+      // Generate a shared split_group_id. crypto.randomUUID is available in
+      // modern browsers + Edge Runtime.
+      const splitGroupId = (typeof crypto !== "undefined" && "randomUUID" in crypto)
+        ? crypto.randomUUID()
+        : `split-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+      const cashAmt = parseFloat(splitCashAmount) || 0;
+      const cardAmt = parseFloat(splitCardAmount) || 0;
+      const baseFields = {
+        user_id: user?.id ?? null,
+        name: form.name,
+        category: form.category,
+        date: form.date,
+        recurring: form.recurring,
+        frequency: form.recurring ? form.frequency : "One-time",
+        notes: form.notes || null,
+        is_card_payment: false,
+        split_group_id: splitGroupId,
+      };
+
+      const inserts: Record<string, unknown>[] = [];
+      if (cashAmt > 0 && splitCashAccountId) {
+        inserts.push({
+          ...baseFields,
+          amount: cashAmt,
+          payment_method: "cash" as PaymentMethod,
+          credit_card_id: null,
+          cash_account_id: splitCashAccountId,
+        });
+      }
+      if (cardAmt > 0 && splitCardId) {
+        inserts.push({
+          ...baseFields,
+          amount: cardAmt,
+          payment_method: "credit" as PaymentMethod,
+          credit_card_id: splitCardId,
+          cash_account_id: null,
+        });
+      }
+      if (inserts.length === 0) {
+        setLoading(false);
+        return;
+      }
+      const { error } = await supabase.from("expenses").insert(inserts);
+      if (!error && cashAmt > 0 && splitCashAccountId) {
+        // Debit the cash account for the cash portion only
+        await adjustAccountBalance(splitCashAccountId, -cashAmt);
+      }
+      setLoading(false);
+      if (!error) {
+        resetForm();
+        onAdded();
+        onClose();
+      }
+      return;
+    }
+
+    // ───── Single-method path (existing behavior) ─────
     const cardIdToUse = isCardPayment ? (creditCardId || null) : paymentMethod === "credit" ? (creditCardId || null) : null;
-    // Tag the expense with the cash account when paying from one (cash/debit/
-    // bank_transfer) OR when this expense is a card payment funded from an
-    // account. Pure credit-card charges leave this null.
     const accountIdToUse = (paymentMethod !== "credit" || isCardPayment) ? (selectedAccount || null) : null;
 
     const { error } = await supabase.from("expenses").insert({
@@ -86,19 +172,15 @@ export default function AddExpenseModal({ isOpen, onClose, onAdded, defaultCardI
       credit_card_id: cardIdToUse,
       cash_account_id: accountIdToUse,
       is_card_payment: isCardPayment,
+      split_group_id: null,
     });
     setLoading(false);
     if (!error) {
       const amt = parseFloat(form.amount) || 0;
-      // Deduct from selected account if paying with cash/debit or making a card payment
       if ((paymentMethod !== "credit" || isCardPayment) && selectedAccount) {
         await adjustAccountBalance(selectedAccount, -amt);
       }
-      setForm({ name: "", category: "Groceries", amount: "", date: todayEST(), recurring: false, frequency: "Monthly", notes: "" });
-      setPaymentMethod("cash");
-      setCreditCardId("");
-      setPayFromAccount("");
-      setIsCardPayment(false);
+      resetForm();
       onAdded();
       onClose();
     }
@@ -151,13 +233,23 @@ export default function AddExpenseModal({ isOpen, onClose, onAdded, defaultCardI
                 {categories.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
-            <div>
-              <label className={labelClass}>Amount *</label>
-              <div className="relative">
-                <span className="absolute left-3 top-2.5 text-gray-400 dark:text-gray-500">$</span>
-                <input type="number" step="0.01" min="0" value={form.amount} onChange={(e) => update("amount", e.target.value)} required className={`${inputClass} pl-7`} placeholder="0.00" />
+            {!splitEnabled && (
+              <div>
+                <label className={labelClass}>Amount *</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-gray-400 dark:text-gray-500">$</span>
+                  <input type="number" step="0.01" min="0" value={form.amount} onChange={(e) => update("amount", e.target.value)} required className={`${inputClass} pl-7`} placeholder="0.00" />
+                </div>
               </div>
-            </div>
+            )}
+            {splitEnabled && (
+              <div>
+                <label className={labelClass}>Total</label>
+                <div className="px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-bold tabular-nums text-gray-900 dark:text-gray-100">
+                  ${((parseFloat(splitCashAmount) || 0) + (parseFloat(splitCardAmount) || 0)).toFixed(2)}
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
@@ -165,8 +257,121 @@ export default function AddExpenseModal({ isOpen, onClose, onAdded, defaultCardI
             <input type="date" value={form.date} onChange={(e) => update("date", e.target.value)} required className={inputClass} />
           </div>
 
-          {/* Payment method + card picker (not for card payments) */}
-          {!isCardPayment && (
+          {/* Split-payment toggle (only available for non-card-payments) */}
+          {!isCardPayment && (accounts.length > 0 || cards.length > 0) && (
+            <button
+              type="button"
+              onClick={() => {
+                const next = !splitEnabled;
+                setSplitEnabled(next);
+                if (next) {
+                  // Pre-fill split fields from any single-mode amount typed
+                  const totalSoFar = parseFloat(form.amount) || 0;
+                  if (totalSoFar > 0 && !splitCashAmount && !splitCardAmount) {
+                    setSplitCashAmount((totalSoFar / 2).toFixed(2));
+                    setSplitCardAmount((totalSoFar / 2).toFixed(2));
+                  }
+                }
+              }}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                splitEnabled
+                  ? "border-purple-400 bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-200"
+                  : "border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700"
+              }`}
+            >
+              <Split size={18} className={splitEnabled ? "text-purple-600 dark:text-purple-400" : "text-gray-400 dark:text-gray-500"} />
+              <div className="text-left flex-1">
+                <p className="text-sm font-medium">{splitEnabled ? "Splitting between cash and card" : "Split between cash and card?"}</p>
+                <p className="text-xs opacity-70">{splitEnabled ? "Two rows will be saved sharing this purchase" : "Tap if you paid part with cash and part with credit"}</p>
+              </div>
+            </button>
+          )}
+
+          {/* Split portion blocks */}
+          {splitEnabled && !isCardPayment && (
+            <div className="space-y-3">
+              {/* Cash portion */}
+              <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-3 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                    <Banknote size={14} />
+                  </div>
+                  <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Cash / Debit portion</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] text-gray-500 dark:text-gray-400 mb-1">Amount</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-gray-400 dark:text-gray-500">$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={splitCashAmount}
+                        onChange={(e) => setSplitCashAmount(e.target.value)}
+                        className={`${inputClass} pl-7`}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-gray-500 dark:text-gray-400 mb-1">From account</label>
+                    {accounts.length === 0 ? (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 py-2">No cash accounts</p>
+                    ) : (
+                      <select value={splitCashAccountId} onChange={(e) => setSplitCashAccountId(e.target.value)} className={inputClass}>
+                        {accounts.map((a) => <option key={a.id} value={a.id}>{a.name} ({a.type})</option>)}
+                      </select>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Card portion */}
+              <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-3 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                    <CardIcon size={14} />
+                  </div>
+                  <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Credit card portion</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] text-gray-500 dark:text-gray-400 mb-1">Amount</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-gray-400 dark:text-gray-500">$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={splitCardAmount}
+                        onChange={(e) => setSplitCardAmount(e.target.value)}
+                        className={`${inputClass} pl-7`}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-gray-500 dark:text-gray-400 mb-1">Card</label>
+                    {cards.length === 0 ? (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 py-2">No cards</p>
+                    ) : (
+                      <select value={splitCardId} onChange={(e) => setSplitCardId(e.target.value)} className={inputClass}>
+                        {cards.map((c) => <option key={c.id} value={c.id}>{c.name}{c.last_four ? ` ••${c.last_four}` : ""}</option>)}
+                      </select>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                Two expense rows will be saved with the same name &amp; date so you can later see them as one purchase.
+              </p>
+            </div>
+          )}
+
+          {/* Payment method + card picker — only when NOT splitting */}
+          {!isCardPayment && !splitEnabled && (
             <div>
               <label className={labelClass}>Paid with</label>
               <div className="grid grid-cols-2 gap-2 mb-2">
@@ -207,8 +412,8 @@ export default function AddExpenseModal({ isOpen, onClose, onAdded, defaultCardI
             </div>
           )}
 
-          {/* Pay from account picker */}
-          {showAccountPicker && accounts.length > 0 && (
+          {/* Pay from account picker — hidden when splitting */}
+          {!splitEnabled && showAccountPicker && accounts.length > 0 && (
             <div>
               <label className={labelClass}>{isCardPayment ? "Pay from" : "Deduct from"}</label>
               <div className="space-y-1.5">
@@ -259,7 +464,23 @@ export default function AddExpenseModal({ isOpen, onClose, onAdded, defaultCardI
           </div>
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={onClose} className="flex-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium py-2.5 px-4 rounded-xl transition-colors">Cancel</button>
-            <button type="submit" disabled={loading || (paymentMethod === "credit" && !creditCardId && !isCardPayment) || (isCardPayment && !creditCardId)} className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-medium py-2.5 px-4 rounded-xl transition-all hover:shadow-lg hover:shadow-red-600/20">{loading ? "Adding..." : isCardPayment ? "Pay Card" : "Add Expense"}</button>
+            {(() => {
+              const splitTotal = (parseFloat(splitCashAmount) || 0) + (parseFloat(splitCardAmount) || 0);
+              const splitInvalid = splitEnabled && (
+                splitTotal <= 0 ||
+                ((parseFloat(splitCashAmount) || 0) > 0 && !splitCashAccountId) ||
+                ((parseFloat(splitCardAmount) || 0) > 0 && !splitCardId)
+              );
+              const singleInvalid = !splitEnabled && (
+                (paymentMethod === "credit" && !creditCardId && !isCardPayment) ||
+                (isCardPayment && !creditCardId)
+              );
+              return (
+                <button type="submit" disabled={loading || splitInvalid || singleInvalid} className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-medium py-2.5 px-4 rounded-xl transition-all hover:shadow-lg hover:shadow-red-600/20">
+                  {loading ? "Adding..." : isCardPayment ? "Pay Card" : splitEnabled ? `Add Split Expense ($${splitTotal.toFixed(2)})` : "Add Expense"}
+                </button>
+              );
+            })()}
           </div>
         </form>
       </div>

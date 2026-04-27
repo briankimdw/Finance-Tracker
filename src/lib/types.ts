@@ -199,6 +199,10 @@ export interface Expense {
   // or the funding account for a card payment. Nullable for older rows.
   cash_account_id: string | null;
   is_card_payment: boolean;
+  // Shared by multiple expense rows that represent one purchase paid via
+  // multiple methods (e.g. $40 cash + $60 card). UI groups rows with the
+  // same split_group_id into a single line item. Null = single-method.
+  split_group_id: string | null;
   created_at: string;
 }
 

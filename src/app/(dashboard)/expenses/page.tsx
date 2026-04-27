@@ -66,6 +66,37 @@ export default function ExpensesPage() {
   const cardMap = new Map(cards.map((c) => [c.id, c]));
   const accountMap = new Map(accounts.map((a) => [a.id, a]));
 
+  // Collapse split-group rows so a multi-method purchase shows up once.
+  // We preserve original row order by using the first occurrence of a group_id
+  // as the anchor; subsequent rows in the same group are merged into it.
+  type ExpenseRow =
+    | { kind: "single"; expense: Expense }
+    | { kind: "split"; groupId: string; portions: Expense[]; primary: Expense };
+  const groupedRows: ExpenseRow[] = [];
+  const groupIndex = new Map<string, number>();
+  for (const exp of filtered) {
+    if (!exp.split_group_id) {
+      groupedRows.push({ kind: "single", expense: exp });
+      continue;
+    }
+    const existing = groupIndex.get(exp.split_group_id);
+    if (existing != null) {
+      const row = groupedRows[existing] as Extract<ExpenseRow, { kind: "split" }>;
+      row.portions.push(exp);
+      continue;
+    }
+    groupIndex.set(exp.split_group_id, groupedRows.length);
+    groupedRows.push({ kind: "split", groupId: exp.split_group_id, portions: [exp], primary: exp });
+  }
+  // If a "split" group ended up with only one portion (rest filtered out or
+  // deleted), demote it back to a single row so it doesn't show a misleading
+  // "Split" badge.
+  const finalRows: ExpenseRow[] = groupedRows.map((r) =>
+    r.kind === "split" && r.portions.length < 2
+      ? { kind: "single" as const, expense: r.portions[0] }
+      : r
+  );
+
   const updateFilter = (field: keyof ExpenseFilters, value: string) => setFilters((prev) => {
     // Mutually exclusive: picking a specific card auto-sets paidWith="credit",
     // picking a specific cash account auto-sets paidWith to a non-credit method.
@@ -215,7 +246,7 @@ export default function ExpensesPage() {
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {loading ? (
                 <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">Loading...</td></tr>
-              ) : filtered.length === 0 ? (
+              ) : finalRows.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center">
@@ -228,7 +259,85 @@ export default function ExpensesPage() {
                   </td>
                 </tr>
               ) : (
-                filtered.map((exp) => {
+                finalRows.map((row) => {
+                  // ── Split row: render combined line ──
+                  if (row.kind === "split") {
+                    const totalAmt = row.portions.reduce((s, p) => s + Number(p.amount), 0);
+                    return (
+                      <tr
+                        key={`g-${row.groupId}`}
+                        onClick={() => setEditExpense(row.primary)}
+                        className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 even:bg-gray-50/40 dark:even:bg-gray-800/20 transition-colors"
+                      >
+                        <td className="px-4 py-3.5 text-sm">
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300">
+                              SPLIT {row.portions.length}×
+                            </span>
+                            <span className="text-gray-900 dark:text-gray-100 font-medium">{row.primary.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">{row.primary.category}</td>
+                        <td className="px-4 py-3.5 text-sm">
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {row.portions.map((p) => {
+                              const c = p.credit_card_id ? cardMap.get(p.credit_card_id) : null;
+                              const a = p.cash_account_id ? accountMap.get(p.cash_account_id) : null;
+                              const AIcon = a ? ACCOUNT_TYPE_ICON[a.type] : null;
+                              if (c) {
+                                return (
+                                  <span key={p.id} className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md text-white" style={{ background: c.color }}>
+                                    <CreditCard size={10} /> {c.name} <span className="opacity-80 ml-0.5">${Number(p.amount).toFixed(2)}</span>
+                                  </span>
+                                );
+                              }
+                              if (a && AIcon) {
+                                return (
+                                  <span key={p.id} className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md border" style={{ background: `${a.color}15`, color: a.color, borderColor: `${a.color}40` }}>
+                                    <AIcon size={10} /> {a.name} <span className="opacity-80 ml-0.5">${Number(p.amount).toFixed(2)}</span>
+                                  </span>
+                                );
+                              }
+                              return (
+                                <span key={p.id} className="inline-flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400">
+                                  <Banknote size={10} /> {p.payment_method} ${Number(p.amount).toFixed(2)}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5 text-sm font-medium text-red-600 dark:text-red-400 tabular-nums">
+                          -${totalAmt.toFixed(2)}
+                        </td>
+                        <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">{new Date(row.primary.date).toLocaleDateString()}</td>
+                        <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">{row.primary.recurring ? row.primary.frequency : "One-time"}</td>
+                        <td className="px-4 py-3.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setEditExpense(row.primary); }}
+                            className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mr-1"
+                            title="Edit (opens first portion — edit each row separately)"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (confirm(`Delete all ${row.portions.length} split portions of "${row.primary.name}"?`)) {
+                                for (const p of row.portions) await deleteExpense(p.id);
+                              }
+                            }}
+                            className="text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors"
+                            title="Delete entire split"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  // ── Single row (existing rendering) ──
+                  const exp = row.expense;
                   const card = exp.credit_card_id && !exp.is_card_payment ? cardMap.get(exp.credit_card_id) : null;
                   const account = exp.cash_account_id ? accountMap.get(exp.cash_account_id) : null;
                   const AccountIcon = account ? ACCOUNT_TYPE_ICON[account.type] : null;

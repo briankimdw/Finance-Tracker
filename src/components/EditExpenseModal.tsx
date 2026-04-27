@@ -137,6 +137,40 @@ export default function EditExpenseModal({ isOpen, expense, onClose, onUpdated }
   const inputClass = "w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 dark:focus:border-blue-500";
   const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5";
 
+  // ─── Balance-change preview ───
+  // Tells the user what'll happen to their cash account balances when they
+  // save. Critical because the smart rebalance is otherwise invisible — most
+  // users don't expect Save on an edit to also debit/credit their checking.
+  const previewAccountIdToUse = (paymentMethod !== "credit" || isCardPayment) ? (cashAccountId || null) : null;
+  const previewNewAmount = parseFloat(form.amount) || 0;
+  const previewOldEffect = cashEffect({
+    amount: Number(expense.amount),
+    payment_method: expense.payment_method,
+    is_card_payment: expense.is_card_payment,
+    cash_account_id: expense.cash_account_id,
+  });
+  const previewNewEffect = cashEffect({
+    amount: previewNewAmount,
+    payment_method: paymentMethod,
+    is_card_payment: isCardPayment,
+    cash_account_id: previewAccountIdToUse,
+  });
+  // Build a list of {accountId, delta} entries describing what each account
+  // will see when we save.
+  const previewLines: { accountId: string; delta: number }[] = [];
+  if (previewOldEffect.accountId && previewOldEffect.accountId === previewNewEffect.accountId) {
+    const net = previewNewEffect.delta - previewOldEffect.delta;
+    if (Math.abs(net) >= 0.01) previewLines.push({ accountId: previewOldEffect.accountId, delta: net });
+  } else {
+    if (previewOldEffect.accountId && Math.abs(previewOldEffect.delta) >= 0.01) {
+      previewLines.push({ accountId: previewOldEffect.accountId, delta: -previewOldEffect.delta });
+    }
+    if (previewNewEffect.accountId && Math.abs(previewNewEffect.delta) >= 0.01) {
+      previewLines.push({ accountId: previewNewEffect.accountId, delta: previewNewEffect.delta });
+    }
+  }
+  const isSplitMember = !!expense.split_group_id;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
@@ -146,6 +180,16 @@ export default function EditExpenseModal({ isOpen, expense, onClose, onUpdated }
           <button onClick={onClose} className="p-1 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"><X size={20} /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-5">
+          {/* Split badge — heads up that this is part of a multi-method purchase */}
+          {isSplitMember && (
+            <div className="bg-purple-50 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900/50 rounded-lg p-3 text-xs">
+              <p className="font-semibold text-purple-900 dark:text-purple-200">Part of a split payment</p>
+              <p className="text-purple-700 dark:text-purple-300 mt-0.5">
+                This row is one portion of a multi-method purchase. Editing only changes this portion — the other portion(s) stay as-is.
+              </p>
+            </div>
+          )}
+
           <div>
             <label className={labelClass}>Name *</label>
             <input type="text" value={form.name} onChange={(e) => update("name", e.target.value)} required className={inputClass} />
@@ -246,6 +290,41 @@ export default function EditExpenseModal({ isOpen, expense, onClose, onUpdated }
             <label className={labelClass}>Notes</label>
             <textarea value={form.notes} onChange={(e) => update("notes", e.target.value)} rows={2} className={`${inputClass} resize-none`} />
           </div>
+
+          {/* Balance-change preview — only shown when there's actually something to change */}
+          {previewLines.length > 0 && (
+            <div className="rounded-lg border border-blue-100 dark:border-blue-900/60 bg-blue-50 dark:bg-blue-950/30 p-3 text-xs">
+              <p className="font-semibold text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
+                <span>↻</span> When you save:
+              </p>
+              <ul className="mt-1.5 space-y-0.5">
+                {previewLines.map((line, i) => {
+                  const acc = accounts.find((a) => a.id === line.accountId);
+                  if (!acc) return null;
+                  const sign = line.delta >= 0 ? "+" : "−";
+                  const cls = line.delta >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
+                  const newBalance = Number(acc.balance) + line.delta;
+                  return (
+                    <li key={i} className="flex items-center justify-between gap-2 text-blue-900 dark:text-blue-200">
+                      <span className="truncate">{acc.name} ({acc.type})</span>
+                      <span className={`tabular-nums font-semibold ${cls}`}>
+                        {sign}${Math.abs(line.delta).toFixed(2)}
+                      </span>
+                      <span className="text-[11px] text-blue-700 dark:text-blue-300 tabular-nums">
+                        → ${newBalance.toFixed(2)}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+              {expense.credit_card_id && (
+                <p className="text-[11px] text-blue-700 dark:text-blue-300 mt-1.5">
+                  Credit card balance auto-updates from the new amount.
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={onClose} className="flex-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium py-2.5 px-4 rounded-xl transition-colors">Cancel</button>
             <button type="submit" disabled={loading} className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-medium py-2.5 px-4 rounded-xl transition-all hover:shadow-lg hover:shadow-red-600/20">{loading ? "Saving..." : "Save Changes"}</button>
