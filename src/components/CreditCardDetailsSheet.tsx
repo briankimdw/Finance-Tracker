@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import AdjustBalanceModal from "@/components/AdjustBalanceModal";
+import EditExpenseModal from "@/components/EditExpenseModal";
+import type { Expense } from "@/lib/types";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 import { createClient } from "@/lib/supabase/client";
@@ -16,15 +18,10 @@ import { useAuth } from "@/context/AuthContext";
 import { formatESTDate } from "@/lib/dates";
 import type { CreditCardWithStats } from "@/lib/types";
 
-interface CardTransaction {
-  id: string;
-  name: string;
-  category: string;
-  amount: number;
-  date: string;
-  is_card_payment: boolean;
-  notes: string | null;
-}
+// Pull full Expense rows so clicking opens the EditExpenseModal seamlessly,
+// and the modal's smart-rebalance has the original payment_method,
+// cash_account_id, etc. to compare against.
+type CardTransaction = Expense;
 
 interface CreditCardDetailsSheetProps {
   isOpen: boolean;
@@ -62,6 +59,8 @@ export default function CreditCardDetailsSheet({
   const [transactions, setTransactions] = useState<CardTransaction[]>([]);
   const [loadingTx, setLoadingTx] = useState(false);
   const [showAdjust, setShowAdjust] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!isOpen || !card) return;
@@ -72,9 +71,11 @@ export default function CreditCardDetailsSheet({
       try {
         // The app stores credit-card activity in the "expenses" table with credit_card_id set.
         // Charges have is_card_payment=false; payments have is_card_payment=true.
+        // Pull * so EditExpenseModal opens with full context (payment_method,
+        // cash_account_id, etc.) and smart-rebalance can diff old vs new.
         let q = supabase
           .from("expenses")
-          .select("id, name, category, amount, date, is_card_payment, notes")
+          .select("*")
           .eq("credit_card_id", card.id)
           .order("date", { ascending: false })
           .order("created_at", { ascending: false })
@@ -96,7 +97,7 @@ export default function CreditCardDetailsSheet({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, card, user, supabase]);
+  }, [isOpen, card, user, supabase, refreshKey]);
 
   if (!card) return null;
 
@@ -309,38 +310,47 @@ export default function CreditCardDetailsSheet({
             <div className="space-y-1.5">
               {transactions.map((tx) => {
                 const isPayment = tx.is_card_payment;
-                const amount = Number(tx.amount);
-                const sign = isPayment ? "−" : "+";
-                const amountClass = isPayment
+                const amountRaw = Number(tx.amount);
+                // Refunds are negative-amount charges. Show their abs value
+                // with a "refund" affordance.
+                const isRefund = !isPayment && amountRaw < 0;
+                const absAmt = Math.abs(amountRaw);
+                const sign = isPayment || isRefund ? "−" : "+";
+                const amountClass = isPayment || isRefund
                   ? "text-green-600 dark:text-green-400"
                   : "text-red-600 dark:text-red-400";
+                const subtitle = isPayment ? "Payment" : isRefund ? "Refund" : tx.category;
                 return (
-                  <div
+                  <button
                     key={tx.id}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800"
+                    type="button"
+                    onClick={() => setEditingExpense(tx)}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                    title="Click to edit — all balances rebalance automatically"
                   >
                     <div
                       className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                        isPayment
+                        isPayment || isRefund
                           ? "bg-green-100 dark:bg-green-950/40 text-green-600 dark:text-green-400"
                           : "bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400"
                       }`}
                     >
-                      {isPayment ? <ArrowDownRight size={15} /> : <ArrowUpRight size={15} />}
+                      {isPayment || isRefund ? <ArrowDownRight size={15} /> : <ArrowUpRight size={15} />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                         {tx.name}
                       </p>
                       <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-                        {isPayment ? "Payment" : tx.category} ·{" "}
+                        {subtitle} ·{" "}
                         {formatESTDate(tx.date, { month: "short", day: "numeric", year: "numeric" })}
                       </p>
                     </div>
                     <span className={`text-sm font-semibold tabular-nums shrink-0 ${amountClass}`}>
-                      {sign}${amount.toFixed(2)}
+                      {sign}${absAmt.toFixed(2)}
                     </span>
-                  </div>
+                    <Pencil size={11} className="text-gray-300 dark:text-gray-600 shrink-0" />
+                  </button>
                 );
               })}
             </div>
@@ -391,6 +401,17 @@ export default function CreditCardDetailsSheet({
           onClose={() => setShowAdjust(false)}
         />
       )}
+
+      <EditExpenseModal
+        isOpen={!!editingExpense}
+        expense={editingExpense}
+        onClose={() => setEditingExpense(null)}
+        onUpdated={() => {
+          // Bump the refresh key so the recent-activity query reruns and
+          // the row reflects whatever was edited.
+          setRefreshKey((k) => k + 1);
+        }}
+      />
     </BottomSheet>
   );
 }

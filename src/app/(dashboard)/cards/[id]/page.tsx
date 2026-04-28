@@ -21,6 +21,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useRealtimeRefetch } from "@/lib/useRealtimeRefetch";
 import { formatESTDate } from "@/lib/dates";
+import EditExpenseModal from "@/components/EditExpenseModal";
+import type { Expense } from "@/lib/types";
 
 type Kind = "charge" | "payment" | "refund";
 
@@ -35,6 +37,8 @@ interface Row {
   notes: string | null;
   fundingAccountName: string | null;
   fundingAccountColor: string | null;
+  // Full expense row carried through so we can open EditExpenseModal on click
+  expense: Expense;
 }
 
 interface MonthGroup {
@@ -71,6 +75,7 @@ export default function CardHistoryPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | Kind>("all");
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
 
   const accountMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
 
@@ -81,7 +86,7 @@ export default function CardHistoryPage() {
       try {
         let q = supabase
           .from("expenses")
-          .select("id, name, category, amount, date, notes, is_card_payment, cash_account_id")
+          .select("*")
           .eq("credit_card_id", cardId)
           .order("date", { ascending: false })
           .order("created_at", { ascending: false });
@@ -89,7 +94,7 @@ export default function CardHistoryPage() {
         else q = q.is("user_id", null);
         const { data } = await q;
 
-        const out: Row[] = ((data || []) as { id: string; name: string; category: string; amount: number; date: string; notes: string | null; is_card_payment: boolean; cash_account_id: string | null }[]).map((e) => {
+        const out: Row[] = ((data || []) as Expense[]).map((e) => {
           const amtRaw = Number(e.amount);
           const isRefund = !e.is_card_payment && amtRaw < 0;
           const kind: Kind = e.is_card_payment ? "payment" : isRefund ? "refund" : "charge";
@@ -107,6 +112,7 @@ export default function CardHistoryPage() {
             notes: e.notes,
             fundingAccountName: acc?.name ?? null,
             fundingAccountColor: acc?.color ?? null,
+            expense: e,
           };
         });
 
@@ -286,7 +292,13 @@ export default function CardHistoryPage() {
                 {g.rows.map((row, i) => {
                   const meta = kindMeta(row.kind);
                   return (
-                    <div key={row.id} className={`flex items-center gap-3 px-4 py-3 ${i > 0 ? "border-t border-gray-100 dark:border-gray-800" : ""}`}>
+                    <button
+                      key={row.id}
+                      type="button"
+                      onClick={() => setEditingExpense(row.expense)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${i > 0 ? "border-t border-gray-100 dark:border-gray-800" : ""}`}
+                      title="Click to edit — balances rebalance automatically"
+                    >
                       <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${meta.bg}`}>
                         <meta.Icon size={15} className={meta.accent} />
                       </div>
@@ -304,7 +316,7 @@ export default function CardHistoryPage() {
                       <span className={`text-sm font-semibold tabular-nums shrink-0 ${row.signed >= 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
                         {row.signed >= 0 ? "+" : "−"}${row.amount.toFixed(2)}
                       </span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -312,6 +324,15 @@ export default function CardHistoryPage() {
           ))}
         </div>
       )}
+
+      <EditExpenseModal
+        isOpen={!!editingExpense}
+        expense={editingExpense}
+        onClose={() => setEditingExpense(null)}
+        onUpdated={() => {
+          // Realtime subscription refreshes us automatically; no extra action needed.
+        }}
+      />
     </div>
   );
 }
