@@ -28,6 +28,9 @@ import {
   Plus,
   Search,
   ArrowRight,
+  Repeat,
+  TrendingUp,
+  Dices,
 } from "lucide-react";
 import { useTrips } from "@/hooks/useTrips";
 import { useGoals } from "@/hooks/useGoals";
@@ -73,8 +76,11 @@ const NAV_ROUTES: NavRoute[] = [
   { href: "/income", label: "Income", icon: Wallet, subtitle: "All income entries" },
   { href: "/cards", label: "Cards", icon: WalletCards, subtitle: "Credit cards & cash accounts" },
   { href: "/debts", label: "Debts", icon: HandCoins, subtitle: "Track loans & debts" },
+  { href: "/recurring", label: "Recurring", icon: Repeat, subtitle: "Auto-applied bills & income" },
   { href: "/inventory", label: "Inventory", icon: Package, subtitle: "Items for resale" },
   { href: "/sales", label: "Sales", icon: History, subtitle: "Sales history" },
+  { href: "/investments", label: "Investments", icon: TrendingUp, subtitle: "Robinhood accounts & positions" },
+  { href: "/predictions", label: "Predictions", icon: Dices, subtitle: "Prediction market stats" },
   { href: "/metals", label: "Metals", icon: Coins, subtitle: "Precious metal holdings" },
   { href: "/goals", label: "Goals", icon: Target, subtitle: "Savings goals" },
   { href: "/trips", label: "Trips", icon: Plane, subtitle: "Trip planning & budgets" },

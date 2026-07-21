@@ -44,7 +44,7 @@ export function useNetWorthHistory(days: number = 90) {
  */
 export async function saveNetWorthSnapshot(
   userId: string | null,
-  data: { cash: number; metals: number; inventory: number; owed_to_me: number; card_debt: number; i_owe: number; net_worth: number }
+  data: { cash: number; investments: number; metals: number; inventory: number; owed_to_me: number; card_debt: number; i_owe: number; net_worth: number }
 ) {
   const supabase = createClient();
   const date = todayEST();

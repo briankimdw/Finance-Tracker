@@ -5,6 +5,7 @@
 import {
   LayoutDashboard, Package, History, CalendarDays, Wallet, CreditCard, Coins,
   WalletCards, Target, HandCoins, PieChart, Plane, Users, UserCog, Cpu,
+  Repeat, TrendingUp, Dices,
 } from "lucide-react";
 
 export interface NavItem {
@@ -24,14 +25,17 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, color: "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40" },
   { href: "/budget", label: "Budget", icon: PieChart, color: "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40" },
   { href: "/expenses", label: "Expenses", icon: CreditCard, color: "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40" },
+  { href: "/recurring", label: "Recurring", icon: Repeat, color: "text-lime-600 dark:text-lime-400 bg-lime-50 dark:bg-lime-950/40" },
   { href: "/cards", label: "Cards", icon: WalletCards, color: "text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40" },
   { href: "/income", label: "Income", icon: Wallet, color: "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/40" },
   { href: "/debts", label: "Debts", icon: HandCoins, color: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40" },
   { href: "/inventory", label: "Inventory", icon: Package, divider: true, color: "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40" },
   { href: "/sales", label: "Sales History", icon: History, color: "text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40" },
   { href: "/pc-deals", label: "PC Deals", icon: Cpu, color: "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40" },
+  { href: "/investments", label: "Investments", icon: TrendingUp, divider: true, color: "text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40" },
+  { href: "/predictions", label: "Predictions", icon: Dices, color: "text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-50 dark:bg-fuchsia-950/40" },
   { href: "/metals", label: "Metals", icon: Coins, color: "text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/40" },
-  { href: "/goals", label: "Goals", icon: Target, color: "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40" },
+  { href: "/goals", label: "Goals", icon: Target, divider: true, color: "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40" },
   { href: "/trips", label: "Trips", icon: Plane, color: "text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40" },
   { href: "/calendar", label: "Calendar", icon: CalendarDays, color: "text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40" },
   { href: "/friends", label: "Friends", icon: Users, divider: true, color: "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40" },

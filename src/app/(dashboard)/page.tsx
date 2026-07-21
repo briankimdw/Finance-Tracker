@@ -30,6 +30,7 @@ import { useItems, useStats } from "@/hooks/useItems";
 import { useIncome, useIncomeStats, useSavedIncome, useMonthlyIncomeStats } from "@/hooks/useIncome";
 import { useExpenseStats, useMonthlyExpenseStats } from "@/hooks/useExpenses";
 import { usePortfolioStats, useRealizedMetalProfit } from "@/hooks/useHoldings";
+import { useInvestmentTotals } from "@/hooks/useInvestments";
 import { useCashAccounts } from "@/hooks/useCashAccounts";
 import { useCreditCards } from "@/hooks/useCreditCards";
 import { useDebts } from "@/hooks/useDebts";
@@ -124,6 +125,7 @@ export default function DashboardPage() {
   const { total: monthlyExpenses, refetch: refetchMonthlyExpenses } = useMonthlyExpenseStats();
   const { mainTotal: monthlyMain, sideTotal: monthlySide, refetch: refetchMonthlyIncome } = useMonthlyIncomeStats();
   const { stats: metalStats, refetch: refetchMetals } = usePortfolioStats();
+  const { total: investmentsTotal, refetch: refetchInvestments } = useInvestmentTotals();
   const { monthlyProfit: monthlyMetalProfit, refetch: refetchMetalProfit } = useRealizedMetalProfit();
   const { accounts: cashAccounts, totalBalance: totalCash, refetch: refetchCash, updateAccount, deleteAccount, createAccount } = useCashAccounts();
   const { cards: creditCards, refetch: refetchCards } = useCreditCards();
@@ -192,7 +194,7 @@ export default function DashboardPage() {
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [editIncome, setEditIncome] = useState<Income | null>(null);
 
-  const handleRefresh = () => { refetchStats(); refetchItems(); refetchIncome(); refetchIncomeList(); refetchExpenses(); refetchMonthlyExpenses(); refetchMonthlyIncome(); refetchMetals(); refetchMetalProfit(); refetchCash(); refetchCards(); refetchDebts(); refetchGoals(); refetchTrips(); fetchHeatMap(); refetchCharts(); };
+  const handleRefresh = () => { refetchStats(); refetchItems(); refetchIncome(); refetchIncomeList(); refetchExpenses(); refetchMonthlyExpenses(); refetchMonthlyIncome(); refetchMetals(); refetchMetalProfit(); refetchInvestments(); refetchCash(); refetchCards(); refetchDebts(); refetchGoals(); refetchTrips(); fetchHeatMap(); refetchCharts(); };
   const handleQuickAdd = async (saved: Parameters<typeof quickAdd>[0]) => { await quickAdd(saved); handleRefresh(); };
 
   const monthlyIncome = monthlyMain + monthlySide;
@@ -205,14 +207,15 @@ export default function DashboardPage() {
     .filter((c) => c.balance > 0 && c.daysUntilDue !== null && c.daysUntilDue <= 30)
     .sort((a, b) => (a.daysUntilDue || 0) - (b.daysUntilDue || 0));
 
-  // NET WORTH = Cash + Metals + Inventory + Money owed to me - Card debt - Debts I owe
-  const netWorth = totalCash + metalStats.totalValue + stats.inventoryValue + totalTheyOwe - totalCardDebt - totalIOwe;
+  // NET WORTH = Cash + Investments + Metals + Inventory + Money owed to me - Card debt - Debts I owe
+  const netWorth = totalCash + investmentsTotal + metalStats.totalValue + stats.inventoryValue + totalTheyOwe - totalCardDebt - totalIOwe;
 
   // Save daily net worth snapshot (debounced — only when data is loaded and stabilized)
   useEffect(() => {
     const timer = setTimeout(() => {
       saveNetWorthSnapshot(user?.id ?? null, {
         cash: totalCash,
+        investments: investmentsTotal,
         metals: metalStats.totalValue,
         inventory: stats.inventoryValue,
         owed_to_me: totalTheyOwe,
@@ -222,11 +225,12 @@ export default function DashboardPage() {
       });
     }, 2000);
     return () => clearTimeout(timer);
-  }, [user, totalCash, metalStats.totalValue, stats.inventoryValue, totalTheyOwe, totalCardDebt, totalIOwe, netWorth]);
+  }, [user, totalCash, investmentsTotal, metalStats.totalValue, stats.inventoryValue, totalTheyOwe, totalCardDebt, totalIOwe, netWorth]);
 
   const topCards = [
     { label: `${monthName} Net`, value: monthlyNet, icon: Scale, iconBg: monthlyNet >= 0 ? "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/40" : "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40", valueColor: monthlyNet >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400", href: "/budget" as string | undefined },
     { label: "Cash & Checking", value: totalCash, icon: Wallet, iconBg: "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/40", valueColor: "text-green-600 dark:text-green-400", href: "/cards" as string | undefined },
+    { label: "Investments", value: investmentsTotal, icon: TrendingUp, iconBg: "text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40", valueColor: "text-teal-600 dark:text-teal-400", href: "/investments" as string | undefined },
     { label: "Card Debt", value: totalCardDebt, icon: CreditCard, iconBg: "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40", valueColor: "text-red-600 dark:text-red-400", negative: true, href: "/cards" as string | undefined },
     { label: "Metals Portfolio", value: metalStats.totalValue, icon: Coins, iconBg: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40", valueColor: "text-amber-600 dark:text-amber-400", href: "/metals" as string | undefined },
   ];
@@ -350,10 +354,14 @@ export default function DashboardPage() {
           <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"><Crown size={16} /></div>
           <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">Breakdown</span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <div>
             <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Cash & Banks</p>
             <AnimatedNumber value={totalCash} prefix="$" className="text-sm font-semibold text-green-600 dark:text-green-400" />
+          </div>
+          <div>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Investments</p>
+            <AnimatedNumber value={investmentsTotal} prefix="$" className="text-sm font-semibold text-teal-600 dark:text-teal-400" />
           </div>
           <div>
             <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Metals</p>
@@ -374,7 +382,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <Stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <Stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {topCards.map((card) => {
           const Icon = card.icon;
           const v = card.value;

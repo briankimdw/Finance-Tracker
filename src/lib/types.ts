@@ -471,6 +471,7 @@ export interface NetWorthSnapshot {
   user_id: string | null;
   date: string;
   cash: number;
+  investments: number;
   metals: number;
   inventory: number;
   owed_to_me: number;
@@ -648,4 +649,109 @@ export interface PCDealWithParts extends PCDeal {
   profitMargin: number;       // 0-100
   verdict: PCDealVerdict;
   actualProfit: number | null; // if status=sold: sold_for - purchased_price - selling_fees
+}
+
+// ---- Investments (Robinhood) ----
+
+export type InvestmentAccountType = "individual" | "roth_ira" | "traditional_ira" | "other";
+
+export interface InvestmentAccount {
+  id: string;
+  user_id: string | null;
+  provider: string;              // "robinhood" for now; room for more brokers later
+  nickname: string | null;
+  account_type: InvestmentAccountType | string;
+  trading_type: string | null;   // "margin" | "cash"
+  mask: string | null;           // last 4 digits of the account number only
+  total_value: number;
+  equity_value: number;
+  options_value: number;
+  event_contracts_value: number; // prediction markets balance
+  crypto_value: number;
+  cash: number;
+  display_order: number;
+  last_synced_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvestmentPosition {
+  id: string;
+  user_id: string | null;
+  account_id: string;
+  symbol: string;
+  quantity: number;
+  avg_cost: number;
+  last_price: number | null;
+  price_updated_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvestmentPositionWithStats extends InvestmentPosition {
+  marketValue: number;   // quantity * (last_price ?? avg_cost)
+  costBasis: number;     // quantity * avg_cost
+  pnl: number;
+  pnlPercent: number;
+}
+
+export interface InvestmentSnapshot {
+  id: string;
+  user_id: string | null;
+  date: string;
+  total_value: number;
+  equities: number;
+  options: number;
+  event_contracts: number;
+  crypto: number;
+  cash: number;
+  created_at: string;
+}
+
+// ---- Prediction markets (Robinhood event contracts, imported via CSV) ----
+
+export interface PredictionActivity {
+  id: string;
+  user_id: string | null;
+  activity_date: string;
+  process_date: string | null;
+  settle_date: string | null;
+  instrument: string | null;
+  description: string;
+  trans_code: string;
+  quantity: number | null;
+  price: number | null;
+  amount: number;              // signed: negative = cash out (buys), positive = cash in
+  market: string | null;       // parsed event/market title
+  outcome_side: string | null; // "Yes" / "No" when detectable
+  source_file: string | null;
+  dedupe_hash: string;
+  created_at: string;
+}
+
+// ---- Recurring rules (auto-applied bills & income) ----
+
+export type RecurringKind = "expense" | "income";
+export type RecurringFrequency = "weekly" | "biweekly" | "monthly" | "yearly";
+
+export interface RecurringRule {
+  id: string;
+  user_id: string | null;
+  kind: RecurringKind;
+  name: string;
+  category: string;
+  amount: number;
+  frequency: RecurringFrequency;
+  day_of_month: number | null;      // 1-28; keeps monthly/yearly rules stable
+  payment_method: PaymentMethod;
+  credit_card_id: string | null;    // expense rules charged to a card
+  cash_account_id: string | null;   // account debited (expense) or credited (income)
+  income_type: IncomeType;
+  next_due_date: string;
+  last_applied_date: string | null;
+  active: boolean;
+  autopay: boolean;                 // false = track/remind only, never auto-apply
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
 }

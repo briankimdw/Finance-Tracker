@@ -1,7 +1,7 @@
-﻿"use client";
+"use client";
 
-import { useEffect } from "react";
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { useEffect, useState } from "react";
+import { useMotionValue, animate } from "framer-motion";
 
 interface AnimatedNumberProps {
   value: number;
@@ -15,6 +15,11 @@ interface AnimatedNumberProps {
 /**
  * Smoothly animates a number from its previous value to the new value.
  * Perfect for financial stat cards.
+ *
+ * The animated frames are pushed through React state (via the motion value's
+ * change subscription) rather than rendered as a MotionValue child — motion
+ * children only re-resolve when the parent re-renders, which froze values on
+ * pages that render exactly once after their data loads.
  */
 export default function AnimatedNumber({
   value,
@@ -22,20 +27,32 @@ export default function AnimatedNumber({
   suffix = "",
   decimals = 2,
   duration = 0.8,
-  className="",
+  className = "",
 }: AnimatedNumberProps) {
   const motionValue = useMotionValue(value);
-  const display = useTransform(motionValue, (latest) =>
-    `${prefix}${latest.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}${suffix}`
-  );
+  const format = (latest: number) =>
+    `${prefix}${latest.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}${suffix}`;
+  const [display, setDisplay] = useState(() => format(value));
 
   useEffect(() => {
+    const unsubscribe = motionValue.on("change", (latest) => setDisplay(format(latest)));
     const controls = animate(motionValue, value, {
       duration,
       ease: [0.25, 0.1, 0.25, 1],
     });
-    return controls.stop;
-  }, [value, duration, motionValue]);
+    // rAF is throttled or fully paused in background/hidden tabs, which would
+    // freeze the animation mid-flight — always settle on the exact final value.
+    const settle = setTimeout(() => {
+      motionValue.set(value);
+      setDisplay(format(value));
+    }, duration * 1000 + 150);
+    return () => {
+      clearTimeout(settle);
+      unsubscribe();
+      controls.stop();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, duration, prefix, suffix, decimals, motionValue]);
 
-  return <motion.span className={`tabular-nums ${className}`}>{display}</motion.span>;
+  return <span className={`tabular-nums ${className}`}>{display}</span>;
 }

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import QuickActionsFAB from "@/components/QuickActionsFAB";
+import RecurringAutopilot from "@/components/RecurringAutopilot";
 import { CommandPalette, useCommandPalette } from "@/components/ui/CommandPalette";
 import { CommandPaletteContext } from "@/context/CommandPaletteContext";
 import { useAuth } from "@/context/AuthContext";
@@ -50,6 +51,7 @@ export default function DashboardLayout({
         </main>
         <MobileBottomNav />
         <QuickActionsFAB />
+        <RecurringAutopilot />
         <CommandPalette isOpen={palette.isOpen} onClose={palette.close} />
       </div>
     </CommandPaletteContext.Provider>
