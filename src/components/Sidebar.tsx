@@ -1,11 +1,12 @@
 ﻿"use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useFriends } from "@/hooks/useFriends";
 import { usePendingInvites } from "@/hooks/usePendingInvites";
-import { LogOut, LogIn, TrendingUp, Command } from "lucide-react";
+import { LogOut, LogIn, TrendingUp, Command, SlidersHorizontal, Check, Eye, EyeOff, Lock } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useCommandPaletteContext } from "@/context/CommandPaletteContext";
 import { NAV_ITEMS, filterNavItems } from "@/lib/navItems";
@@ -15,13 +16,18 @@ export default function Sidebar() {
   const { user, signOut } = useAuth();
   const { incoming } = useFriends();
   const { trips: tripInvites, goals: goalInvites } = usePendingInvites();
-  const { profile } = useProfile();
+  const { profile, setNavVisibility } = useProfile();
   const palette = useCommandPaletteContext();
   const pendingCount = incoming.length + tripInvites.length + goalInvites.length;
   const avatarUrl = profile?.avatar_url || null;
   const avatarInitial = (profile?.display_name || profile?.username || user?.email || "?").charAt(0).toUpperCase();
   const avatarColor = profile?.color || "#3b82f6";
   const navItems = filterNavItems(NAV_ITEMS, profile?.nav_preferences ?? null);
+
+  // Edit mode: show EVERY route (hidden ones dimmed) with eye toggles so tabs
+  // can be added/removed right here, without a trip to /profile.
+  const [editingNav, setEditingNav] = useState(false);
+  const displayItems = editingNav ? NAV_ITEMS : navItems;
 
   return (
     <>
@@ -62,11 +68,64 @@ export default function Sidebar() {
           </div>
         </div>
 
-        <nav className="flex-1 p-3 space-y-0.5">
-          {navItems.map((item) => {
+        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+          {user && (
+            <div className="flex items-center justify-between px-3 pb-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                {editingNav ? "Tap to show / hide" : "Menu"}
+              </span>
+              <button
+                type="button"
+                onClick={() => setEditingNav((v) => !v)}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider transition-all ${
+                  editingNav
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-white/60 dark:hover:bg-gray-800/60"
+                }`}
+                title={editingNav ? "Done customizing" : "Add or remove tabs"}
+              >
+                {editingNav ? <Check size={12} /> : <SlidersHorizontal size={12} />}
+                {editingNav ? "Done" : "Edit"}
+              </button>
+            </div>
+          )}
+          {displayItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
             const badge = item.href === "/friends" && pendingCount > 0 ? pendingCount : 0;
+            const hidden = (profile?.nav_preferences ?? {})[item.href] === false;
+
+            if (editingNav) {
+              return (
+                <div key={item.href}>
+                  {item.divider && <div className="my-2 border-t border-gray-200/60 dark:border-gray-800/60" />}
+                  <button
+                    type="button"
+                    onClick={() => { if (!item.essential) setNavVisibility(item.href, hidden); }}
+                    disabled={item.essential}
+                    aria-label={item.essential ? `${item.label} is always shown` : hidden ? `Show ${item.label}` : `Hide ${item.label}`}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all text-left ${
+                      item.essential
+                        ? "text-gray-400 dark:text-gray-500 cursor-default"
+                        : hidden
+                          ? "text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-white/60 dark:hover:bg-gray-800/60"
+                          : "text-gray-600 dark:text-gray-300 hover:bg-white/60 dark:hover:bg-gray-800/60"
+                    }`}
+                  >
+                    <Icon size={18} className={hidden ? "opacity-40" : ""} />
+                    <span className={`flex-1 ${hidden ? "line-through decoration-gray-300 dark:decoration-gray-600" : ""}`}>{item.label}</span>
+                    {item.essential ? (
+                      <Lock size={13} className="text-gray-300 dark:text-gray-600" />
+                    ) : hidden ? (
+                      <EyeOff size={14} className="text-gray-300 dark:text-gray-600" />
+                    ) : (
+                      <Eye size={14} className="text-blue-500 dark:text-blue-400" />
+                    )}
+                  </button>
+                </div>
+              );
+            }
+
             return (
               <div key={item.href}>
                 {item.divider && <div className="my-2 border-t border-gray-200/60 dark:border-gray-800/60" />}

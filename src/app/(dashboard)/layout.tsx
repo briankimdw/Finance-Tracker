@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import QuickActionsFAB from "@/components/QuickActionsFAB";
@@ -16,6 +17,10 @@ export default function DashboardLayout({
 }) {
   const { user, loading } = useAuth();
   const palette = useCommandPalette();
+  const pathname = usePathname();
+  // Metals is a dense data page — let it stretch edge-to-edge instead of
+  // stopping at the max-w-7xl column every other page uses.
+  const fullBleed = pathname === "/metals" || pathname.startsWith("/metals/");
 
   // Cmd/Ctrl-K toggles the palette globally.
   useEffect(() => {
@@ -47,7 +52,7 @@ export default function DashboardLayout({
               Demo mode — connect Supabase and sign in to save your data
             </div>
           )}
-          <div className="p-4 lg:p-6 max-w-7xl">{children}</div>
+          <div className={`p-4 lg:p-6 ${fullBleed ? "w-full" : "max-w-7xl"}`}>{children}</div>
         </main>
         <MobileBottomNav />
         <QuickActionsFAB />
